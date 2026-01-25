@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global font family */
+html,
+body,
+#root {
+  height: 100%;
+  font-family: var(--font-body);
+  color: hsl(var(--textPrimary));
+}
+
+/* =========================================================
+   KFarms Theme – Global Tokens
+   ========================================================= */
+
+/* Default fonts */
+:root {
+  --font-header:
+    "Poppins", "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
+  --font-body:
+    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial;
+}
+
+/* =========================================================
+   Font Utilities
+   ========================================================= */
+
+/* Font utilities */
+.font-header {
+  font-family: var(--font-header);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+/* =========================================================
+   Layout Helpers
+   ========================================================= */
+.app-full {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide scrollbars while keeping scroll enabled */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Glass style */
+.glass {
+  background: rgba(255, 255, 255, 0.08); /* improved visibility */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Toast */
+.toast-top {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+}
+
+/* Fix date input icon visibility in dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Glassy skeleton shimmer */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-glass {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    110deg,
+    rgba(148, 163, 184, 0.26) 8%,
+    rgba(226, 232, 240, 0.72) 18%,
+    rgba(148, 163, 184, 0.26) 33%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s linear infinite;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.dark .skeleton-glass {
+  background: linear-gradient(
+    110deg,
+    rgba(15, 23, 42, 0.35) 8%,
+    rgba(148, 163, 184, 0.18) 18%,
+    rgba(15, 23, 42, 0.35) 33%
+  );
+  border-color: rgba(255, 255, 255, 0.08);
+}
