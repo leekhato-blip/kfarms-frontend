@@ -1,4 +1,5 @@
-import api from "./axios";
+import api from "../api/apiClient";
+import { buildOfflineMutationConfig } from "../offline/offlineStore";
 
 // Get livestock with filters + pagination
 export async function getLivestock(params = {}) {
@@ -30,14 +31,31 @@ export async function getLivestockOverview() {
 }
 
 // Create livestock batch
-export async function createLivestock(payload) {
-  const res = await api.post("/livestock", payload);
+export async function createLivestock(payload, options = {}) {
+  const res = await api.post(
+    "/livestock",
+    payload,
+    buildOfflineMutationConfig({
+      resource: "livestock",
+      action: "create",
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
 // Update livestock batch
-export async function updateLivestock(id, payload) {
-  const res = await api.put(`/livestock/${id}`, payload);
+export async function updateLivestock(id, payload, options = {}) {
+  const res = await api.put(
+    `/livestock/${id}`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "livestock",
+      action: "update",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 

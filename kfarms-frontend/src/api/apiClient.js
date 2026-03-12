@@ -1,7 +1,20 @@
 import axios from "axios";
+import {
+  DEMO_ACCOUNT_BLOCKED_MESSAGE,
+  emitDemoAccountBlocked,
+  hasDemoAccountHint,
+  isDemoBlockedMessage,
+} from "../auth/demoMode";
+import {
+  cacheApiResponse,
+  createQueuedAxiosResponse,
+  ensureOfflineRequestId,
+  getCachedApiResponse,
+  shouldServeOfflineImmediately,
+} from "../offline/offlineStore";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
-const PING_PATH = "/health/events";
+const PING_PATH = "/auth/me";
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
 const AUTH_PUBLIC_401_PATHS = new Set([
@@ -29,6 +42,7 @@ const pingClient = axios.create({
 let backendDown = false;
 let pingTimer = null;
 let sessionValidationPromise = null;
+let lastBackendConfirmedAt = 0;
 
 function dispatchWindowEvent(event) {
   if (typeof window === "undefined") return;
@@ -86,11 +100,99 @@ function extractErrorMessage(error) {
   return "";
 }
 
-function isNetworkError(error) {
+function getHeaderValue(headers, key) {
+  if (!headers) return "";
+  if (typeof headers.get === "function") {
+    return headers.get(key) || "";
+  }
+  return headers[key] || headers[String(key).toLowerCase()] || headers[String(key).toUpperCase()] || "";
+}
+
+function isCanceledError(error) {
   return (
-    !error.response &&
-    (error.code === "ECONNABORTED" || error.message === "Network Error" || !error.response)
+    axios.isCancel?.(error) ||
+    error?.code === "ERR_CANCELED" ||
+    error?.name === "CanceledError" ||
+    error?.message === "canceled"
   );
+}
+
+function isNetworkError(error) {
+  if (!error || error.response || isCanceledError(error)) {
+    return false;
+  }
+
+  if (typeof window !== "undefined" && window.navigator?.onLine === false) {
+    return true;
+  }
+
+  return error.code === "ERR_NETWORK" || error.message === "Network Error";
+}
+
+function isGetRequest(config) {
+  return String(config?.method || "get").toUpperCase() === "GET";
+}
+
+function isMutationRequest(config) {
+  const method = String(config?.method || "").toUpperCase();
+  return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
+}
+
+function shouldAllowDemoMutation(pathname) {
+  return pathname === "/api/auth/logout";
+}
+
+function createDemoModeError(config, requestPath) {
+  const error = new Error(DEMO_ACCOUNT_BLOCKED_MESSAGE);
+  error.name = "AxiosError";
+  error.code = "ERR_DEMO_MODE";
+  error.config = config;
+  error.response = {
+    status: 403,
+    statusText: "Forbidden",
+    config,
+    headers: {},
+    data: {
+      success: false,
+      message: DEMO_ACCOUNT_BLOCKED_MESSAGE,
+      path: requestPath,
+    },
+  };
+  return error;
+}
+
+function isOfflineSyntheticResponse(response) {
+  return (
+    getHeaderValue(response?.headers, "x-offline-cache") === "1" ||
+    getHeaderValue(response?.headers, "x-offline-queued") === "1"
+  );
+}
+
+function getRequestStartedAt(config) {
+  const startedAt = Number(config?._kfRequestStartedAt);
+  return Number.isFinite(startedAt) && startedAt > 0 ? startedAt : 0;
+}
+
+function confirmBackendUp() {
+  lastBackendConfirmedAt = Date.now();
+  if (!backendDown) return;
+  backendDown = false;
+  stopPing();
+  dispatchWindowEvent(new Event("kf-backend-up"));
+}
+
+function markBackendDown(config) {
+  const requestStartedAt = getRequestStartedAt(config);
+  if (requestStartedAt && requestStartedAt < lastBackendConfirmedAt) {
+    return false;
+  }
+
+  if (backendDown) return true;
+
+  backendDown = true;
+  dispatchWindowEvent(new Event("kf-backend-down"));
+  startPing();
+  return true;
 }
 
 function stopPing() {
@@ -99,18 +201,37 @@ function stopPing() {
   pingTimer = null;
 }
 
+export async function probeBackendConnection({ silent = false } = {}) {
+  if (typeof window !== "undefined" && window.navigator?.onLine === false) {
+    if (!silent) {
+      markBackendDown({ _kfRequestStartedAt: Date.now() });
+    }
+    return false;
+  }
+
+  try {
+    await pingClient.get(PING_PATH, {
+      validateStatus: () => true,
+    });
+    confirmBackendUp();
+    return true;
+  } catch (error) {
+    if (!silent && isNetworkError(error)) {
+      markBackendDown({ _kfRequestStartedAt: Date.now() });
+    }
+    return false;
+  }
+}
+
 function startPing() {
   if (pingTimer) return;
-  pingTimer = setInterval(async () => {
-    try {
-      await pingClient.get(PING_PATH, { validateStatus: () => true });
-      backendDown = false;
-      stopPing();
-      dispatchWindowEvent(new Event("kf-backend-up"));
-    } catch {
-      // Keep waiting until backend is reachable.
-    }
-  }, 3000);
+
+  const runProbe = () => {
+    void probeBackendConnection({ silent: true });
+  };
+
+  pingTimer = setInterval(runProbe, 3000);
+  runProbe();
 }
 
 function redirectToLogin() {
@@ -142,23 +263,74 @@ async function hasActiveSession() {
 apiClient.interceptors.request.use((config) => {
   if (typeof window === "undefined") return config;
 
+  config._kfRequestStartedAt = Date.now();
+
   const pathname = resolveRequestPath(config);
-  if (!shouldAttachTenantHeader(pathname)) return config;
+  if (config.offline?.enabled) {
+    ensureOfflineRequestId(config);
+  }
 
-  const tenantId = window.localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY);
-  if (!tenantId) return config;
+  if (shouldAttachTenantHeader(pathname)) {
+    const tenantId = window.localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY);
+    if (tenantId) {
+      config.headers = config.headers || {};
+      config.headers["X-Tenant-Id"] = tenantId;
+    }
+  }
 
-  config.headers = config.headers || {};
-  config.headers["X-Tenant-Id"] = tenantId;
+  if (isMutationRequest(config) && hasDemoAccountHint() && !shouldAllowDemoMutation(pathname)) {
+    config.adapter = async () => {
+      throw createDemoModeError(config, pathname);
+    };
+    return config;
+  }
+
+  if (shouldServeOfflineImmediately(config)) {
+    if (isGetRequest(config)) {
+      const cachedData = getCachedApiResponse({
+        tenantId: config.headers?.["X-Tenant-Id"],
+        path: pathname,
+        params: config.params,
+      });
+
+      if (cachedData) {
+        config.adapter = async () => ({
+          status: 200,
+          statusText: "OK",
+          config,
+          headers: {
+            "x-offline-cache": "1",
+          },
+          data: cachedData,
+        });
+        return config;
+      }
+    }
+
+    if (isMutationRequest(config) && config.offline?.enabled) {
+      const queuedResponse = createQueuedAxiosResponse(config, pathname);
+      config.adapter = async () => queuedResponse;
+      return config;
+    }
+  }
+
   return config;
 });
 
 apiClient.interceptors.response.use(
   (response) => {
-    if (backendDown) {
-      backendDown = false;
-      stopPing();
-      dispatchWindowEvent(new Event("kf-backend-up"));
+    const requestPath = resolveRequestPath(response.config);
+    if (isGetRequest(response.config) && !response.config?.offline?.skipCache) {
+      cacheApiResponse({
+        tenantId: response.config?.headers?.["X-Tenant-Id"],
+        path: requestPath,
+        params: response.config?.params,
+        data: response.data,
+      });
+    }
+
+    if (!isOfflineSyntheticResponse(response)) {
+      confirmBackendUp();
     }
     return response;
   },
@@ -169,10 +341,8 @@ apiClient.interceptors.response.use(
     const requestPath = resolveRequestPath(error.config);
 
     // If we received any HTTP response, the backend is reachable again.
-    if (status && backendDown) {
-      backendDown = false;
-      stopPing();
-      dispatchWindowEvent(new Event("kf-backend-up"));
+    if (status) {
+      confirmBackendUp();
     }
 
     if (status === 401 && !skipAuthInvalid) {
@@ -200,10 +370,36 @@ apiClient.interceptors.response.use(
       );
     }
 
-    if (isNetworkError(error) && !backendDown) {
-      backendDown = true;
-      dispatchWindowEvent(new Event("kf-backend-down"));
-      startPing();
+    if (status === 403 && isDemoBlockedMessage(message)) {
+      emitDemoAccountBlocked(message || DEMO_ACCOUNT_BLOCKED_MESSAGE);
+    }
+
+    if (isNetworkError(error)) {
+      markBackendDown(error.config);
+    }
+
+    if (isNetworkError(error) && isGetRequest(error.config)) {
+      const cachedData = getCachedApiResponse({
+        tenantId: error.config?.headers?.["X-Tenant-Id"],
+        path: requestPath,
+        params: error.config?.params,
+      });
+
+      if (cachedData) {
+        return Promise.resolve({
+          status: 200,
+          statusText: "OK",
+          config: error.config,
+          headers: {
+            "x-offline-cache": "1",
+          },
+          data: cachedData,
+        });
+      }
+    }
+
+    if (isNetworkError(error) && isMutationRequest(error.config) && error.config?.offline?.enabled) {
+      return Promise.resolve(createQueuedAxiosResponse(error.config, requestPath));
     }
 
     return Promise.reject(error);

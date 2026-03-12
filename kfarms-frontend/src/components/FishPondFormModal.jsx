@@ -1,14 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  Droplets,
-  Hash,
-  Calendar,
-  StickyNote,
-  X,
-  Save,
-  Activity,
-  Fish,
-} from "lucide-react";
+import { Activity, Calendar, Droplets, Fish, Hash, Save, StickyNote } from "lucide-react";
+import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
 import { createFishPond, updateFishPond } from "../services/fishPondService";
 
 function defaultForm() {
@@ -23,7 +15,18 @@ function defaultForm() {
   };
 }
 
-const Required = () => <span className="text-red-500 ml-0.5">*</span>;
+const Required = () => <span className="ml-0.5 text-red-500">*</span>;
+
+const POND_STEPS = [
+  {
+    title: "What pond is this?",
+    description: "Add the pond name, type, and current status.",
+  },
+  {
+    title: "Stock and water details",
+    description: "Add capacity, stock, and the last water change date.",
+  },
+];
 
 export default function FishPondFormModal({
   open,
@@ -33,9 +36,13 @@ export default function FishPondFormModal({
 }) {
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
+
   const editing = Boolean(initialData?.id);
 
   useEffect(() => {
+    if (!open) return;
+
     if (initialData) {
       setForm({
         pondName: initialData.pondName ?? "",
@@ -51,12 +58,19 @@ export default function FishPondFormModal({
     } else {
       setForm(defaultForm());
     }
+
+    setStep(0);
   }, [initialData, open]);
 
-  if (!open) return null;
+  const stepOneComplete = Boolean(String(form.pondName || "").trim() && form.pondType && form.status);
+  const stepTwoComplete = Boolean(
+    Number(form.capacity) >= 0 && Number(form.currentStock) >= 0 && form.lastWaterChange,
+  );
 
-  async function submit(e) {
-    e.preventDefault();
+  async function submit(event) {
+    event.preventDefault();
+    if (!stepOneComplete || !stepTwoComplete) return;
+
     setSaving(true);
 
     const payload = {
@@ -66,121 +80,139 @@ export default function FishPondFormModal({
       capacity: form.capacity === "" ? null : Number(form.capacity),
       currentStock: form.currentStock === "" ? null : Number(form.currentStock),
       lastWaterChange: form.lastWaterChange || null,
-      note: form.note?.trim() || null,
+      note: form.note.trim() || null,
     };
 
     try {
       const saved = editing
-        ? await updateFishPond(initialData.id, payload)
+        ? await updateFishPond(initialData.id, payload, { baseRecord: initialData })
         : await createFishPond(payload);
       onSuccess?.(saved);
-    } catch (err) {
-      console.error("Fish pond submit failed");
-      if (err?.response) {
-        console.error(err.response.status);
-        console.error(err.response.data);
-      } else {
-        console.error(err?.message);
-      }
+    } catch (error) {
+      console.error("Fish pond submit failed", error);
     } finally {
       setSaving(false);
     }
   }
 
+  const footer = (
+    <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500 dark:text-slate-300">
+        {step === 0 ? "Step 1 of 2: pond basics" : "Step 2 of 2: stock and water details"}
+      </p>
+
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((current) => Math.max(current - 1, 0))}
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+          >
+            Back
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+          >
+            Cancel
+          </button>
+        )}
+
+        {step < POND_STEPS.length - 1 ? (
+          <button
+            type="button"
+            disabled={!stepOneComplete}
+            onClick={() => setStep(1)}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Continue
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={saving || !stepOneComplete || !stepTwoComplete}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : editing ? "Save changes" : "Save pond"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4">
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-md"
-        onClick={onClose}
-      />
-
-      <form
-        onSubmit={submit}
-        className="relative w-full max-w-[96vw] sm:max-w-lg rounded-2xl p-1 animate-fadeIn"
-        aria-modal="true"
-        role="dialog"
-      >
-        <div className="rounded-2xl bg-darkCard/60 shadow-neo p-px">
-          <div className="rounded-2xl bg-white/70 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-4 sm:p-6 space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex justify-between items-center">
-              <div className="flex items-start gap-3">
-                <div className="rounded-md bg-accent-primary/10 p-2 flex items-center justify-center">
-                  <Droplets className="w-5 h-5 text-accent-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    {editing ? "Edit Pond" : "New Pond"}
-                    <span className="text-xs bg-white/10 text-slate-400 px-2 py-0.5 rounded-full">
-                      {editing ? "Editing" : "Create"}
-                    </span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Track pond capacity, stock, and status
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close modal"
-                className="p-2 rounded-md hover:bg-white/10"
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+    <GuidedFormModal
+      open={open}
+      onClose={onClose}
+      onSubmit={submit}
+      saving={saving}
+      icon={Droplets}
+      title={editing ? "Edit pond" : "Add pond"}
+      description="Keep pond setup simple. Start with the pond identity, then add stock and water details."
+      editing={editing}
+      steps={POND_STEPS}
+      currentStep={step}
+      maxWidth="max-w-2xl"
+      footer={footer}
+    >
+      {step === 0 ? (
+        <GuidedFormSection
+          title="Pond basics"
+          description="Give the pond a clear name and choose its type and current status."
+        >
+          <div className="space-y-4">
             <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5">
-                  <Droplets className="w-4 h-4 text-slate-500" />
-                </span>
-                Pond Name <Required />
+              <label className="mb-1 flex items-center gap-2 text-xs">
+                <Droplets className="h-4 w-4 text-slate-500" />
+                Pond name <Required />
               </label>
               <input
                 value={form.pondName}
-                onChange={(e) => setForm({ ...form, pondName: e.target.value })}
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
-                placeholder="e.g. Grow Out Pond 1"
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, pondName: event.target.value }))
+                }
+                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                placeholder="e.g. Grow out pond 1"
                 autoFocus
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Fish className="w-4 h-4 text-slate-500" />
-                  </span>
-                  Pond Type <Required />
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Fish className="h-4 w-4 text-slate-500" />
+                  Pond type <Required />
                 </label>
                 <select
                   value={form.pondType}
-                  onChange={(e) =>
-                    setForm({ ...form, pondType: e.target.value })
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, pondType: event.target.value }))
                   }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   required
                 >
                   <option value="HATCHING">Hatching</option>
-                  <option value="GROW_OUT">Grow Out</option>
+                  <option value="GROW_OUT">Grow out</option>
                   <option value="BROODSTOCK">Broodstock</option>
                   <option value="HOLDING">Holding</option>
                 </select>
               </div>
+
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Activity className="w-4 h-4 text-slate-500" />
-                  </span>
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Activity className="h-4 w-4 text-slate-500" />
                   Status <Required />
                 </label>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, status: event.target.value }))
+                  }
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   required
                 >
                   <option value="ACTIVE">Active</option>
@@ -189,99 +221,88 @@ export default function FishPondFormModal({
                 </select>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          </div>
+        </GuidedFormSection>
+      ) : (
+        <>
+          <GuidedFormSection
+            title="Stock and water details"
+            description="Add the capacity, current fish stock, and the last water change."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Hash className="w-4 h-4 text-slate-500" />
-                  </span>
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Hash className="h-4 w-4 text-slate-500" />
                   Capacity <Required />
                 </label>
                 <input
                   type="number"
+                  min="0"
                   value={form.capacity}
-                  onChange={(e) =>
-                    setForm({ ...form, capacity: e.target.value })
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, capacity: event.target.value }))
                   }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   placeholder="e.g. 2000"
                   required
                 />
               </div>
+
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Hash className="w-4 h-4 text-slate-500" />
-                  </span>
-                  Current Stock <Required />
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Hash className="h-4 w-4 text-slate-500" />
+                  Current stock <Required />
                 </label>
                 <input
                   type="number"
+                  min="0"
                   value={form.currentStock}
-                  onChange={(e) =>
-                    setForm({ ...form, currentStock: e.target.value })
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, currentStock: event.target.value }))
                   }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   placeholder="e.g. 1500"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5">
-                  <Calendar className="w-4 h-4 text-slate-500" />
-                </span>
-                Last Water Change <Required />
+            <div className="mt-4">
+              <label className="mb-1 flex items-center gap-2 text-xs">
+                <Calendar className="h-4 w-4 text-slate-500" />
+                Last water change <Required />
               </label>
               <input
                 type="date"
                 value={form.lastWaterChange}
-                onChange={(e) =>
-                  setForm({ ...form, lastWaterChange: e.target.value })
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, lastWaterChange: event.target.value }))
                 }
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                 required
               />
             </div>
+          </GuidedFormSection>
 
-            <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5">
-                  <StickyNote className="w-4 h-4 text-slate-500" />
-                </span>
-                Note
-              </label>
-              <textarea
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none min-h-[90px]"
-                placeholder="Optional notes about this pond"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-md bg-transparent border border-white/10 hover:bg-white/5"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-4 py-2 rounded-md bg-accent-primary text-white hover:opacity-90 disabled:opacity-60 flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                {saving ? "Saving..." : "Save Pond"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
+          <GuidedFormSection
+            title="Optional note"
+            description="Use this only if there is anything helpful to remember later."
+          >
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <StickyNote className="h-4 w-4 text-slate-500" />
+              Note
+            </label>
+            <textarea
+              value={form.note}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, note: event.target.value }))
+              }
+              className="min-h-[96px] w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+              placeholder="Optional note about this pond"
+            />
+          </GuidedFormSection>
+        </>
+      )}
+    </GuidedFormModal>
   );
 }

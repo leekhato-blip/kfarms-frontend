@@ -1,4 +1,5 @@
-import api from "./axios";
+import api from "../api/apiClient";
+import { buildOfflineMutationConfig } from "../offline/offlineStore";
 
 /**
  * Fetch all sales records with pagination & filters
@@ -38,8 +39,16 @@ export async function getSaleById(id) {
  * Backend: POST /api/sales
  * Body: SalesRequestDto
  */
-export async function createSale(payload) {
-  const res = await api.post("/sales", payload);
+export async function createSale(payload, options = {}) {
+  const res = await api.post(
+    "/sales",
+    payload,
+    buildOfflineMutationConfig({
+      resource: "sales",
+      action: "create",
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
@@ -48,8 +57,17 @@ export async function createSale(payload) {
  * Backend: PUT /api/sales/{id}
  * Body: SalesRequestDto
  */
-export async function updateSale(id, payload) {
-  const res = await api.put(`/sales/${id}`, payload);
+export async function updateSale(id, payload, options = {}) {
+  const res = await api.put(
+    `/sales/${id}`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "sales",
+      action: "update",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 

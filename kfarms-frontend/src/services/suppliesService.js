@@ -1,4 +1,5 @@
-import api from "./axios";
+import api from "../api/apiClient";
+import { buildOfflineMutationConfig } from "../offline/offlineStore";
 
 /**
  * Fetch all supplies with pagination & filters
@@ -28,13 +29,30 @@ export async function getSupplyById(id) {
   return res.data.data;
 }
 
-export async function createSupply(payload) {
-  const res = await api.post("/supplies", payload);
+export async function createSupply(payload, options = {}) {
+  const res = await api.post(
+    "/supplies",
+    payload,
+    buildOfflineMutationConfig({
+      resource: "supplies",
+      action: "create",
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
-export async function updateSupply(id, payload) {
-  const res = await api.put(`/supplies/${id}`, payload);
+export async function updateSupply(id, payload, options = {}) {
+  const res = await api.put(
+    `/supplies/${id}`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "supplies",
+      action: "update",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 

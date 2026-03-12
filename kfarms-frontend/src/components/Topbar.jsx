@@ -1,28 +1,45 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useTenant } from "../tenant/TenantContext";
 import {
   Sun,
   Moon,
   Search,
   Bell,
   PlusSquare,
-  ChevronDown,
-  LogOut,
   TrendingUp,
   Truck,
   Egg,
-  Skull,
+  ArrowLeft,
+  Droplets,
+  ShieldAlert,
+  Info,
+  Wheat,
+  Package,
+  CheckCheck,
+  Check,
+  ArrowUpRight,
 } from "lucide-react";
 import { Feather } from "lucide-react";
-import { TbCurrencyNaira } from "react-icons/tb";
 import SalesFormModal from "./SalesFormModal";
 import SuppliesFormModal from "./SuppliesFormModal";
 import LivestockFormModal from "./LivestockFormModal";
+import FeedFormModal from "./FeedFormModal";
+import EggProductionFormModal from "./EggProductionFormModal";
+import InventoryFormModal from "./InventoryFormModal";
 import GlassToast from "./GlassToast";
-import api from "../services/axios";
+import api from "../api/apiClient";
 import { search as searchApi } from "../services/searchService";
-import OrgSwitcher from "./OrgSwitcher";
+import { getLivestock } from "../services/livestockService";
+import { resolveSearchTarget } from "../search/searchUtils";
+import useSmartBackNavigation from "../hooks/useSmartBackNavigation";
+import {
+  SETTINGS_THEME_EVENT,
+  THEME_STORAGE_KEY,
+  getStoredThemeMode,
+} from "../constants/settings";
+import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
 
 async function fetchNotifications() {
   try {
@@ -43,24 +60,249 @@ async function markNotificationRead(id) {
   }
 }
 
-function getInitialTheme() {
-  if (typeof window === "undefined") return "dark";
-  const saved = localStorage.getItem("kf_theme");
-  if (saved) return saved;
-  const prefersDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
+async function markMultipleNotificationsRead(ids) {
+  try {
+    await api.post("/notifications/multiple-read", ids);
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+}
+
+const NOTIFICATION_RESYNC_MS = 180000;
+const NOTIFICATION_FALLBACK_POLL_MS = 45000;
+const NOTIFICATION_DROPDOWN_LIMIT = 8;
+
+function notificationSignature(notification) {
+  return [
+    notification?.tenant?.id ?? notification?.tenantId ?? "",
+    notification?.user?.id ?? notification?.userId ?? "",
+    notification?.type ?? "",
+    (notification?.title ?? "").trim().toLowerCase(),
+    (notification?.message ?? notification?.body ?? "").trim().toLowerCase(),
+  ].join("::");
+}
+
+function notificationTimestamp(notification) {
+  const createdAt = notification?.createdAt ? new Date(notification.createdAt).getTime() : 0;
+  return Number.isNaN(createdAt) ? 0 : createdAt;
+}
+
+function mergeNotifications(...notificationLists) {
+  const merged = new Map();
+
+  notificationLists.flat().filter(Boolean).forEach((notification) => {
+    if (!notification || notification.read) {
+      return;
+    }
+
+    const key = notificationSignature(notification);
+    const existing = merged.get(key);
+
+    if (!existing) {
+      merged.set(key, notification);
+      return;
+    }
+
+    const nextTime = notificationTimestamp(notification);
+    const existingTime = notificationTimestamp(existing);
+    const nextId = Number(notification?.id ?? 0);
+    const existingId = Number(existing?.id ?? 0);
+
+    if (nextTime > existingTime || (nextTime === existingTime && nextId > existingId)) {
+      merged.set(key, notification);
+    }
+  });
+
+  return [...merged.values()].sort((left, right) => {
+    const timeDiff = notificationTimestamp(right) - notificationTimestamp(left);
+    if (timeDiff !== 0) {
+      return timeDiff;
+    }
+    return Number(right?.id ?? 0) - Number(left?.id ?? 0);
+  });
+}
+
+function formatNotificationAge(createdAt) {
+  const stamp = notificationTimestamp({ createdAt });
+  if (!stamp) {
+    return "Just now";
+  }
+
+  const diffMs = Date.now() - stamp;
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+
+  if (diffMinutes < 1) {
+    return "Just now";
+  }
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(stamp));
+}
+
+function resolveNotificationTarget(notification) {
+  const haystack = [
+    notification?.type,
+    notification?.title,
+    notification?.message,
+    notification?.body,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    haystack.includes("egg")
+    || haystack.includes("layer")
+    || haystack.includes("poultry")
+    || haystack.includes("livestock")
+    || haystack.includes("bird")
+  ) {
+    return "/poultry";
+  }
+  if (
+    haystack.includes("fish")
+    || haystack.includes("pond")
+    || haystack.includes("water")
+    || haystack.includes("hatch")
+  ) {
+    return "/fish-ponds";
+  }
+  if (
+    haystack.includes("sale")
+    || haystack.includes("revenue")
+    || haystack.includes("finance")
+    || haystack.includes("cash")
+  ) {
+    return "/sales";
+  }
+  if (
+    haystack.includes("inventory")
+    || haystack.includes("supply")
+    || haystack.includes("feed")
+    || haystack.includes("stock")
+  ) {
+    return "/inventory";
+  }
+
+  return "/dashboard";
+}
+
+function getNotificationMeta(type) {
+  switch ((type || "").toUpperCase()) {
+    case "FISH":
+      return {
+        label: "Fish",
+        icon: Droplets,
+        iconClass:
+          "bg-cyan-500/12 text-cyan-600 ring-1 ring-cyan-500/20 dark:bg-cyan-500/18 dark:text-cyan-200 dark:ring-cyan-400/20",
+        chipClass:
+          "border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/15 dark:text-cyan-100",
+      };
+    case "SUPPLIES":
+      return {
+        label: "Supplies",
+        icon: Truck,
+        iconClass:
+          "bg-sky-500/12 text-sky-600 ring-1 ring-sky-500/20 dark:bg-sky-500/18 dark:text-sky-200 dark:ring-sky-400/20",
+        chipClass:
+          "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/15 dark:text-sky-100",
+      };
+    case "LIVESTOCK":
+      return {
+        label: "Poultry",
+        icon: Feather,
+        iconClass:
+          "bg-violet-500/12 text-violet-600 ring-1 ring-violet-500/20 dark:bg-violet-500/18 dark:text-violet-200 dark:ring-violet-400/20",
+        chipClass:
+          "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/15 dark:text-violet-100",
+      };
+    case "LAYER":
+      return {
+        label: "Layers",
+        icon: Egg,
+        iconClass:
+          "bg-amber-500/12 text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-500/18 dark:text-amber-200 dark:ring-amber-400/20",
+        chipClass:
+          "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/15 dark:text-amber-100",
+      };
+    case "FINANCE":
+      return {
+        label: "Finance",
+        icon: TrendingUp,
+        iconClass:
+          "bg-emerald-500/12 text-emerald-600 ring-1 ring-emerald-500/20 dark:bg-emerald-500/18 dark:text-emerald-200 dark:ring-emerald-400/20",
+        chipClass:
+          "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-100",
+      };
+    case "FEED":
+      return {
+        label: "Feeds",
+        icon: Wheat,
+        iconClass:
+          "bg-orange-500/12 text-orange-600 ring-1 ring-orange-500/20 dark:bg-orange-500/18 dark:text-orange-200 dark:ring-orange-400/20",
+        chipClass:
+          "border-orange-500/20 bg-orange-500/10 text-orange-700 dark:border-orange-400/20 dark:bg-orange-500/15 dark:text-orange-100",
+      };
+    case "INVENTORY":
+      return {
+        label: "Inventory",
+        icon: Package,
+        iconClass:
+          "bg-indigo-500/12 text-indigo-600 ring-1 ring-indigo-500/20 dark:bg-indigo-500/18 dark:text-indigo-200 dark:ring-indigo-400/20",
+        chipClass:
+          "border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-500/15 dark:text-indigo-100",
+      };
+    case "SYSTEM":
+      return {
+        label: "System",
+        icon: ShieldAlert,
+        iconClass:
+          "bg-rose-500/12 text-rose-600 ring-1 ring-rose-500/20 dark:bg-rose-500/18 dark:text-rose-200 dark:ring-rose-400/20",
+        chipClass:
+          "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/15 dark:text-rose-100",
+      };
+    default:
+      return {
+        label: "Update",
+        icon: Info,
+        iconClass:
+          "bg-slate-500/12 text-slate-600 ring-1 ring-slate-500/20 dark:bg-slate-500/18 dark:text-slate-200 dark:ring-slate-400/20",
+        chipClass:
+          "border-slate-500/20 bg-slate-500/10 text-slate-700 dark:border-slate-400/20 dark:bg-slate-500/15 dark:text-slate-100",
+      };
+  }
 }
 
 export default function Topbar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { activeTenant, activeTenantId } = useTenant();
   const navigate = useNavigate();
+  const { goBack, showBackButton } = useSmartBackNavigation({
+    fallbackPath: "/dashboard",
+    hiddenPaths: ["/dashboard"],
+  });
 
   const hr = new Date().getHours();
   const greet =
     hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
   const name = user?.username || "Farmer";
+  const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
 
   const rootRef = React.useRef(null);
   const searchInputRef = React.useRef(null);
@@ -72,10 +314,16 @@ export default function Topbar() {
   const [mobileSearchOpen, setMobileSearchOpen] = React.useState(false);
   const [searchLoading, setSearchLoading] = React.useState(false);
   const [notifications, setNotifications] = React.useState([]);
+  const [notificationsLoading, setNotificationsLoading] = React.useState(false);
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [salesModalOpen, setSalesModalOpen] = React.useState(false);
   const [suppliesModalOpen, setSuppliesModalOpen] = React.useState(false);
   const [livestockModalOpen, setLivestockModalOpen] = React.useState(false);
+  const [feedModalOpen, setFeedModalOpen] = React.useState(false);
+  const [eggModalOpen, setEggModalOpen] = React.useState(false);
+  const [inventoryModalOpen, setInventoryModalOpen] = React.useState(false);
+  const [layerBatches, setLayerBatches] = React.useState([]);
+  const [layerBatchesLoading, setLayerBatchesLoading] = React.useState(false);
   const [toast, setToast] = React.useState({
     message: "",
     type: "info",
@@ -114,91 +362,229 @@ export default function Topbar() {
   }, [query, navigate]);
 
   React.useEffect(() => {
-    let mounted = true;
-    async function load() {
-      const res = await fetchNotifications();
-      if (!mounted) return;
-      if (res.success) setNotifications(res.data || []);
+    if (!activeTenantId) {
+      setNotifications([]);
+      setNotificationsLoading(false);
+      return undefined;
     }
-    load();
-    const id = setInterval(load, 15000);
-    return () => {
-      mounted = false;
-      clearInterval(id);
-    };
-  }, []);
 
-  React.useEffect(() => {
-    if (typeof window === "undefined" || !user?.id) return undefined;
     let isActive = true;
-    const source = new EventSource(`/api/notifications/stream/${user.id}`);
-    const handleNotification = (event) => {
-      if (!isActive) return;
-      try {
-        const payload = JSON.parse(event.data);
-        setNotifications((prev) => {
-          if (prev.some((n) => n.id === payload.id)) return prev;
-          return [payload, ...prev];
-        });
-      } catch (err) {
-        console.error("Failed to parse notification stream:", err);
+    let source;
+    let resyncId;
+    let pollId;
+
+    const syncNotifications = async ({ background = false } = {}) => {
+      if (!isActive) {
+        return;
+      }
+
+      if (!background) {
+        setNotificationsLoading(true);
+      }
+
+      const res = await fetchNotifications();
+      if (!isActive) {
+        return;
+      }
+
+      if (res.success) {
+        setNotifications((prev) => mergeNotifications(background ? prev : [], res.data || []));
+      } else if (!background) {
+        setNotifications([]);
+      }
+
+      if (!background) {
+        setNotificationsLoading(false);
       }
     };
-    source.addEventListener("notification", handleNotification);
-    source.addEventListener("error", () => {
-      if (source.readyState === EventSource.CLOSED) source.close();
-    });
+
+    const syncIfVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      void syncNotifications({ background: true });
+    };
+
+    const onVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        void syncNotifications({ background: true });
+      }
+    };
+
+    setNotifications([]);
+    void syncNotifications();
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+
+    if (typeof window !== "undefined" && user?.id && "EventSource" in window) {
+      source = new EventSource(`/api/notifications/stream/${user.id}?tenantId=${activeTenantId}`);
+      const handleNotification = (event) => {
+        if (!isActive) {
+          return;
+        }
+
+        try {
+          const payload = JSON.parse(event.data);
+          setNotifications((prev) => mergeNotifications(prev, [payload]));
+        } catch (err) {
+          console.error("Failed to parse notification stream:", err);
+        }
+      };
+
+      source.addEventListener("notification", handleNotification);
+      source.addEventListener("error", () => {
+        if (source.readyState === EventSource.CLOSED) {
+          source.close();
+        }
+      });
+      resyncId = window.setInterval(syncIfVisible, NOTIFICATION_RESYNC_MS);
+
+      return () => {
+        isActive = false;
+        if (typeof document !== "undefined") {
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+        }
+        if (resyncId) {
+          window.clearInterval(resyncId);
+        }
+        source.removeEventListener("notification", handleNotification);
+        source.close();
+      };
+    }
+
+    if (typeof window !== "undefined") {
+      pollId = window.setInterval(syncIfVisible, NOTIFICATION_FALLBACK_POLL_MS);
+    }
 
     return () => {
       isActive = false;
-      source.removeEventListener("notification", handleNotification);
-      source.close();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
+      if (pollId && typeof window !== "undefined") {
+        window.clearInterval(pollId);
+      }
     };
-  }, [user?.id]);
+  }, [activeTenantId, user?.id]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.length;
+  const visibleNotifications = notifications.slice(0, NOTIFICATION_DROPDOWN_LIMIT);
+
   async function handleMarkRead(id) {
     const res = await markNotificationRead(id);
-    if (res.success)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
+    if (res.success) {
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id));
+      return;
+    }
+
+    setToast({
+      message: "We could not update that notification just now.",
+      type: "error",
+    });
+  }
+
+  async function handleMarkAllRead() {
+    const ids = notifications.map((notification) => notification.id).filter(Boolean);
+    if (ids.length === 0) {
+      return;
+    }
+
+    const res = await markMultipleNotificationsRead(ids);
+    if (res.success) {
+      setNotifications([]);
+      return;
+    }
+
+    setToast({
+      message: "We could not clear the notification list just now.",
+      type: "error",
+    });
+  }
+
+  function handleNotificationOpen(notification) {
+    setNotifOpen(false);
+    if (notification?.id) {
+      void handleMarkRead(notification.id);
+    }
+    navigate(resolveNotificationTarget(notification));
   }
 
   const [quickOpen, setQuickOpen] = React.useState(false);
-  function quickAdd(action) {
+  async function quickAdd(action) {
     setQuickOpen(false);
     if (action === "sales") {
       setSalesModalOpen(true);
       return;
     }
-    if (action == "supplies") {
+    if (action === "supplies") {
       setSuppliesModalOpen(true);
       return;
     }
-    if (action === "livestock") {
+    if (action === "feeds") {
+      setFeedModalOpen(true);
+      return;
+    }
+    if (action === "poultry") {
       setLivestockModalOpen(true);
       return;
     }
-    const map = {
-      livestock: "/livestock",
-      supplies: "/supplies/new",
-      eggs: "/records/eggs/new",
-      mortality: "/records/mortality/new",
-    };
-    navigate(map[action] || "/");
+    if (action === "inventory") {
+      setInventoryModalOpen(true);
+      return;
+    }
+    if (action === "eggs") {
+      if (!layerBatchesLoading) {
+        setLayerBatchesLoading(true);
+        try {
+          const data = await getLivestock({ page: 0, size: 200, type: "LAYER" });
+          setLayerBatches(Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []);
+        } catch (error) {
+          console.error("Failed to load layer batches for quick add", error);
+          setLayerBatches([]);
+          setToast({
+            message: "Could not refresh layer batches. You can still review the form.",
+            type: "error",
+          });
+        } finally {
+          setLayerBatchesLoading(false);
+        }
+      }
+      setEggModalOpen(true);
+      return;
+    }
+
+    navigate("/dashboard");
   }
 
-  const [userOpen, setUserOpen] = React.useState(false);
-  const [confirmingLogout, setConfirmingLogout] = React.useState(false);
-
-  const [theme, setTheme] = React.useState(getInitialTheme);
+  const [theme, setTheme] = React.useState(getStoredThemeMode);
   React.useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("kf_theme", theme);
+    document.body.classList.toggle("dark", theme === "dark");
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    window.dispatchEvent(
+      new CustomEvent(SETTINGS_THEME_EVENT, {
+        detail: { mode: theme },
+      }),
+    );
     document.documentElement.style.transition =
       "background-color 200ms, color 200ms";
   }, [theme]);
+
+  React.useEffect(() => {
+    const syncTheme = () => {
+      setTheme(getStoredThemeMode());
+    };
+
+    window.addEventListener(SETTINGS_THEME_EVENT, syncTheme);
+    window.addEventListener("storage", syncTheme);
+
+    return () => {
+      window.removeEventListener(SETTINGS_THEME_EVENT, syncTheme);
+      window.removeEventListener("storage", syncTheme);
+    };
+  }, []);
 
   React.useEffect(() => {
     function onDocClick(e) {
@@ -208,7 +594,6 @@ export default function Topbar() {
         setMobileSearchOpen(false);
         setNotifOpen(false);
         setQuickOpen(false);
-        setUserOpen(false);
       }
     }
     function onKey(e) {
@@ -217,7 +602,6 @@ export default function Topbar() {
         setMobileSearchOpen(false);
         setNotifOpen(false);
         setQuickOpen(false);
-        setUserOpen(false);
       }
     }
     document.addEventListener("click", onDocClick);
@@ -248,25 +632,7 @@ export default function Topbar() {
 
 
   function resolveSearchUrl(result) {
-    if (!result) return null;
-    if (result.url) return result.url;
-    const kind = (result.entityType || result.entity || result.type || "").toString().toLowerCase();
-    const subtitle = (result.subtitle || result.category || result.section || "").toString().toLowerCase();
-    const title = (result.title || "").toString().toLowerCase();
-    const haystack = `${kind} ${subtitle} ${title}`;
-    if (haystack.includes("livestock") || haystack.includes("stock") || haystack.includes("batch")) {
-      return "/livestock";
-    }
-    if (haystack.includes("sale") || haystack.includes("invoice")) {
-      return "/sales";
-    }
-    if (haystack.includes("supply") || haystack.includes("inventory") || haystack.includes("feed")) {
-      return "/supplies";
-    }
-    if (haystack.includes("pond") || haystack.includes("hatch") || haystack.includes("fish")) {
-      return "/fish-ponds";
-    }
-    return result.id ? `/items/${result.id}` : "/search";
+    return resolveSearchTarget(result);
   }
 
   function handleResultSelect(result) {
@@ -300,12 +666,32 @@ export default function Topbar() {
     }
   }
 
+  const topActionIconClass =
+    "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
+  const topActionButtonClass =
+    "inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
+  const topActionDropdownClass =
+    "rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_20px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-slate-700/80 dark:bg-[#0b1220]/95 dark:shadow-[0_18px_38px_rgba(0,0,0,0.48)]";
+  const quickMenuItemClass =
+    "group mx-2 my-1 flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all duration-200 hover:border-accent-primary/30 hover:bg-accent-primary/10 dark:hover:border-accent-primary/30 dark:hover:bg-white/5";
+
   return (
     <div
       ref={rootRef}
       className="w-full sticky top-0 z-50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="min-w-0">
+        {showBackButton && (
+          <button
+            type="button"
+            onClick={goBack}
+            className={`${topActionButtonClass} mb-2`}
+            aria-label="Go back to the previous page"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back
+          </button>
+        )}
         <h1 className="text-2xl md:text-3xl font-bold font-header flex flex-wrap items-center gap-2">
           {greet},{" "}
           <span className="text-status-success max-w-[12rem] truncate whitespace-nowrap">
@@ -313,7 +699,7 @@ export default function Topbar() {
           </span>
         </h1>
         <p className="text-sm font-body text-slate-400">
-          Overview of your farm activities
+          Check today, record something, or open alerts.
         </p>
       </div>
 
@@ -339,7 +725,7 @@ export default function Topbar() {
                   setQuery(value);
                 }}
                 onKeyDown={handleSearchKeyDown}
-                placeholder="Search..."
+                placeholder="Search farm records..."
                 className="ml-2 bg-transparent outline-none w-full min-w-0 text-sm placeholder:text-slate-500 dark:placeholder:text-slate-400"
               />
               {query ? (
@@ -376,7 +762,7 @@ export default function Topbar() {
                   <li className="p-3 text-sm text-slate-600">Searching…</li>
                 )}
                 {!searchLoading && results.length === 0 && (
-                  <li className="p-3 text-sm text-slate-600">No results</li>
+                  <li className="p-3 text-sm text-slate-600">Nothing matches yet</li>
                 )}
                 {results.map((r, idx) => (
                   <li
@@ -425,7 +811,7 @@ export default function Topbar() {
                   }}
                   className="w-full text-left"
                 >
-                  Open full search
+                  See all results
                 </button>
               </div>
             </div>
@@ -445,7 +831,7 @@ export default function Topbar() {
                 setQuery(value);
               }}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search ponds, feeds, supplies, invoices..."
+              placeholder="Search ponds, feeds, sales, supplies..."
               className="ml-2 bg-transparent outline-none w-full text-sm placeholder:text-slate-500 dark:placeholder:text-slate-400"
             />
             {query ? (
@@ -479,7 +865,7 @@ export default function Topbar() {
                   <li className="p-3 text-sm text-slate-600">Searching…</li>
                 )}
                 {!searchLoading && results.length === 0 && (
-                  <li className="p-3 text-sm text-slate-600">No results</li>
+                  <li className="p-3 text-sm text-slate-600">Nothing matches yet</li>
                 )}
                 {results.map((r, idx) => (
                   <li
@@ -527,7 +913,7 @@ export default function Topbar() {
                   }}
                   className="w-full text-left"
                 >
-                  Open full search
+                  See all results
                 </button>
               </div>
             </div>
@@ -539,37 +925,33 @@ export default function Topbar() {
           <button
             type="button"
             onClick={toggleMobileSearch}
-            className="sm:hidden p-2 rounded-full text-darkText dark:bg-darkCard hover:scale-105 transition-transform duration-200"
+            className={`sm:hidden ${topActionIconClass}`}
             aria-label="Search"
             aria-haspopup="true"
             aria-expanded={mobileSearchOpen}
           >
-            <Search className="w-5 h-5 text-slate-700 dark:text-darkText" />
+            <Search className="w-5 h-5" />
           </button>
-
-          <OrgSwitcher />
 
           {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => {
                 setQuickOpen(false);
-                setUserOpen(false);
                 setNotifOpen((s) => !s);
               }}
-              className="p-2 rounded-full text-darkText dark:bg-darkCard hover:scale-105 transition-transform duration-200 relative"
+              className={`${topActionIconClass} relative`}
               aria-haspopup="true"
               aria-expanded={notifOpen}
               aria-label="Notifications"
             >
-              <div className="relative text-slate-700 dark:text-darkText">
-                <Bell className="w-5 h-5" />
+              <div className="relative isolate">
+                <Bell className={`w-5 h-5 transition-transform duration-200 ${notifOpen ? "scale-95" : ""}`} />
                 {unreadCount > 0 && (
                   <span
-                    className={`absolute -top-1 -right-1 bg-status-success text-white rounded-full text-[10px] w-5 h-5 grid place-items-center
-                  ${unreadCount > 0 ? "animate-bounce" : ""}`}
+                    className="absolute -right-2 -top-2 inline-flex min-w-[1.45rem] items-center justify-center rounded-full border border-white/75 bg-[linear-gradient(135deg,#2563eb,#14b8a6)] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white shadow-[0_10px_22px_rgba(37,99,235,0.28)] ring-4 ring-slate-950/10 dark:border-slate-950/80 dark:ring-white/5"
                   >
-                    {unreadCount}
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </div>
@@ -579,58 +961,129 @@ export default function Topbar() {
               className={`fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-72 sm:w-80 max-w-[calc(100vw-2rem)] transform origin-top-right z-50
               ${
                 notifOpen
-                  ? "scale-100 opacity-100"
-                  : "scale-95 opacity-0 pointer-events-none"
+                  ? "translate-y-0 scale-100 opacity-100"
+                  : "pointer-events-none translate-y-2 scale-[0.98] opacity-0"
               }
-              transition-all duration-200`}
+              transition-all duration-200 ease-out`}
             >
-              <div className="rounded-lg shadow-lg overflow-hidden bg-lightbg dark:bg-darkCard border border-white/10 dark:border-slate-700">
-                <div className="p-3 border-b dark:border-slate-800 text-sm font-medium">
-                  Notifications
-                </div>
-                <ul className="max-h-64 overflow-auto">
-                  {notifications.length === 0 && (
-                    <li className="p-3 text-sm text-slate-500">
-                      No notifications
-                    </li>
-                  )}
-                  {notifications.map((n) => (
-                    <li
-                      key={n.id}
-                      className={`p-3 hover:bg-slate-50 dark:hover:bg-slate-800 ${
-                        n.read ? "opacity-80" : ""
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="text-sm">{n.title}</div>
-                        {!n.read && (
-                          <button
-                            onClick={() => handleMarkRead(n.id)}
-                            className="text-xs text-slate-500"
-                          >
-                            Mark
-                          </button>
-                        )}
+              <div className={`${topActionDropdownClass} overflow-hidden`}>
+                <div className="border-b border-slate-200/70 px-4 py-3.5 dark:border-slate-800/90">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          Notifications
+                        </p>
+                        <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-100">
+                          Live
+                        </span>
                       </div>
-                      {n.body && (
-                        <div className="text-xs text-slate-500 mt-1">
-                          {n.body}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                <div className="p-2 border-t dark:border-slate-800">
-                  <button
-                    onClick={() => {
-                      setNotifOpen(false);
-                      navigate("/notifications");
-                    }}
-                    className="w-full text-left"
-                  >
-                    View all
-                  </button>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {unreadCount > 0
+                          ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"} waiting`
+                          : "You are all caught up for now."}
+                      </p>
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRead}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-accent-primary/30 hover:text-accent-primary dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-accent-primary/35 dark:hover:text-white"
+                      >
+                        <CheckCheck className="h-3.5 w-3.5" />
+                        Mark all
+                      </button>
+                    )}
+                  </div>
                 </div>
+                {notificationsLoading ? (
+                  <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                    Pulling in your latest alerts...
+                  </div>
+                ) : visibleNotifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                      <Bell className="h-5 w-5" />
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      No fresh notifications
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      New farm alerts will land here without repeating the same noise.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="max-h-[26rem] overflow-y-auto px-2 py-2">
+                    {visibleNotifications.map((notification) => {
+                      const meta = getNotificationMeta(notification.type);
+                      const NotificationIcon = meta.icon;
+                      const description =
+                        notification.message
+                        || notification.body
+                        || "Fresh activity was recorded in your workspace.";
+
+                      return (
+                        <li key={`${notificationSignature(notification)}::${notification.id ?? "live"}`}>
+                          <div className="group my-1 rounded-2xl border border-transparent px-3 py-3 transition-all duration-200 hover:border-slate-200/80 hover:bg-slate-50/90 dark:hover:border-slate-700/80 dark:hover:bg-slate-900/65">
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${meta.iconClass}`}>
+                                <NotificationIcon className="h-[18px] w-[18px]" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-col gap-2">
+                                  <p className="text-sm font-semibold leading-5 text-slate-900 break-words dark:text-slate-100">
+                                    {notification.title || "Workspace update"}
+                                  </p>
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${meta.chipClass}`}>
+                                      {meta.label}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkRead(notification.id)}
+                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:border-emerald-500/30 hover:text-emerald-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-emerald-400/30 dark:hover:text-emerald-200"
+                                      aria-label={`Mark ${notification.title || "notification"} as read`}
+                                    >
+                                      <Check className="h-3.5 w-3.5" />
+                                      Mark
+                                    </button>
+                                  </div>
+                                </div>
+                                <p
+                                  className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300"
+                                  style={{
+                                    display: "-webkit-box",
+                                    WebkitBoxOrient: "vertical",
+                                    WebkitLineClamp: 2,
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  {description}
+                                </p>
+                                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                  <span>{formatNotificationAge(notification.createdAt)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNotificationOpen(notification)}
+                                    className="inline-flex items-center gap-1 font-medium text-accent-primary transition-transform duration-200 hover:translate-x-0.5"
+                                  >
+                                    Open
+                                    <ArrowUpRight className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {notifications.length > NOTIFICATION_DROPDOWN_LIMIT && (
+                  <div className="border-t border-slate-200/70 px-4 py-2.5 text-[11px] text-slate-500 dark:border-slate-800/90 dark:text-slate-400">
+                    Showing the latest {NOTIFICATION_DROPDOWN_LIMIT} unread alerts first.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -640,17 +1093,16 @@ export default function Topbar() {
             <button
               onClick={() => {
                 setNotifOpen(false);
-                setUserOpen(false);
                 setQuickOpen((s) => !s);
               }}
-              className="p-2 rounded-md bg-accent-primary hover:opacity-95 text-white flex items-center gap-2 transition-shadow shadow-neo dark:shadow-dark"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-accent-primary/35 bg-accent-primary px-3.5 text-white shadow-[0_10px_22px_rgba(37,99,235,0.34)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-primary/90 dark:shadow-[0_14px_28px_rgba(0,0,0,0.24)]"
               aria-haspopup="true"
               aria-expanded={quickOpen}
-              aria-label="Quick add"
+              aria-label="Record something"
             >
               <PlusSquare className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-body">
-                Quick Add
+                Record
               </span>
             </button>
 
@@ -663,20 +1115,41 @@ export default function Topbar() {
               }
               transition-all duration-200`}
             >
-              <div className="rounded-lg shadow-lg overflow-hidden bg-lightbg dark:bg-darkCard border border-white/10 dark:border-slate-700">
-                <ul className="py-1">
+              <div className={`${topActionDropdownClass} overflow-hidden`}>
+                <ul className="py-2">
                   {/* Add Egg Record */}
+                  {poultryEnabled && (
+                    <li
+                      className={`${quickMenuItemClass} cursor-pointer`}
+                      onClick={() => {
+                        void quickAdd("eggs");
+                      }}
+                    >
+                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-amber-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-amber-500/20">
+                        <Egg className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Record eggs</div>
+                        <div className="text-xs text-slate-500">
+                          Save today&apos;s egg count
+                        </div>
+                      </div>
+                    </li>
+                  )}
+
                   <li
-                    className="px-4 py-3 hover:bg-accent-subtle/30 hover:shadow-soft transition dark:hover:bg-slate-800 flex items-center gap-3 cursor-pointer"
-                    onClick={() => quickAdd("eggs")}
+                    className={`${quickMenuItemClass} cursor-pointer`}
+                    onClick={() => {
+                      void quickAdd("feeds");
+                    }}
                   >
-                    <div className="text-slate-700 dark:text-slate-200">
-                      <Egg className="w-5 h-5" />
+                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-emerald-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-emerald-500/20">
+                      <Wheat className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Add Egg Record</div>
+                      <div className="text-sm font-medium">Record feed</div>
                       <div className="text-xs text-slate-500">
-                        Log production
+                        Log feed usage or feed cost
                       </div>
                     </div>
                   </li>
@@ -684,14 +1157,16 @@ export default function Topbar() {
                   {/* Add Sales */}
                   <li
                     title="Register income"
-                    className="px-4 py-3 hover:bg-accent-subtle/30 hover:shadow-soft transition dark:hover:bg-slate-800 flex items-center gap-3 cursor-pointer"
-                    onClick={() => quickAdd("sales")}
+                    className={`${quickMenuItemClass} cursor-pointer`}
+                    onClick={() => {
+                      void quickAdd("sales");
+                    }}
                   >
-                    <div className="text-slate-700 dark:text-slate-200">
+                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-emerald-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-emerald-500/20">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Add Sales</div>
+                      <div className="text-sm font-medium">Record sale</div>
                       <div className="text-xs text-slate-500">
                         Record income
                       </div>
@@ -700,48 +1175,54 @@ export default function Topbar() {
 
                   {/* Add Supplies */}
                   <li
-                    className="px-4 py-3 hover:bg-accent-subtle/30 hover:shadow-soft transition dark:hover:bg-slate-800 flex items-center gap-3 cursor-pointer"
-                    onClick={() => quickAdd("supplies")}
+                    className={`${quickMenuItemClass} cursor-pointer`}
+                    onClick={() => {
+                      void quickAdd("supplies");
+                    }}
                   >
-                    <div className="text-slate-700 dark:text-slate-200">
+                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-sky-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-sky-500/20">
                       <Truck className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Add Supplies</div>
+                      <div className="text-sm font-medium">Record purchase</div>
                       <div className="text-xs text-slate-500">
-                        Track feed & tools
+                        Save feed, tools, or medicine
                       </div>
                     </div>
                   </li>
 
-                  {/* Add Livestock */}
-                  <li
-                    className="px-4 py-3 hover:bg-accent-subtle/30 hover:shadow-soft transition dark:hover:bg-slate-800 flex items-center gap-3 cursor-pointer"
-                    onClick={() => quickAdd("livestock")}
-                  >
-                    <div className="text-slate-700 dark:text-slate-200">
-                      <Feather className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">Add Livestock</div>
-                      <div className="text-xs text-slate-500">
-                        Register animal quickly
+                  {poultryEnabled && (
+                    <li
+                      className={`${quickMenuItemClass} cursor-pointer`}
+                      onClick={() => {
+                        void quickAdd("poultry");
+                      }}
+                    >
+                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-violet-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-violet-500/20">
+                        <Feather className="w-5 h-5" />
                       </div>
-                    </div>
-                  </li>
+                      <div>
+                        <div className="text-sm font-medium">Add poultry flock</div>
+                        <div className="text-xs text-slate-500">
+                          Save a new flock or batch
+                        </div>
+                      </div>
+                    </li>
+                  )}
 
-                  {/* Mortality */}
                   <li
-                    className="px-4 py-3 hover:bg-accent-subtle/30 hover:shadow-soft transition dark:hover:bg-slate-800 flex items-center gap-3 cursor-pointer"
-                    onClick={() => quickAdd("mortality")}
+                    className={`${quickMenuItemClass} cursor-pointer`}
+                    onClick={() => {
+                      void quickAdd("inventory");
+                    }}
                   >
-                    <div className="text-slate-700 dark:text-slate-200">
-                      <Skull className="w-5 h-5" />
+                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-indigo-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-indigo-500/20">
+                      <Package className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Mortality</div>
+                      <div className="text-sm font-medium">Add stock item</div>
                       <div className="text-xs text-slate-500">
-                        Record deaths
+                        Save inventory for quick tracking
                       </div>
                     </div>
                   </li>
@@ -753,7 +1234,11 @@ export default function Topbar() {
           {/* Theme toggle */}
           <button
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-            className="p-2 rounded-full bg-yellow-300 text-lightText dark:text-darkText hover:bg-yellow-300/45 hover:dark:bg-darkSecondary/45 dark:bg-accent-primary transition-colors duration-300"
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
+              theme === "dark"
+                ? "border-accent-primary/40 bg-accent-primary text-white shadow-[0_10px_22px_rgba(37,99,235,0.34)] hover:bg-accent-primary/90"
+                : "border-amber-300/70 bg-amber-200/90 text-amber-900 shadow-[0_8px_18px_rgba(217,119,6,0.24)] hover:bg-amber-200"
+            }`}
             aria-label="Toggle theme"
           >
             {theme === "dark" ? (
@@ -763,98 +1248,6 @@ export default function Topbar() {
             )}
           </button>
 
-          {/* User info */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setNotifOpen(false);
-                setQuickOpen(false);
-                setUserOpen((s) => !s);
-              }}
-              className="flex items-center gap-2 sm:gap-3 rounded-2xl border border-slate-700 px-2 py-1 dark:hover:shadow-dark hover:shadow-md bg-white/5"
-              aria-haspopup="true"
-              aria-expanded={userOpen}
-            >
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    name,
-                  )}&background=4ADE80&color=fff&rounded=true&size=64`
-                }
-                alt="avatar"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div className="hidden sm:block text-right leading-tight">
-                <div className="text-sm font-medium">{name}</div>
-                <div className="text-xs text-slate-400">
-                  {user?.role || "Manager"}
-                </div>
-              </div>
-              <div className="pl-2">
-                <ChevronDown className="w-4 h-4" />
-              </div>
-            </button>
-
-            <div
-              className={`fixed sm:absolute left-10 right-10 sm:left-auto sm:right-0 mt-2 w-[calc(100vw-5rem)] sm:w-44 max-w-[calc(100vw-5rem)] transform origin-top-right z-50
-              ${
-                userOpen
-                  ? "scale-100 opacity-100"
-                  : "scale-95 opacity-0 pointer-events-none"
-              }
-              transition-all duration-200`}
-            >
-              <div className="rounded-lg shadow-lg overflow-hidden bg-white dark:bg-darkCard border border-white/10 dark:border-slate-700">
-                <div className="p-3 text-sm">
-                  Signed in as{" "}
-                  <div className="font-medium">
-                    {user?.email || user?.username}
-                  </div>
-                </div>
-                <div className="p-2 border-t dark:border-slate-800">
-                  <button
-                    onClick={() => {
-                      setConfirmingLogout(true);
-                      setUserOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 justify-center p-2 rounded-md bg-red-600 text-white hover:opacity-95"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {confirmingLogout && (
-              <div className="fixed inset-0 z-60 grid dark:shadow-dark place-items-center bg-black/40 p-4">
-                <div className="max-w-sm w-full bg-white dark:bg-darkCard rounded-lg shadow-lg p-4">
-                  <div className="text-lg font-medium">Confirm logout</div>
-                  <p className="text-sm text-slate-500 mt-2">
-                    Are you sure you want to logout?
-                  </p>
-                  <div className="mt-4 flex gap-2 justify-end">
-                    <button
-                      onClick={() => setConfirmingLogout(false)}
-                      className="px-3 py-1 rounded-md"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        setConfirmingLogout(false);
-                        logout();
-                      }}
-                      className="px-3 py-1 rounded-md bg-red-600 text-white"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
       <SalesFormModal
@@ -868,18 +1261,6 @@ export default function Topbar() {
           });
         }}
       />
-      <SalesFormModal
-        open={salesModalOpen}
-        onClose={() => setSalesModalOpen(false)}
-        onSuccess={() => {
-          setSalesModalOpen(false);
-          setToast({
-            message: "Sales record added successfully",
-            type: "success",
-          });
-        }}
-      />
-
       <SuppliesFormModal
         open={suppliesModalOpen}
         onClose={() => setSuppliesModalOpen(false)}
@@ -897,7 +1278,47 @@ export default function Topbar() {
         onSuccess={() => {
           setLivestockModalOpen(false);
           setToast({
-            message: "Livestock group added successfully",
+            message: "Poultry flock added successfully",
+            type: "success",
+          });
+        }}
+      />
+      <FeedFormModal
+        open={feedModalOpen}
+        onClose={() => setFeedModalOpen(false)}
+        onSuccess={() => {
+          setFeedModalOpen(false);
+          setToast({
+            message: "Feed record added successfully",
+            type: "success",
+          });
+        }}
+      />
+      <EggProductionFormModal
+        open={eggModalOpen}
+        onClose={() => setEggModalOpen(false)}
+        layerBatches={layerBatches}
+        onSuccess={() => {
+          setEggModalOpen(false);
+          setToast({
+            message: "Egg record added successfully",
+            type: "success",
+          });
+        }}
+        onError={() => {
+          setToast({
+            message: "Could not save the egg record",
+            type: "error",
+          });
+        }}
+      />
+      <InventoryFormModal
+        open={inventoryModalOpen}
+        onClose={() => setInventoryModalOpen(false)}
+        onSuccess={() => {
+          setInventoryModalOpen(false);
+          setToast({
+            message: "Inventory item added successfully",
             type: "success",
           });
         }}

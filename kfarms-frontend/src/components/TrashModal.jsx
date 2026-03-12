@@ -1,8 +1,16 @@
-import { useEffect, useState } from "react";
-import { X, RotateCcw, Trash2, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, RotateCcw, Trash2, X } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import ItemDetailsModal from "./ItemDetailsModal";
+import PlanUpgradePrompt from "./PlanUpgradePrompt";
+import { useTenant } from "../tenant/TenantContext";
+import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
+
+function getAlignClass(align) {
+  if (align === "center") return "text-center";
+  if (align === "right") return "text-right";
+  return "text-left";
+}
 
 export default function TrashModal({
   open,
@@ -10,10 +18,14 @@ export default function TrashModal({
   fetchData,
   columns,
   onRestore,
-  onPermanentDelete, // 🔴 backend tomorrow inshaAllah
+  onPermanentDelete,
   formatCell,
   onClose,
 }) {
+  const { activeTenant } = useTenant();
+  const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
+  const canUseTrashRestore = isPlanAtLeast(currentPlan, "PRO");
+
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState({
     page: 0,
@@ -23,35 +35,48 @@ export default function TrashModal({
   });
   const [loading, setLoading] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
-
-  // confirm state
   const [confirm, setConfirm] = useState({
     open: false,
-    action: null, // "restore" | "delete"
+    action: null,
     item: null,
   });
 
-  async function loadPage(page = 0) {
-    if (page === undefined || page < 0) page = 0;
-    setLoading(true);
-    try {
-      const res = await fetchData({ page, size: 10 });
-      setItems(res?.items ?? []);
-      setMeta({
-        page: res.page ?? 0,
-        totalPages: res.totalPages ?? 1,
-        hasNext: res.hasNext ?? false,
-        hasPrevious: res.hasPrevious ?? false,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  const loadPage = useCallback(
+    async (page = 0) => {
+      if (page === undefined || page < 0) page = 0;
+      setLoading(true);
+      try {
+        const res = await fetchData({ page, size: 10 });
+        setItems(res?.items ?? []);
+        setMeta({
+          page: res?.page ?? 0,
+          totalPages: Math.max(res?.totalPages ?? 1, 1),
+          hasNext: Boolean(res?.hasNext),
+          hasPrevious: Boolean(res?.hasPrevious),
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchData],
+  );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !canUseTrashRestore) return;
     loadPage(0);
-  }, [open, fetchData]);
+  }, [canUseTrashRestore, loadPage, open]);
+
+  const label = useMemo(
+    () =>
+      confirm.item?.itemName ??
+      confirm.item?.name ??
+      confirm.item?.batchName ??
+      confirm.item?.pondName ??
+      confirm.item?.batchType ??
+      confirm.item?.type ??
+      "item",
+    [confirm.item],
+  );
 
   function askRestore(item) {
     setConfirm({ open: true, action: "restore", item });
@@ -59,10 +84,6 @@ export default function TrashModal({
 
   function askPermanentDelete(item) {
     setConfirm({ open: true, action: "delete", item });
-  }
-
-  function openDetails(item) {
-    setDetailItem(item);
   }
 
   function closeDetails() {
@@ -81,12 +102,12 @@ export default function TrashModal({
 
     if (action === "restore") {
       await onRestore(item);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setItems((prev) => prev.filter((entry) => entry.id !== item.id));
     }
 
     if (action === "delete") {
       await onPermanentDelete?.(item);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setItems((prev) => prev.filter((entry) => entry.id !== item.id));
     }
 
     setConfirm({ open: false, action: null, item: null });
@@ -94,195 +115,213 @@ export default function TrashModal({
 
   if (!open) return null;
 
-  const label =
-    confirm.item?.itemName ??
-    confirm.item?.name ??
-    confirm.item?.batchType ??
-    confirm.item?.type ??
-    "item";
-
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-md"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-md" onClick={onClose} />
 
       <div className="relative w-full max-w-5xl rounded-2xl p-1 animate-fadeIn">
-        <div className="absolute -inset-1 rounded-2xl blur-xl opacity-60" />
+        <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-lightCard/90 p-6 shadow-neo backdrop-blur-xl dark:bg-[#020817]/92 dark:shadow-dark">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(108deg,rgba(37,99,235,0.12)_0%,rgba(14,116,144,0.08)_48%,rgba(16,185,129,0.06)_100%)] dark:bg-[linear-gradient(108deg,rgba(6,19,43,0.88)_0%,rgba(7,32,63,0.84)_48%,rgba(6,58,55,0.7)_100%)]" />
 
-        <div className="relative rounded-2xl bg-darkCard/60 dark:shadow-dark shadow-neo p-px">
-          <div className="rounded-2xl bg-lightCard/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-6 space-y-5">
-            {/* Header */}
-            <div className="flex justify-between items-center">
+          <div className="relative z-10 space-y-5">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <Trash2 className="w-5 h-5 text-status-danger" />
-                <h2 className="text-lg font-semibold">{title}</h2>
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-500 dark:bg-red-500/15 dark:text-red-300">
+                  <Trash2 className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Review deleted records and restore them when needed.
+                  </p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2 rounded-md hover:bg-white/10"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/50 text-slate-700 transition hover:bg-white/70 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[750px]">
-                <thead className="border-b border-white/10 text-slate-500">
-                  <tr>
-                    {columns.map((c) => (
-                      <th
-                        key={c.key}
-                        className={`py-2 px-3 text-${c.align ?? "left"}`}
-                      >
-                        {c.label}
-                      </th>
-                    ))}
-                    <th className="w-28 px-3 text-center">Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {items.map((item) => (
-                    <tr
-                      key={item.id}
-                      onClick={() => openDetails(item)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openDetails(item);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View details for ${item?.itemName ?? item?.name ?? "item"}`}
-                      className="border-b border-white/10 hover:bg-white/5 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
-                    >
-                      {columns.map((c) => (
-                        <td
-                          key={c.key}
-                          className={`py-2 px-3 text-${c.align ?? "left"}`}
-                        >
-                          {formatCell ? formatCell(item, c.key) : item[c.key]}
-                        </td>
-                      ))}
-
-                      <td className="flex items-center justify-center gap-2 py-2 px-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            askRestore(item);
-                          }}
-                          title="Restore"
-                          className="p-2 rounded-md text-green-500 hover:bg-green-500/10 transition"
-                        >
-                          <RotateCcw className="w-5 h-5" />
-                        </button>
-
-                        {onPermanentDelete && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              askPermanentDelete(item);
-                            }}
-                            title="Delete permanently"
-                            className="p-2 rounded-md text-status-danger hover:bg-red-500/10 transition"
+            {!canUseTrashRestore ? (
+              <PlanUpgradePrompt
+                title="Trash restore requires Pro"
+                description={`Your ${currentPlan.toLowerCase()} workspace can delete records, but reviewing deleted items and restoring them is available on the Pro plan.`}
+                feature="Trash restore workflow"
+                requiredPlan="PRO"
+              />
+            ) : (
+              <>
+                <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/40 dark:bg-white/5">
+                  <table className="w-full min-w-[750px] text-sm">
+                    <thead className="border-b border-white/10 text-slate-500 dark:text-slate-400">
+                      <tr>
+                        {columns.map((column) => (
+                          <th
+                            key={column.key}
+                            className={`px-3 py-2.5 ${getAlignClass(column.align)}`}
                           >
-                            <AlertTriangle className="w-5 h-5" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                            {column.label}
+                          </th>
+                        ))}
+                        <th className="w-28 px-3 py-2.5 text-center">Actions</th>
+                      </tr>
+                    </thead>
 
-            {/* Pagination */}
-            <div className="flex justify-end gap-4 items-center pt-3">
-              <button
-                disabled={!meta.hasPrevious}
-                onClick={() => loadPage((meta.page ?? 0) - 1)}
-                className="disabled:opacity-40 flex items-center gap-1"
-              >
-                <ChevronLeft className="w-4 h-4" /> Prev
-              </button>
+                    <tbody>
+                      {items.map((item) => (
+                        <tr
+                          key={item.id}
+                          onClick={() => setDetailItem(item)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setDetailItem(item);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`View details for ${item?.itemName ?? item?.name ?? "item"}`}
+                          className="border-b border-white/10 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+                        >
+                          {columns.map((column) => (
+                            <td
+                              key={column.key}
+                              className={`px-3 py-2.5 ${getAlignClass(column.align)}`}
+                            >
+                              {formatCell ? formatCell(item, column.key) : item[column.key]}
+                            </td>
+                          ))}
 
-              <span>
-                Page {meta.page + 1} / {meta.totalPages}
-              </span>
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  askRestore(item);
+                                }}
+                                title="Restore"
+                                className="rounded-md p-2 text-emerald-600 transition hover:bg-emerald-500/10 dark:text-emerald-300"
+                              >
+                                <RotateCcw className="h-5 w-5" />
+                              </button>
 
-              <button
-                disabled={!meta.hasNext}
-                onClick={() => loadPage(meta.page + 1)}
-                className="disabled:opacity-40 flex items-center gap-1"
-              >
-                Next <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+                              {onPermanentDelete ? (
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    askPermanentDelete(item);
+                                  }}
+                                  title="Delete permanently"
+                                  className="rounded-md p-2 text-red-500 transition hover:bg-red-500/10 dark:text-red-300"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </button>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-            {!loading && items.length === 0 && (
-              <div className="py-10 text-center text-slate-500">
-                <Trash2 className="mx-auto mb-3 opacity-40" />
-                <p className="text-sm">Trash is empty</p>
-              </div>
+                <div className="flex items-center justify-end gap-4 pt-1 text-sm text-slate-600 dark:text-slate-300">
+                  <button
+                    type="button"
+                    disabled={!meta.hasPrevious || loading}
+                    onClick={() => loadPage((meta.page ?? 0) - 1)}
+                    className="inline-flex items-center gap-1 disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Prev
+                  </button>
+
+                  <span>
+                    Page {meta.page + 1} / {meta.totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={!meta.hasNext || loading}
+                    onClick={() => loadPage((meta.page ?? 0) + 1)}
+                    className="inline-flex items-center gap-1 disabled:opacity-40"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {!loading && items.length === 0 ? (
+                  <div className="py-10 text-center text-slate-500 dark:text-slate-400">
+                    <Trash2 className="mx-auto mb-3 h-8 w-8 opacity-40" />
+                    <p className="text-sm">Trash is empty</p>
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
         </div>
       </div>
 
-      <ConfirmModal
-        open={confirm.open}
-        title={
-          confirm.action === "restore" ? "Restore Item" : "Permanent Delete"
-        }
-        message={
-          confirm.action === "restore"
-            ? `Restore "${label}" back to records?`
-            : `This will permanently delete "${label}". This action cannot be undone.`
-        }
-        confirmText={
-          confirm.action === "restore" ? "Restore" : "Delete forever"
-        }
-        onConfirm={handleConfirm}
-        onCancel={() => setConfirm({ open: false, action: null, item: null })}
-      />
+      {canUseTrashRestore ? (
+        <>
+          <ConfirmModal
+            open={confirm.open}
+            title={confirm.action === "restore" ? "Restore Item" : "Permanent Delete"}
+            message={
+              confirm.action === "restore"
+                ? `Restore "${label}" back to records?`
+                : `This will permanently delete "${label}". This action cannot be undone.`
+            }
+            confirmText={confirm.action === "restore" ? "Restore" : "Delete forever"}
+            onConfirm={handleConfirm}
+            onCancel={() => setConfirm({ open: false, action: null, item: null })}
+          />
 
-      {detailItem && (
-        <ItemDetailsModal
-          open={Boolean(detailItem)}
-          title={detailItem?.itemName || detailItem?.name || "Deleted Item"}
-          subtitle={
-            detailItem?.id ? `Deleted ID #${detailItem.id}` : "Deleted Item"
-          }
-          status={{ label: "Deleted", color: "#ef4444" }}
-          fields={columns.map((c) => ({
-            label: c.label,
-            value: getCellValue(detailItem, c.key),
-          }))}
-          onClose={closeDetails}
-          onEdit={
-            onRestore
-              ? () => {
-                  closeDetails();
-                  askRestore(detailItem);
-                }
-              : undefined
-          }
-          onDelete={
-            onPermanentDelete
-              ? () => {
-                  closeDetails();
-                  askPermanentDelete(detailItem);
-                }
-              : undefined
-          }
-          editLabel="Restore"
-          deleteLabel="Delete"
-        />
-      )}
+          {detailItem ? (
+            <ItemDetailsModal
+              open={Boolean(detailItem)}
+              title={
+                detailItem?.itemName ||
+                detailItem?.name ||
+                detailItem?.batchName ||
+                detailItem?.pondName ||
+                "Deleted Item"
+              }
+              subtitle={detailItem?.id ? `Deleted ID #${detailItem.id}` : "Deleted Item"}
+              status={{ label: "Deleted", color: "#ef4444" }}
+              fields={columns.map((column) => ({
+                label: column.label,
+                value: getCellValue(detailItem, column.key),
+              }))}
+              onClose={closeDetails}
+              onEdit={
+                onRestore
+                  ? () => {
+                      closeDetails();
+                      askRestore(detailItem);
+                    }
+                  : undefined
+              }
+              onDelete={
+                onPermanentDelete
+                  ? () => {
+                      closeDetails();
+                      askPermanentDelete(detailItem);
+                    }
+                  : undefined
+              }
+              editLabel="Restore"
+              deleteLabel="Delete forever"
+            />
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }

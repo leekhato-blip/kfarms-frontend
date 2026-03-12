@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 
 export default function TaskModal({ open, onClose, onSave, initial = {} }) {
@@ -31,6 +31,31 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     }
   }, [open, initial]);
 
+  // Validate form inputs
+  const validate = useCallback(() => {
+    const e = {};
+    if (!title || title.trim().length < 3) {
+      e.title = "Title is required (min 3 chars).";
+      setTimeout(() => setErrors({}), 3000); // error disappears after 3.5s
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }, [title]);
+
+  // Handle form submission
+  const handleSubmit = useCallback((ev) => {
+    if (ev && typeof ev.preventDefault === "function") ev.preventDefault();
+    if (!validate()) return;
+    const payload = {
+      title: title.trim(),
+      description: description?.trim() || null,
+      type,
+      priority,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+    };
+    onSave(payload);
+  }, [description, dueDate, onSave, priority, title, type, validate]);
+
   // Effect: handle keyboard shortcuts (Escape to close, Ctrl/Cmd+Enter to save)
   useEffect(() => {
     function onKey(e) {
@@ -42,7 +67,7 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
 
     if (open) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [handleSubmit, onClose, open]);
 
   // Effect: trap focus within modal for accessibility
   useEffect(() => {
@@ -70,31 +95,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     return () => node.removeEventListener("keydown", onTab);
   }, [open]);
 
-  // Validate form inputs
-  const validate = () => {
-    const e = {};
-    if (!title || title.trim().length < 3) {
-      e.title = "Title is required (min 3 chars).";
-      setTimeout(() => setErrors({}), 3000); // error disappears after 3.5s
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  // Handle form submission
-  const handleSubmit = (ev) => {
-    if (ev && typeof ev.preventDefault === "function") ev.preventDefault();
-    if (!validate()) return;
-    const payload = {
-      title: title.trim(),
-      description: description?.trim() || null,
-      type,
-      priority,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-    };
-    onSave(payload);
-  };
-
   if (!open) return null;
 
   // Mapping task types to color styles
@@ -118,7 +118,7 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop with blur effect */}
       <div
-        className="absolute inset-0 bg-black/45 backdrop-blur-md"
+        className="absolute inset-0 bg-black/40 backdrop-blur-md"
         onClick={onClose}
         aria-hidden
       />
@@ -141,7 +141,7 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
         }`}
       >
         <div className="rounded-2xl p-px bg-darkCard/50 shadow-lg">
-          <div className="bg-white/55 dark:bg-black/55 backdrop-blur-md rounded-2xl p-6 shadow-inner border border-white/20">
+          <div className="bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl p-6 shadow-inner border border-white/20">
             {/* Header: icon, title, description, priority and close button */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">

@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import {
-  ClipboardList,
-  Calendar,
-  Hash,
-  X,
-  Users,
-  Feather,
-  StickyNote,
-  RotateCcw,
   AlertTriangle,
+  Calendar,
+  ClipboardList,
+  Feather,
+  Hash,
+  House,
+  RotateCcw,
+  Save,
+  StickyNote,
+  Users,
 } from "lucide-react";
+import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
 import { createLivestock, updateLivestock } from "../services/livestockService";
 
-const livestockTypes = [
+const LIVESTOCK_TYPES = [
   "LAYER",
   "DUCK",
   "FOWL",
@@ -22,7 +24,15 @@ const livestockTypes = [
   "OTHER",
 ];
 
-const sourceTypes = ["FARM_BIRTH", "SUPPLIER"];
+const SOURCE_TYPES = ["FARM_BIRTH", "SUPPLIER"];
+const KEEPING_METHODS = [
+  "DEEP_LITTER",
+  "BATTERY_CAGE",
+  "FREE_RANGE",
+  "SEMI_INTENSIVE",
+  "BROODER_HOUSE",
+  "OTHER",
+];
 
 function defaultForm() {
   const today = new Date().toISOString().slice(0, 10);
@@ -32,13 +42,25 @@ function defaultForm() {
     currentStock: "",
     arrivalDate: today,
     sourceType: "FARM_BIRTH",
+    keepingMethod: "DEEP_LITTER",
     startingAgeInWeeks: "",
     mortality: "",
     note: "",
   };
 }
 
-const Required = () => <span className="text-red-500 ml-0.5">*</span>;
+const Required = () => <span className="ml-0.5 text-red-500">*</span>;
+
+const LIVESTOCK_STEPS = [
+  {
+    title: "What group is this?",
+    description: "Add the flock name, poultry type, and source.",
+  },
+  {
+    title: "Stock and age details",
+    description: "Add stock count, date, keeping method, age, and any mortality update.",
+  },
+];
 
 export default function LivestockFormModal({
   open,
@@ -48,9 +70,13 @@ export default function LivestockFormModal({
 }) {
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
+
   const editing = Boolean(initialData?.id);
 
   useEffect(() => {
+    if (!open) return;
+
     if (initialData) {
       setForm({
         batchName: initialData.batchName ?? "",
@@ -60,6 +86,7 @@ export default function LivestockFormModal({
           ? String(initialData.arrivalDate).slice(0, 10)
           : "",
         sourceType: initialData.sourceType ?? "FARM_BIRTH",
+        keepingMethod: initialData.keepingMethod ?? "DEEP_LITTER",
         startingAgeInWeeks:
           initialData.startingAgeInWeeks ?? initialData.startingAge ?? "",
         mortality: "",
@@ -68,12 +95,17 @@ export default function LivestockFormModal({
     } else {
       setForm(defaultForm());
     }
+
+    setStep(0);
   }, [initialData, open]);
 
-  if (!open) return null;
+  const stepOneComplete = Boolean(String(form.batchName || "").trim() && form.type && form.sourceType);
+  const stepTwoComplete = Boolean(form.arrivalDate);
 
-  async function submit(e) {
-    e.preventDefault();
+  async function submit(event) {
+    event.preventDefault();
+    if (!stepOneComplete || !stepTwoComplete) return;
+
     setSaving(true);
 
     const payload = {
@@ -82,245 +114,284 @@ export default function LivestockFormModal({
       currentStock: form.currentStock === "" ? null : Number(form.currentStock),
       arrivalDate: form.arrivalDate || null,
       sourceType: form.sourceType || null,
+      keepingMethod:
+        form.type === "LAYER" ? form.keepingMethod || null : null,
       startingAgeInWeeks:
-        form.startingAgeInWeeks === ""
-          ? null
-          : Number(form.startingAgeInWeeks),
+        form.startingAgeInWeeks === "" ? null : Number(form.startingAgeInWeeks),
       mortality: form.mortality === "" ? null : Number(form.mortality),
-      note: form.note?.trim() || null,
+      note: form.note.trim() || null,
     };
 
     try {
       const saved = editing
-        ? await updateLivestock(initialData.id, payload)
+        ? await updateLivestock(initialData.id, payload, { baseRecord: initialData })
         : await createLivestock(payload);
       onSuccess?.(saved);
-    } catch (err) {
-      console.error("Livestock submit failed", err);
+    } catch (error) {
+      console.error("Livestock submit failed", error);
     } finally {
       setSaving(false);
     }
   }
 
+  const footer = (
+    <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500 dark:text-slate-300">
+        {step === 0 ? "Step 1 of 2: flock basics" : "Step 2 of 2: stock and keeping details"}
+      </p>
+
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((current) => Math.max(current - 1, 0))}
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+          >
+            Back
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+          >
+            Cancel
+          </button>
+        )}
+
+        {step < LIVESTOCK_STEPS.length - 1 ? (
+          <button
+            type="button"
+            disabled={!stepOneComplete}
+            onClick={() => setStep(1)}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Continue
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={saving || !stepOneComplete || !stepTwoComplete}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : editing ? "Save changes" : "Save group"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4">
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-md"
-        onClick={onClose}
-      />
-
-      <form
-        onSubmit={submit}
-        className="relative w-full max-w-lg rounded-2xl p-1 animate-fadeIn"
-        aria-modal="true"
-        role="dialog"
-      >
-        <div className="rounded-2xl bg-darkCard/60 shadow-neo p-px">
-          <div className="rounded-2xl bg-white/70 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-6 space-y-5">
-            <div className="flex justify-between items-center">
-              <div className="flex items-start gap-3">
-                <div className="rounded-md bg-accent-primary/10 p-2 flex items-center justify-center">
-                  <ClipboardList className="w-5 h-5 text-accent-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    {editing ? "Edit Livestock" : "New Livestock Batch"}
-                    <span className="text-xs bg-white/10 text-slate-400 px-2 py-0.5 rounded-full">
-                      {editing ? "Editing" : "Create"}
-                    </span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Track batches, stock, and mortality.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close modal"
-                className="p-2 rounded-md hover:bg-white/10"
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+    <GuidedFormModal
+      open={open}
+      onClose={onClose}
+      onSubmit={submit}
+      saving={saving}
+      icon={ClipboardList}
+      title={editing ? "Edit poultry flock" : "Add poultry flock"}
+      description="Keep poultry setup simple. Start with the flock identity, then add stock and keeping details."
+      editing={editing}
+      steps={LIVESTOCK_STEPS}
+      currentStep={step}
+      maxWidth="max-w-2xl"
+      footer={footer}
+    >
+      {step === 0 ? (
+        <GuidedFormSection
+          title="Group basics"
+          description="Give the flock a clear name and choose its type and source."
+        >
+          <div className="space-y-4">
             <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5">
-                  <ClipboardList className="w-4 h-4 text-slate-500" />
-                </span>
-                Batch Name <Required />
+              <label className="mb-1 flex items-center gap-2 text-xs">
+                <ClipboardList className="h-4 w-4 text-slate-500" />
+                Group name <Required />
               </label>
               <input
                 value={form.batchName}
-                onChange={(e) =>
-                  setForm({ ...form, batchName: e.target.value })
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, batchName: event.target.value }))
                 }
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
-                placeholder="e.g. Layer Batch 3"
+                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                placeholder="e.g. Layer flock 3"
                 autoFocus
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Feather className="w-4 h-4 text-slate-500" />
-                  </span>
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Feather className="h-4 w-4 text-slate-500" />
                   Type <Required />
                 </label>
                 <select
                   value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, type: event.target.value }))
+                  }
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   required
                 >
-                  {livestockTypes.map((t) => (
-                    <option key={t} value={t}>
-                      {t.replace("_", " ")}
+                  {LIVESTOCK_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type.replace("_", " ")}
                     </option>
                   ))}
                 </select>
               </div>
+
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <RotateCcw className="w-4 h-4 text-slate-500" />
-                  </span>
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <RotateCcw className="h-4 w-4 text-slate-500" />
                   Source <Required />
                 </label>
                 <select
                   value={form.sourceType}
-                  onChange={(e) =>
-                    setForm({ ...form, sourceType: e.target.value })
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, sourceType: event.target.value }))
                   }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   required
                 >
-                  {sourceTypes.map((t) => (
-                    <option key={t} value={t}>
-                      {t.replace("_", " ")}
+                  {SOURCE_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type.replace("_", " ")}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
+          </div>
+        </GuidedFormSection>
+      ) : (
+        <>
+          <GuidedFormSection
+            title="Stock, timing, and keeping"
+            description="Add how many birds are in the flock, when they arrived, and how they are kept."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Users className="w-4 h-4 text-slate-500" />
-                  </span>
-                  Current Stock
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Users className="h-4 w-4 text-slate-500" />
+                  Current stock
                 </label>
                 <input
                   type="number"
-                  value={form.currentStock}
-                  onChange={(e) =>
-                    setForm({ ...form, currentStock: e.target.value })
-                  }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
-                  placeholder="e.g. 1200"
                   min="0"
+                  value={form.currentStock}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, currentStock: event.target.value }))
+                  }
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  placeholder="e.g. 1200"
                 />
               </div>
+
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Calendar className="w-4 h-4 text-slate-500" />
-                  </span>
-                  Arrival Date
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                  Arrival date <Required />
                 </label>
                 <input
                   type="date"
                   value={form.arrivalDate}
-                  onChange={(e) =>
-                    setForm({ ...form, arrivalDate: e.target.value })
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, arrivalDate: event.target.value }))
                   }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  required
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
+              {form.type === "LAYER" && (
+                <div>
+                  <label className="mb-1 flex items-center gap-2 text-xs">
+                    <House className="h-4 w-4 text-slate-500" />
+                    Method of keeping
+                  </label>
+                  <select
+                    value={form.keepingMethod}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        keepingMethod: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  >
+                    {KEEPING_METHODS.map((method) => (
+                      <option key={method} value={method}>
+                        {method.replaceAll("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Helpful for layer flocks so housing style stays visible in reports.
+                  </p>
+                </div>
+              )}
+
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <Hash className="w-4 h-4 text-slate-500" />
-                  </span>
-                  Starting Age (weeks)
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <Hash className="h-4 w-4 text-slate-500" />
+                  Starting age (weeks)
                 </label>
                 <input
                   type="number"
+                  min="0"
                   value={form.startingAgeInWeeks}
-                  onChange={(e) =>
-                    setForm({ ...form, startingAgeInWeeks: e.target.value })
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      startingAgeInWeeks: event.target.value,
+                    }))
                   }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
                   placeholder="e.g. 10"
-                  min="0"
                 />
               </div>
+
               <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-5 h-5">
-                    <AlertTriangle className="w-4 h-4 text-slate-500" />
-                  </span>
-                  Mortality (add)
+                <label className="mb-1 flex items-center gap-2 text-xs">
+                  <AlertTriangle className="h-4 w-4 text-slate-500" />
+                  Mortality to add
                 </label>
                 <input
                   type="number"
-                  value={form.mortality}
-                  onChange={(e) =>
-                    setForm({ ...form, mortality: e.target.value })
-                  }
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
-                  placeholder="e.g. 5"
                   min="0"
+                  value={form.mortality}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, mortality: event.target.value }))
+                  }
+                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  placeholder="e.g. 5"
                 />
               </div>
             </div>
+          </GuidedFormSection>
 
-            <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5">
-                  <StickyNote className="w-4 h-4 text-slate-500" />
-                </span>
-                Note
-              </label>
-              <textarea
-                rows={3}
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none resize-none"
-                placeholder="Optional notes about this batch"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-lg bg-white/10 text-slate-500 hover:bg-white/20"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-4 py-2 rounded-lg bg-accent-primary text-white hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-              >
-                {saving ? "Saving..." : "Save Batch"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
+          <GuidedFormSection
+            title="Optional note"
+            description="Use this only if there is anything helpful to remember later."
+          >
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <StickyNote className="h-4 w-4 text-slate-500" />
+              Note
+            </label>
+            <textarea
+              rows={3}
+              value={form.note}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, note: event.target.value }))
+              }
+              className="w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+              placeholder="Optional note about this poultry flock"
+            />
+          </GuidedFormSection>
+        </>
+      )}
+    </GuidedFormModal>
   );
 }

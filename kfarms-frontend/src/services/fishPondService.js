@@ -1,4 +1,5 @@
-import api from "./axios";
+import api from "../api/apiClient";
+import { buildOfflineMutationConfig } from "../offline/offlineStore";
 // Get ponds with filters + pagination
 export async function getFishPonds(params = {}) {
   const {
@@ -32,20 +33,43 @@ export async function getFishPondSummary() {
 }
 
 // Create new pond
-export async function createFishPond(payload) {
-  const res = await api.post("/fishpond", payload);
+export async function createFishPond(payload, options = {}) {
+  const res = await api.post(
+    "/fishpond",
+    payload,
+    buildOfflineMutationConfig({
+      resource: "fishpond",
+      action: "create",
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
 // Update pond by ID
-export async function updateFishPond(id, payload) {
-  const res = await api.put(`/fishpond/${id}`, payload);
+export async function updateFishPond(id, payload, options = {}) {
+  const res = await api.put(
+    `/fishpond/${id}`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "fishpond",
+      action: "update",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
 // Soft-delete pond
 export async function deleteFishPond(id) {
   const res = await api.delete(`/fishpond/${id}`);
+  return res.data.data;
+}
+
+// Permanently delete pond
+export async function permanentDeleteFishPond(id) {
+  const res = await api.delete(`/fishpond/${id}/permanent`);
   return res.data.data;
 }
 
@@ -65,8 +89,21 @@ export async function restoreFishPond(id) {
 }
 
 // Adjust stock
-export async function adjustFishPondStock(id, payload) {
+export async function adjustFishPondStock(id, payload, options = {}) {
   // payload: { quantity: number, reason: string }
-  const res = await api.post(`/fishpond/${id}/adjust-stock`, payload);
+  const normalizedPayload = {
+    ...payload,
+    quantityChange: payload?.quantityChange ?? payload?.quantity,
+  };
+  const res = await api.post(
+    `/fishpond/${id}/adjust-stock`,
+    normalizedPayload,
+    buildOfflineMutationConfig({
+      resource: "fishpond",
+      action: "adjust",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }

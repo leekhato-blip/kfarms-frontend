@@ -1,19 +1,27 @@
 import React from "react";
 import AuthCard from "../components/AuthCard";
+import AuthWatermark from "../components/AuthWatermark";
 import GlassToast from "../components/GlassToast";
 import { forgotPassword } from "../services/authService";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { div } from "framer-motion/client";
+import { Link, useNavigate } from "react-router-dom";
 import PageWrapper from "../components/PageWrapper";
 import FloatingInput from "../components/FloatingInput";
 import { getAuthTrustText } from "../constants/authCopy";
+import kfarmsLogo from "../assets/Kfarms_logo.png";
+import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
+  const redirectTimerRef = React.useRef(null);
   const [email, setEmail] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [inlineError, setInlineError] = React.useState("");
   const [toast, setToast] = React.useState({ message: "", type: "" });
+
+  const looksLikeEmail = React.useCallback(
+    (value) => /\S+@\S+\.\S+/.test(String(value || "").trim()),
+    [],
+  );
 
   // auto-clear inline error
   React.useEffect(() => {
@@ -22,20 +30,46 @@ export default function ForgotPasswordPage() {
     return () => clearTimeout(t);
   }, [inlineError]);
 
+  React.useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
+
   async function handleForgot(e) {
     e.preventDefault();
-    setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
     setInlineError("");
 
+    if (!normalizedEmail) {
+      setInlineError("Please enter your email address.");
+      return;
+    }
+
+    if (!looksLikeEmail(normalizedEmail)) {
+      setInlineError("Please enter a valid email address.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const res = await forgotPassword({ email });
+      const res = await forgotPassword({ email: normalizedEmail });
       if (res?.success) {
         setToast({
-          message: "Password reset link sent to your email. Redirecting...",
+          message: "If that email is registered, a reset link is on the way. Redirecting...",
           type: "success",
         });
         setEmail("");
-        setTimeout(() => navigate("/auth/login"), 1500);
+        redirectTimerRef.current = window.setTimeout(() => {
+          navigate("/auth/login", {
+            state: {
+              prefillIdentifier: normalizedEmail,
+            },
+          });
+        }, 1800);
       } else {
         setInlineError(res?.message || "Request failed");
       }
@@ -50,20 +84,30 @@ export default function ForgotPasswordPage() {
 
   return (
     <PageWrapper>
-      <div className="app-full bg-gradient-to-br from-darkbg via-[#0A0A0F] to-[#111827] bg-darkbg text-darkText px-4">
+      <div className="relative app-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
+        <AuthWatermark />
+        <AuthThemeSwitcher />
         <GlassToast
           message={toast.message}
           type={toast.type}
           onClose={() => setToast({ message: "", type: "" })}
         />
 
-        <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gat-8 items-center px-4">
+        <div className="relative z-10 w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-4">
           {/* Left side info */}
           <div className="hidden md:flex flex-col items-start">
-            <div className="text-5xl font-header text-accent-primary">KFarms</div>
-            <p className="font-body text-base text-textSecondary max-w-md">
-              Enter your email, and we'll send
-              you a reset link.
+            <div className="flex items-center gap-3">
+              <div className="h-16 w-16 grid place-items-center overflow-hidden">
+                <img
+                  src={kfarmsLogo}
+                  alt="KFarms"
+                  className="h-full w-full object-contain scale-[2] saturate-110 contrast-110"
+                />
+              </div>
+              <div className="text-5xl font-header text-accent-primary">KFarms</div>
+            </div>
+            <p className="max-w-md font-body text-base text-slate-600 dark:text-slate-300">
+              Enter your email and we&apos;ll help you get back in with a fresh reset link.
             </p>
           </div>
 
@@ -71,7 +115,7 @@ export default function ForgotPasswordPage() {
           <div className="flex items-center justify-center">
             <AuthCard
               title="Forgot Password"
-              subtitle="Enter your registered email"
+              subtitle="Enter your registered email and we&apos;ll send a reset link if we find a match."
               trustText={getAuthTrustText("forgot")}
             >
               <form onSubmit={handleForgot} className="space-y-4">
@@ -81,30 +125,26 @@ export default function ForgotPasswordPage() {
 
                 <FloatingInput
                   label="Email"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="username"
+                  autoComplete="email"
                   required
-                  className="w-full rounded-md p-3 bg-darkbg/50 border border-transparent focus:border-accent-primary outline-none text-darkText"
                 />
 
                 <div className="flex items-center justify-between">
                   <Link
                     to="/auth/login"
-                    className="text-sm text-darkText hover:text-accent-primary"
+                    className="text-sm text-slate-700 hover:text-accent-primary dark:text-darkText"
                   >
                     Back to login
                   </Link>
 
                   <button
                     type="submit"
-                    className={`text-sm font-header px-3 py-2 rounded-md
-                      border border-darkbg/30 hover:border-accent-primary/40 
-                                bg-accent-primary transition-all duration-300 ${
-                                  loading
-                                    ? "opacity-70 pointer-events-none"
-                                    : ""
-                                }`}
+                    className={`rounded-md border border-accent-primary/40 bg-accent-primary px-3 py-2 text-sm font-header text-white transition-all duration-300 ${
+                      loading ? "pointer-events-none opacity-70" : ""
+                    }`}
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">

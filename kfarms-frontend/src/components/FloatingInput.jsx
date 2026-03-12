@@ -7,10 +7,11 @@ export default function FloatingInput({
   onChange,
   required = false,
   autoComplete,
+  className = "",
 }) {
   const hasValue = value && value.length > 0;
 
-  const isPassword = type == "password";
+  const isPassword = type === "password";
   const [show, setShow] = React.useState(false);
 
   const inputType = isPassword ? (show ? "text" : "password") : type;
@@ -23,23 +24,13 @@ export default function FloatingInput({
         onChange={onChange}
         required={required}
         autoComplete={autoComplete}
-        className="
-          peer w-full 
-          px-3 py-3 
-          bg-darkbg/50 
-          border border-gray-600 
-          focus:border-accent-primary
-          rounded-md
-          text-darkText
-          outline-none
-          pr-10
-        "
+        className={`peer w-full rounded-md border border-slate-300 bg-white/85 px-3 py-3 pr-10 text-slate-800 outline-none transition focus:border-accent-primary dark:border-gray-600 dark:bg-darkbg/50 dark:text-darkText ${className}`}
       />
       {isPassword && (
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-darkText hover:text-accent-primary transition"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-accent-primary dark:text-darkText"
         >
           {show ? (
             /* Open eye */
@@ -79,13 +70,11 @@ export default function FloatingInput({
       )}
       <label
         className={`
-          absolute left-3 
-          transition-all duration-200 
-          pointer-events-none 
-          text-textSecondary
-          ${hasValue ? "-top-3 text-xs px-1 bg-darkbg" : "top-3 text-sm"}
+          absolute left-3 pointer-events-none
+          text-slate-500 transition-all duration-200 dark:text-slate-400
+          ${hasValue ? "-top-3 bg-white px-1 text-xs dark:bg-[#111827]" : "top-3 text-sm"}
           peer-focus:-top-3 peer-focus:text-xs peer-focus:px-1
-          bg-[#111827]
+          peer-focus:bg-white dark:peer-focus:bg-[#111827]
         `}
       >
         {label}

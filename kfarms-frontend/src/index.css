@@ -15,8 +15,8 @@ body {
   background: #f9fafb;
 }
 
-body.dark {
-  background: #07080b;
+html.dark body {
+  background: #010206;
 }
 
 html {
@@ -176,10 +176,10 @@ html {
   width: 52px;
   height: 52px;
   border-radius: 14px;
+  position: relative;
   display: grid;
   place-items: center;
   background: linear-gradient(140deg, #34d399 0%, #0ea5e9 100%);
-  position: relative;
   overflow: hidden;
 }
 
@@ -258,11 +258,72 @@ html {
   z-index: 99999;
 }
 
-/* Fix date input icon visibility in dark mode */
-.dark input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.8;
+/* Keep native calendar controls aligned with the active theme */
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
+input[type="time"] {
+  color-scheme: light;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
+  opacity: 0.78;
+  padding: 0.28rem;
+  margin-right: -0.1rem;
+  border-radius: 0.6rem;
+  transition:
+    opacity 160ms ease,
+    background-color 160ms ease,
+    filter 160ms ease;
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="date"]:focus::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator,
+input[type="month"]:hover::-webkit-calendar-picker-indicator,
+input[type="month"]:focus::-webkit-calendar-picker-indicator,
+input[type="week"]:hover::-webkit-calendar-picker-indicator,
+input[type="week"]:focus::-webkit-calendar-picker-indicator,
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="time"]:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="month"],
+.dark input[type="week"],
+.dark input[type="time"] {
+  color-scheme: dark;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="month"]::-webkit-calendar-picker-indicator,
+.dark input[type="week"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1);
+  background-color: rgba(148, 163, 184, 0.12);
+}
+
+.dark input[type="date"]:hover::-webkit-calendar-picker-indicator,
+.dark input[type="date"]:focus::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator,
+.dark input[type="month"]:hover::-webkit-calendar-picker-indicator,
+.dark input[type="month"]:focus::-webkit-calendar-picker-indicator,
+.dark input[type="week"]:hover::-webkit-calendar-picker-indicator,
+.dark input[type="week"]:focus::-webkit-calendar-picker-indicator,
+.dark input[type="time"]:hover::-webkit-calendar-picker-indicator,
+.dark input[type="time"]:focus::-webkit-calendar-picker-indicator {
+  background-color: rgba(148, 163, 184, 0.18);
 }
 
 /* Remove number input spinners */
@@ -310,4 +371,331 @@ input[type="number"] {
     rgba(15, 23, 42, 0.35) 33%
   );
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* =========================================================
+   Atlas Platform Theme (used by /platform)
+   ========================================================= */
+.atlas-theme {
+  --atlas-text: #334155;
+  --atlas-text-strong: #0f172a;
+  --atlas-muted: #64748b;
+  --atlas-muted-soft: #94a3b8;
+
+  --atlas-surface: rgba(255, 255, 255, 0.78);
+  --atlas-surface-soft: rgba(248, 250, 252, 0.78);
+  --atlas-surface-strong: rgba(241, 245, 249, 0.88);
+  --atlas-surface-hover: rgba(226, 232, 240, 0.72);
+  --atlas-input-bg: rgba(255, 255, 255, 0.9);
+
+  --atlas-border: rgba(148, 163, 184, 0.22);
+  --atlas-border-strong: rgba(148, 163, 184, 0.34);
+  --atlas-topbar: rgba(255, 255, 255, 0.7);
+  --atlas-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(248, 250, 252, 0.76) 100%);
+  --atlas-overlay: rgba(15, 23, 42, 0.34);
+
+  --atlas-frame-shadow:
+    0 18px 38px rgba(15, 23, 42, 0.08),
+    14px 14px 28px rgba(148, 163, 184, 0.12),
+    -10px -10px 22px rgba(255, 255, 255, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  --atlas-panel-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.06),
+    10px 10px 20px rgba(148, 163, 184, 0.11),
+    -8px -8px 16px rgba(255, 255, 255, 0.82),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  --atlas-panel-shadow-hover:
+    0 16px 30px rgba(15, 23, 42, 0.08),
+    12px 12px 24px rgba(148, 163, 184, 0.13),
+    -10px -10px 20px rgba(255, 255, 255, 0.88),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --atlas-command-shadow:
+    0 6px 18px rgba(15, 23, 42, 0.05),
+    8px 8px 16px rgba(148, 163, 184, 0.09),
+    -6px -6px 14px rgba(255, 255, 255, 0.76),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+
+  color: var(--atlas-text);
+}
+
+.dark .atlas-theme {
+  --atlas-text: #cbd5e1;
+  --atlas-text-strong: #f8fafc;
+  --atlas-muted: #9cb0cc;
+  --atlas-muted-soft: #647895;
+
+  --atlas-surface: rgba(9, 14, 24, 0.92);
+  --atlas-surface-soft: rgba(12, 18, 31, 0.88);
+  --atlas-surface-strong: rgba(16, 24, 40, 0.95);
+  --atlas-surface-hover: rgba(37, 54, 82, 0.74);
+  --atlas-input-bg: rgba(6, 10, 18, 0.88);
+
+  --atlas-border: rgba(154, 177, 208, 0.14);
+  --atlas-border-strong: rgba(154, 177, 208, 0.22);
+  --atlas-topbar: rgba(6, 10, 18, 0.86);
+  --atlas-sidebar-bg: linear-gradient(
+    180deg,
+    rgba(2, 5, 11, 0.96) 0%,
+    rgba(4, 8, 16, 0.94) 52%,
+    rgba(5, 10, 19, 0.92) 100%
+  );
+  --atlas-overlay: rgba(1, 4, 10, 0.72);
+
+  --atlas-frame-shadow:
+    0 34px 80px rgba(0, 0, 0, 0.56),
+    0 14px 30px rgba(2, 6, 23, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(148, 163, 184, 0.05);
+  --atlas-panel-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.42),
+    0 10px 22px rgba(2, 6, 23, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 rgba(59, 130, 246, 0.06);
+  --atlas-panel-shadow-hover:
+    0 26px 52px rgba(0, 0, 0, 0.5),
+    0 14px 28px rgba(2, 6, 23, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(59, 130, 246, 0.08);
+  --atlas-command-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.24),
+    0 6px 16px rgba(2, 6, 23, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+select {
+  color-scheme: light;
+}
+
+html.dark select {
+  color-scheme: dark;
+}
+
+html.dark select,
+html.dark select option,
+html.dark select optgroup {
+  background-color: #08101c;
+  color: #e2e8f0;
+}
+
+.atlas-root-network {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(900px 520px at 6% 6%, rgba(139, 92, 246, 0.1), transparent 62%),
+    radial-gradient(820px 480px at 92% 12%, rgba(16, 185, 129, 0.11), transparent 62%),
+    linear-gradient(180deg, #eef3ff 0%, #edf4ff 55%, #eef8f2 100%);
+}
+
+.dark .atlas-root-network {
+  background:
+    radial-gradient(1180px 660px at 8% 4%, rgba(139, 92, 246, 0.1), transparent 66%),
+    radial-gradient(1020px 580px at 92% 10%, rgba(56, 189, 248, 0.055), transparent 68%),
+    radial-gradient(980px 560px at 74% 86%, rgba(16, 185, 129, 0.04), transparent 72%),
+    linear-gradient(180deg, #000102 0%, #010207 40%, #01040a 100%);
+}
+
+.atlas-neon-frame {
+  position: relative;
+  border: 1px solid var(--atlas-border);
+  background:
+    linear-gradient(var(--atlas-surface), var(--atlas-surface)),
+    linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(14, 165, 233, 0.12), rgba(16, 185, 129, 0.18));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: var(--atlas-frame-shadow);
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease;
+}
+
+.dark .atlas-neon-frame {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--atlas-surface) 95%, #0b1220 5%),
+      color-mix(in srgb, var(--atlas-surface-soft) 92%, #0b1220 8%)
+    ),
+    linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(56, 189, 248, 0.08), rgba(16, 185, 129, 0.12));
+  border-color: rgba(154, 177, 208, 0.12);
+  box-shadow:
+    var(--atlas-frame-shadow),
+    0 0 0 1px rgba(12, 18, 32, 0.42);
+}
+
+.atlas-glass-card {
+  background: var(--atlas-surface);
+  border: 1px solid var(--atlas-border);
+  box-shadow: var(--atlas-panel-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease,
+    transform 220ms ease;
+}
+
+.dark .atlas-glass-card {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--atlas-surface) 92%, #111827 8%) 0%,
+      color-mix(in srgb, var(--atlas-surface-soft) 90%, #0f172a 10%) 100%
+    );
+  border-color: rgba(154, 177, 208, 0.14);
+  box-shadow:
+    var(--atlas-panel-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    inset 0 -1px 0 rgba(56, 189, 248, 0.03);
+}
+
+.dark .atlas-command-chrome {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--atlas-surface-soft) 94%, #111827 6%),
+      color-mix(in srgb, var(--atlas-surface-soft) 88%, #0f172a 12%)
+    );
+  border-color: rgba(154, 177, 208, 0.12);
+  box-shadow:
+    var(--atlas-command-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.dark .atlas-glow-rail::before {
+  border-color: rgba(129, 140, 248, 0.12);
+}
+
+.atlas-command-chrome {
+  background: var(--atlas-surface-soft);
+  border: 1px solid var(--atlas-border);
+  box-shadow: var(--atlas-command-shadow);
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease;
+}
+
+.atlas-glow-rail {
+  position: relative;
+}
+
+.atlas-glow-rail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.atlas-lift {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.atlas-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--atlas-panel-shadow-hover);
+}
+
+.dark .atlas-lift:hover {
+  box-shadow: var(--atlas-panel-shadow-hover);
+}
+
+.atlas-premium-row {
+  transition: background-color 160ms ease;
+}
+
+.atlas-premium-row:hover {
+  background: color-mix(in srgb, var(--atlas-surface-soft) 85%, #8b5cf6 15%);
+}
+
+.dark .atlas-premium-row:hover {
+  background: color-mix(in srgb, var(--atlas-surface-soft) 88%, #10b981 12%);
+}
+
+.atlas-premium-badge {
+  border: 1px solid var(--atlas-border-strong);
+  background: var(--atlas-surface-soft);
+  color: var(--atlas-text-strong);
+}
+
+.atlas-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.atlas-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.16) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: atlas-shimmer-sweep 1.8s linear infinite;
+}
+
+.dark .atlas-shimmer::after {
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.08) 50%, transparent 65%);
+}
+
+.atlas-skeleton {
+  background: linear-gradient(
+    110deg,
+    rgba(148, 163, 184, 0.16) 8%,
+    rgba(226, 232, 240, 0.45) 18%,
+    rgba(148, 163, 184, 0.16) 33%
+  );
+  background-size: 200% 100%;
+  animation: atlas-shimmer-sweep 1.2s linear infinite;
+}
+
+.dark .atlas-skeleton {
+  background: linear-gradient(
+    110deg,
+    rgba(30, 41, 59, 0.45) 8%,
+    rgba(100, 116, 139, 0.2) 18%,
+    rgba(30, 41, 59, 0.45) 33%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes atlas-shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+    background-position: -200% 0;
+  }
+}
+
+/* =========================================================
+   Light Mode Glass Contrast Guardrails
+   ========================================================= */
+html:not(.dark) body .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.74);
+}
+
+html:not(.dark) body .bg-white\/6 {
+  background-color: rgba(255, 255, 255, 0.66);
+}
+
+html:not(.dark) body .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+html:not(.dark) body .border-white\/10 {
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+html:not(.dark) body .border-white\/15 {
+  border-color: rgba(148, 163, 184, 0.34);
+}
+
+html:not(.dark) body .border-white\/20 {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+html:not(.dark) body .text-slate-400 {
+  color: #64748b;
 }

@@ -3,28 +3,27 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import apiClient, { tenantStorageKey } from "../api/apiClient";
 import { useAuth } from "../hooks/useAuth";
+import { isTenantOnboardingPath, isTenantScopedPath } from "./tenantRouting";
+import { FARM_MODULES, normalizeEnabledModules } from "./tenantModules";
 
 const TenantContext = React.createContext(null);
+const TENANT_PLAN_OVERRIDE_STORAGE_KEY = "kf-placeholder-tenant-plan-overrides";
 
 function parseTenantId(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function isTenantOnboardingPath(pathname) {
-  return pathname === "/onboarding/create-tenant" || pathname === "/onboarding/accept-invite";
-}
-
-function isTenantScopedPath(pathname) {
-  if (!pathname) return false;
-  return [
-    "/dashboard",
-    "/sales",
-    "/supplies",
-    "/fish-ponds",
-    "/livestock",
-    "/feeds",
-  ].some((path) => pathname === path || pathname.startsWith(`${path}/`));
+function readTenantPlanOverrides() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(TENANT_PLAN_OVERRIDE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 export function useTenant() {
@@ -51,6 +50,9 @@ export function TenantProvider({ children }) {
   const [loadingTenants, setLoadingTenants] = React.useState(false);
   const [tenantBootstrapDone, setTenantBootstrapDone] = React.useState(false);
   const [tenantSwitchMessage, setTenantSwitchMessage] = React.useState("");
+  const [tenantPlanOverrides, setTenantPlanOverrides] = React.useState(
+    () => readTenantPlanOverrides(),
+  );
   const pathnameRef = React.useRef(location.pathname);
 
   React.useEffect(() => {
@@ -60,6 +62,19 @@ export function TenantProvider({ children }) {
   React.useEffect(() => {
     tenantsRef.current = tenants;
   }, [tenants]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleOverridesChanged = () => {
+      setTenantPlanOverrides(readTenantPlanOverrides());
+    };
+
+    window.addEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
+    return () => {
+      window.removeEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
+    };
+  }, []);
 
   const setActiveTenant = React.useCallback((tenantId) => {
     const parsed = parseTenantId(tenantId);
@@ -189,6 +204,7 @@ export function TenantProvider({ children }) {
       setLoadingTenants(false);
       setTenantBootstrapDone(false);
       setTenantSwitchMessage("");
+      setTenantPlanOverrides(readTenantPlanOverrides());
       refreshPromiseRef.current = null;
       networkRetryAfterRef.current = 0;
       return;
@@ -288,15 +304,40 @@ export function TenantProvider({ children }) {
     };
   }, [navigate, refreshTenants, setActiveTenant]);
 
+  const resolvedTenants = React.useMemo(() => {
+    if (!Array.isArray(tenants) || tenants.length === 0) return [];
+
+    return tenants.map((tenant) => {
+      const key = String(Number(tenant?.tenantId) || "");
+      const overridePlan = key ? tenantPlanOverrides[key] : "";
+      const modules = normalizeEnabledModules(tenant);
+      const resolvedTenant = !overridePlan
+        ? tenant
+        : {
+            ...tenant,
+            plan: String(overridePlan),
+          };
+
+      return {
+        ...resolvedTenant,
+        modules,
+        poultryEnabled: modules.includes(FARM_MODULES.POULTRY),
+        fishEnabled: modules.includes(FARM_MODULES.FISH_FARMING),
+      };
+    });
+  }, [tenantPlanOverrides, tenants]);
+
   const activeTenant = React.useMemo(
     () =>
-      tenants.find((tenant) => Number(tenant?.tenantId) === Number(activeTenantId)) || null,
-    [activeTenantId, tenants],
+      resolvedTenants.find((tenant) => Number(tenant?.tenantId) === Number(activeTenantId)) ||
+      null,
+    [activeTenantId, resolvedTenants],
   );
 
   const value = React.useMemo(
     () => ({
       tenants,
+      resolvedTenants,
       activeTenant,
       activeTenantId,
       loadingTenants,
@@ -309,6 +350,7 @@ export function TenantProvider({ children }) {
     }),
     [
       tenants,
+      resolvedTenants,
       activeTenant,
       activeTenantId,
       loadingTenants,
@@ -321,5 +363,14 @@ export function TenantProvider({ children }) {
     ],
   );
 
-  return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
+  return (
+    <TenantContext.Provider
+      value={{
+        ...value,
+        tenants: resolvedTenants,
+      }}
+    >
+      {children}
+    </TenantContext.Provider>
+  );
 }

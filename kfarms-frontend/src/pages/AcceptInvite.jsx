@@ -96,7 +96,7 @@ export default function AcceptInvite() {
           <button
             type="button"
             onClick={handleBack}
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20 transition"
+            className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20 transition"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -106,31 +106,31 @@ export default function AcceptInvite() {
             <button
               type="button"
               onClick={() => handleLogoutTo("/auth/login")}
-              className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold hover:bg-white/20 transition"
+              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-semibold hover:bg-white/20 transition"
             >
               Sign out to Login
             </button>
             <button
               type="button"
               onClick={() => handleLogoutTo("/")}
-              className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold hover:bg-white/20 transition"
+              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-semibold hover:bg-white/20 transition"
             >
-              Sign out to Company Profile
+              Sign out to home
             </button>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-sky-500/15 px-3 py-1 text-xs font-semibold text-sky-200">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-200">
               <MailCheck className="h-4 w-4" />
               Team invite
             </div>
-            <h1 className="text-2xl font-semibold">Join Organization</h1>
+            <h1 className="text-2xl font-semibold">Join farm</h1>
             <p className="mt-2 text-sm text-slate-300">
               Paste your invite code below, or open this page with <code>?token=...</code>.
             </p>
 
             {error && (
-              <div className="mt-4 rounded-lg border border-red-400/30 bg-red-500/15 px-3 py-2 text-sm text-red-100">
+              <div className="mt-4 rounded-lg border border-red-400/30 bg-red-500/20 px-3 py-2 text-sm text-red-100">
                 {error}
               </div>
             )}
@@ -159,18 +159,18 @@ export default function AcceptInvite() {
                     ? "cursor-not-allowed bg-sky-500/50"
                     : "bg-sky-500 hover:bg-sky-400"
                 }`}
-              >
-                {submitting ? "Joining organization..." : "Join organization"}
+                >
+                {submitting ? "Joining farm..." : "Join farm"}
               </button>
             </form>
 
             <div className="mt-4 text-xs text-slate-400">
-              Need to create your own organization instead?{" "}
+              Need to create your own farm instead?{" "}
               <Link
                 to="/onboarding/create-tenant"
                 className="text-sky-300 hover:underline"
               >
-                Create organization
+                Create farm
               </Link>
             </div>
           </div>

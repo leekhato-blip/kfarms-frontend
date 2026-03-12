@@ -5,6 +5,8 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 import DashboardLayout from "../layouts/DashboardLayout";
+import FarmerGuideCard from "../components/FarmerGuideCard";
+import FilteredResultsHint from "../components/FilteredResultsHint";
 import GlassToast from "../components/GlassToast";
 import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
@@ -21,6 +23,8 @@ import {
   permanentDeleteLivestock,
 } from "../services/livestockService";
 import { exportReport } from "../services/reportService";
+import { isOfflinePendingRecord } from "../offline/offlineResources";
+import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
 import {
   Plus,
   Trash2,
@@ -33,6 +37,7 @@ import {
   Search,
   ShieldCheck,
   Download,
+  RefreshCw,
 } from "lucide-react";
 
 const livestockTypes = [
@@ -52,6 +57,17 @@ const typeLabels = {
   TURKEY: "Turkey",
   NOILER: "Noiler",
   BROILER: "Broiler",
+  OTHER: "Other",
+};
+
+const EMPTY_OBJECT = {};
+const EMPTY_ARRAY = [];
+const KEEPING_METHOD_LABELS = {
+  DEEP_LITTER: "Deep litter",
+  BATTERY_CAGE: "Battery cage",
+  FREE_RANGE: "Free range",
+  SEMI_INTENSIVE: "Semi-intensive",
+  BROODER_HOUSE: "Brooder house",
   OTHER: "Other",
 };
 
@@ -88,9 +104,9 @@ export default function LivestockPage() {
   const [trashOpen, setTrashOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
-  const [showHeaderSubtitle, setShowHeaderSubtitle] = useState(true);
   const [showAllMobileGroups, setShowAllMobileGroups] = useState(false);
   const [showAllActiveGroups, setShowAllActiveGroups] = useState(false);
 
@@ -104,8 +120,12 @@ export default function LivestockPage() {
         const rate = total > 0 ? mortality / total : 0;
         const status = rate >= 0.08 ? "Attention" : total > 0 ? "Active" : "Idle";
         return [
-          { label: "Group", value: detailItem.batchName },
+          { label: "Flock", value: detailItem.batchName },
           { label: "Type", value: formatType(detailItem.type) },
+          {
+            label: "Method of Keeping",
+            value: formatKeepingMethod(detailItem.keepingMethod),
+          },
           { label: "Current Stock", value: formatNumber(detailItem.currentStock) },
           { label: "Age", value: `${computeAgeWeeks(detailItem)} wk` },
           {
@@ -140,6 +160,11 @@ export default function LivestockPage() {
   function formatType(value) {
     if (!value) return "—";
     return typeLabels[value] || value;
+  }
+
+  function formatKeepingMethod(value) {
+    if (!value) return "—";
+    return KEEPING_METHOD_LABELS[value] || value.replaceAll("_", " ");
   }
 
   function formatNumber(value) {
@@ -250,15 +275,24 @@ export default function LivestockPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setShowHeaderSubtitle(false);
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     fetchOverview();
   }, [fetchOverview]);
+
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchList(meta.page), fetchOverview()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const refreshPageData = useCallback(async () => {
+    await Promise.all([fetchList(meta.page ?? 0), fetchOverview()]);
+  }, [fetchList, fetchOverview, meta.page]);
+
+  useOfflineSyncRefresh(refreshPageData);
 
   function clearFilters() {
     setFilters({ batchName: "", type: "", arrivalDate: "" });
@@ -290,7 +324,7 @@ export default function LivestockPage() {
       link.download = filename || `${category || "livestock"}.${type || "csv"}`;
       link.click();
       window.URL.revokeObjectURL(url);
-      setToast({ message: "Livestock export ready", type: "success" });
+      setToast({ message: "Poultry export ready", type: "success" });
     } catch (error) {
       console.error("Export failed: ", error);
       setToast({ message: "Export failed", type: "error" });
@@ -339,11 +373,11 @@ export default function LivestockPage() {
     }
   }
 
-  const overviewTotals = overview?.totals || {};
-  const typeCounts = overview?.countByType || summary?.countByType || {};
-  const batchCards = overview?.batchCards || [];
-  const attentionNeeded = overview?.attentionNeeded || [];
-  const recentActivities = overview?.recentActivities || [];
+  const overviewTotals = overview?.totals ?? EMPTY_OBJECT;
+  const typeCounts = overview?.countByType ?? summary?.countByType ?? EMPTY_OBJECT;
+  const batchCards = overview?.batchCards ?? EMPTY_ARRAY;
+  const attentionNeeded = overview?.attentionNeeded ?? EMPTY_ARRAY;
+  const recentActivities = overview?.recentActivities ?? EMPTY_ARRAY;
   const metaRangeDays = overview?.meta?.rangeDays;
   const metaLastUpdated = overview?.meta?.lastUpdated;
   const totalAlive =
@@ -501,83 +535,91 @@ export default function LivestockPage() {
   return (
     <DashboardLayout>
       <div className="font-body space-y-8 animate-fadeIn">
-        <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-4 sm:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative isolate overflow-hidden rounded-2xl border border-sky-200/70 bg-slate-50/85 p-5 shadow-neo dark:border-sky-500/20 dark:bg-[#061024]/90 dark:shadow-[0_22px_40px_rgba(2,8,24,0.45)] md:p-6">
+          <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(108deg,rgba(37,99,235,0.17)_0%,rgba(14,116,144,0.14)_48%,rgba(16,185,129,0.12)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.13),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.14),transparent_38%)] dark:bg-[linear-gradient(108deg,rgba(6,19,43,0.96)_0%,rgba(7,32,63,0.9)_48%,rgba(6,58,55,0.84)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.16),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.18),transparent_38%)]" />
+          <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-lightMuted dark:text-darkMuted">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                Farm Flock Hub
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold text-accent-primary dark:text-blue-200">
+                <Feather className="h-3.5 w-3.5" />
+                Poultry flocks
               </div>
-              <h1 className="text-xl sm:text-h2 font-semibold font-header mt-2">
-                Livestock
+              <h1 className="mt-3 text-2xl font-header font-semibold text-slate-900 dark:text-slate-100 md:text-[1.9rem]">
+                Poultry
               </h1>
-              <div
-                className={`overflow-hidden transition-all duration-500 ${
-                  showHeaderSubtitle ? "max-h-10 opacity-100" : "max-h-0 opacity-0"
-                }`}
-              >
-                <p className="text-xs text-lightMuted dark:text-darkMuted font-body">
-                  Track stock, health, and group performance in one view.
-                </p>
-              </div>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700/90 dark:text-slate-300/85">
+                Keep a clear list of your poultry flocks, how many birds are alive, and which flocks need attention.
+              </p>
             </div>
 
-            <div className="flex flex-col gap-3 w-full lg:w-auto lg:flex-row lg:items-center">
-              <div className="relative w-full lg:w-[420px]">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-lightMuted dark:text-darkMuted" />
+            <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
+              <div className="relative w-full md:w-[380px]">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search groups..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-lightCard dark:bg-darkCard/70 border border-white/10 text-lightText dark:text-darkText focus:outline-none focus:ring-2 focus:ring-accent-primary/40"
+                  placeholder="Search flocks..."
+                  className="w-full rounded-lg border border-slate-200/80 bg-white/45 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:placeholder:text-slate-300/70"
                   value={filters.batchName}
                   onChange={(e) =>
                     setFilters({ ...filters, batchName: e.target.value })
                   }
                 />
               </div>
-              <div className="flex flex-row gap-2 items-center justify-start w-full lg:w-auto">
+              <div className="grid w-full grid-cols-2 auto-rows-fr gap-2 md:flex md:w-auto md:items-center">
                 <button
                   onClick={openCreate}
-                  className="w-auto justify-center flex items-center gap-2 bg-accent-primary text-darkText px-4 py-2 rounded-xl hover:opacity-90 transition font-body"
+                  className="col-span-2 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-primary to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:brightness-105 md:col-span-1 md:h-auto md:min-h-0 md:w-auto"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Group</span>
+                  <Plus className="h-4 w-4" />
+                  <span>Add poultry flock</span>
                 </button>
                 <button
                   onClick={() => setExportOpen(true)}
                   disabled={exporting}
-                  className="ml-auto w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-darkText dark:hover:bg-white/20 transition font-body disabled:opacity-50"
-                  title="Export livestock"
+                  className="inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-50 md:h-auto md:min-h-0 md:w-auto dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+                  title="Download poultry report"
                 >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm font-body">
-                    {exporting ? "Exporting..." : "Export"}
+                  <Download className="h-4 w-4" />
+                  <span>
+                    {exporting ? "Downloading..." : "Download"}
                   </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh poultry"
+                  aria-label="Refresh poultry"
+                  className={`inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 md:h-auto md:min-h-0 md:w-auto dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20 ${
+                    refreshing ? "cursor-not-allowed opacity-70" : ""
+                  }`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  Refresh
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative z-10 mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setFilters({ ...filters, type: "" })}
-                className={`px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer hover:shadow-soft active:scale-95 ${
-                  !filters.type
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-200 dark:border-emerald-400/30"
-                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-white/10 dark:text-darkText dark:border-white/10 dark:hover:bg-white/20"
-                }`}
-              >
-                All Types
-              </button>
+                <button
+                  onClick={() => setFilters({ ...filters, type: "" })}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer hover:shadow-soft active:scale-95 ${
+                    !filters.type
+                      ? "border-cyan-300/70 bg-cyan-100/70 text-cyan-700 shadow-[0_8px_18px_rgba(8,145,178,0.16)] dark:border-cyan-300/50 dark:bg-gradient-to-r dark:from-accent-primary/55 dark:to-cyan-400/38 dark:text-white dark:shadow-[0_10px_22px_rgba(37,99,235,0.34)]"
+                      : "border-slate-200/85 bg-white/60 text-slate-700 hover:bg-white/80 dark:border-slate-300/20 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:border-slate-200/35 dark:hover:bg-slate-800/60"
+                  }`}
+                >
+                  All Types
+                </button>
               {livestockTypes.map((type) => (
                 <button
                   key={`type-filter-${type}`}
                   onClick={() => setFilters({ ...filters, type })}
                   className={`px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer hover:shadow-soft active:scale-95 ${
                     filters.type === type
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-200 dark:border-emerald-400/30"
-                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-white/10 dark:text-darkText dark:border-white/10 dark:hover:bg-white/20"
+                      ? "border-cyan-300/70 bg-cyan-100/70 text-cyan-700 shadow-[0_8px_18px_rgba(8,145,178,0.16)] dark:border-cyan-300/50 dark:bg-gradient-to-r dark:from-accent-primary/55 dark:to-cyan-400/38 dark:text-white dark:shadow-[0_10px_22px_rgba(37,99,235,0.34)]"
+                      : "border-slate-200/85 bg-white/60 text-slate-700 hover:bg-white/80 dark:border-slate-300/20 dark:bg-slate-900/45 dark:text-slate-200 dark:hover:border-slate-200/35 dark:hover:bg-slate-800/60"
                   }`}
                 >
                   {typeLabels[type] || type}
@@ -587,24 +629,37 @@ export default function LivestockPage() {
 
             <div className="flex items-center gap-3">
               {hasActiveFilters && (
-                <span className="text-xs text-lightMuted dark:text-darkMuted">
+                <span className="text-xs text-slate-600/90 dark:text-slate-300/80">
                   {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} active
                 </span>
               )}
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-lightText border-white/10 hover:bg-white/20 dark:bg-white/10 dark:text-darkText dark:border-white/10 dark:hover:bg-white/20 transition"
+                  className="rounded-full border border-slate-200/80 bg-white/45 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-white/70 dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
                 >
-                  Clear Filters
+                  Show everything
                 </button>
               )}
-              <span className="text-xs text-lightMuted dark:text-darkMuted">
+              <span className="text-xs text-slate-600/90 dark:text-slate-300/80">
                 Updated {formatDateTime(metaLastUpdated)}
               </span>
             </div>
           </div>
         </div>
+
+        <FarmerGuideCard
+          icon={Feather}
+          title="How to use poultry"
+          description="This page is for simple poultry flock records, keeping style, and health checks."
+          storageKey="livestock-guide"
+          steps={[
+            "Use \"Add poultry flock\" when you start tracking a new flock or batch.",
+            "Check the top cards first to see total birds, losses, and active flocks.",
+            "Use the filters only when you want to focus on one bird type or one flock.",
+          ]}
+          tip="The top boxes show all poultry activity. The list below may show fewer rows when filters are active."
+        />
 
         
         
@@ -632,7 +687,7 @@ export default function LivestockPage() {
                   {formatNumber(totalAlive)}
                 </div>
                 <div className="text-xs text-lightMuted dark:text-darkMuted mt-2">
-                  Across all livestock
+                  Across all poultry flocks
                 </div>
               </div>
               <div className="min-h-[92px] rounded-2xl bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-5 lg:p-6">
@@ -649,7 +704,7 @@ export default function LivestockPage() {
               </div>
               <div className="min-h-[92px] rounded-2xl bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-5 lg:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-lightMuted dark:text-darkMuted">Active groups</div>
+                  <div className="text-sm text-lightMuted dark:text-darkMuted">Active flocks</div>
                   <Calendar className="w-5 h-5 text-cyan-300" />
                 </div>
                 <div className="mt-3 text-3xl font-semibold">
@@ -689,20 +744,20 @@ export default function LivestockPage() {
               <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-header font-semibold">Active groups</h2>
+                    <h2 className="font-header font-semibold">Active flocks</h2>
                     <p className="text-xs text-lightMuted dark:text-darkMuted">
-                      Quick look at active groups.
+                      Quick look at active poultry flocks.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-lightMuted dark:text-darkMuted">
-                      {filteredGroupCards.length} groups
+                      {filteredGroupCards.length} flocks
                     </span>
                     <div className="hidden md:flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => scrollActiveGroups(-1)}
-                        aria-label="Scroll active groups left"
+                        aria-label="Scroll active flocks left"
                         className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition text-lightText dark:text-darkText disabled:opacity-40 disabled:cursor-not-allowed"
                         disabled={filteredGroupCards.length === 0}
                       >
@@ -711,7 +766,7 @@ export default function LivestockPage() {
                       <button
                         type="button"
                         onClick={() => scrollActiveGroups(1)}
-                        aria-label="Scroll active groups right"
+                        aria-label="Scroll active flocks right"
                         className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition text-lightText dark:text-darkText disabled:opacity-40 disabled:cursor-not-allowed"
                         disabled={filteredGroupCards.length === 0}
                       >
@@ -737,7 +792,7 @@ export default function LivestockPage() {
                     </div>
                   ) : filteredGroupCards.length === 0 ? (
                     <div className="text-sm text-lightMuted dark:text-darkMuted">
-                      No groups match your filters.
+                      No flocks match your filters.
                     </div>
                   ) : (
                     <>
@@ -773,7 +828,9 @@ export default function LivestockPage() {
                                     {batch.batchName}
                                   </div>
                                   <div className="text-xs text-lightMuted dark:text-darkMuted mt-1">
-                                    {typeEmoji(batch.type)} {formatType(batch.type)} · {batch.ageWeeks} wk
+                                    {typeEmoji(batch.type)} {formatType(batch.type)}
+                                    {batch.keepingMethod ? ` · ${formatKeepingMethod(batch.keepingMethod)}` : ""}
+                                    {` · ${batch.ageWeeks} wk`}
                                   </div>
                                 </div>
                                 <span className={`text-xs px-2 py-1 rounded-full ${riskColor}`}>
@@ -813,7 +870,7 @@ export default function LivestockPage() {
                                     openEdit(batch);
                                   }}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
-                                  title="Edit group"
+                                  title="Edit flock"
                                 >
                                   <Edit className="w-4 h-4" />
                                   <span className="text-xs font-semibold">
@@ -826,7 +883,7 @@ export default function LivestockPage() {
                                     askDelete(batch);
                                   }}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
-                                  title="Delete group"
+                                  title="Delete flock"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                   <span className="text-xs font-semibold">
@@ -871,7 +928,9 @@ export default function LivestockPage() {
                                     {batch.batchName}
                                   </div>
                                   <div className="text-xs text-lightMuted dark:text-darkMuted mt-1">
-                                    {typeEmoji(batch.type)} {formatType(batch.type)} · {batch.ageWeeks} wk
+                                    {typeEmoji(batch.type)} {formatType(batch.type)}
+                                    {batch.keepingMethod ? ` · ${formatKeepingMethod(batch.keepingMethod)}` : ""}
+                                    {` · ${batch.ageWeeks} wk`}
                                   </div>
                                 </div>
                                 <span className={`text-xs px-2 py-1 rounded-full ${riskColor}`}>
@@ -911,7 +970,7 @@ export default function LivestockPage() {
                                     openEdit(batch);
                                   }}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
-                                  title="Edit group"
+                                  title="Edit flock"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </button>
@@ -921,7 +980,7 @@ export default function LivestockPage() {
                                     askDelete(batch);
                                   }}
                                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
-                                  title="Delete group"
+                                  title="Delete flock"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -992,9 +1051,9 @@ export default function LivestockPage() {
               <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <h2 className="font-header font-semibold">Group list</h2>
+                    <h2 className="font-header font-semibold">Flock list</h2>
                     <p className="text-xs text-lightMuted dark:text-darkMuted">
-                      Manage livestock groups with filters and pagination.
+                      Each row below is one poultry flock that you can review or update.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 w-full lg:w-auto">
@@ -1025,7 +1084,7 @@ export default function LivestockPage() {
                         onClick={clearFilters}
                         className="w-full sm:w-auto px-3 py-2 rounded-md bg-white/10 text-lightText border-white/10 hover:bg-white/20 dark:bg-white/10 dark:text-darkText dark:border-white/10 dark:hover:bg-white/20 transition"
                       >
-                        Clear
+                        Show everything
                       </button>
                     )}
                     <button
@@ -1033,17 +1092,28 @@ export default function LivestockPage() {
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:text-red-200 transition font-body"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span className="hidden sm:inline">Trash</span>
+                      <span className="hidden sm:inline">Deleted flocks</span>
                     </button>
                   </div>
                 </div>
+
+                {!loading && (hasActiveFilters || (!hasData && totalGroupes > 0)) ? (
+                  <div className="mt-4">
+                    <FilteredResultsHint
+                      summaryLabel="poultry flocks"
+                      tableLabel="flock list"
+                      hasFilters={hasActiveFilters}
+                      onClear={clearFilters}
+                    />
+                  </div>
+                ) : null}
 
                 {loading ? (
                   <div className="overflow-x-auto md:overflow-visible hide-scrollbar mt-4">
                     <div className="space-y-3" aria-hidden="true">
                       {Array.from({ length: 6 }).map((_, idx) => (
                         <div
-                          key={`livestock-row-skeleton-${idx}`}
+                          key={`poultry-row-skeleton-${idx}`}
                           className="skeleton-glass h-10 rounded-md"
                         />
                       ))}
@@ -1056,7 +1126,7 @@ export default function LivestockPage() {
                         <table className="w-full text-sm min-w-[520px] border-separate border-spacing-y-2 [&_th]:px-3 [&_th]:pb-2 [&_td]:px-3 [&_td]:py-2 [&_td:first-child]:rounded-l-lg [&_td:last-child]:rounded-r-lg [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
                           <thead className="text-lightText dark:text-darkText font-body">
                             <tr className="font-header text-[10px] uppercase tracking-[0.2em] text-lightText dark:text-darkText">
-                              <th className="text-left whitespace-nowrap">Group</th>
+                              <th className="text-left whitespace-nowrap">Flock</th>
                               <th className="text-left whitespace-nowrap">Type</th>
                               <th className="text-right whitespace-nowrap">Qty</th>
                               <th className="text-left whitespace-nowrap">Status</th>
@@ -1090,7 +1160,14 @@ export default function LivestockPage() {
                                     {item.batchName}
                                   </td>
                                   <td className="text-left whitespace-nowrap">
-                                    {formatType(item.type)}
+                                    <div className="flex flex-col">
+                                      <span>{formatType(item.type)}</span>
+                                      {item.keepingMethod && (
+                                        <span className="text-[10px] text-lightMuted dark:text-darkMuted">
+                                          {formatKeepingMethod(item.keepingMethod)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="text-right font-semibold">
                                     {formatNumber(item.currentStock)}
@@ -1116,7 +1193,7 @@ export default function LivestockPage() {
                                           openEdit(item);
                                         }}
                                         className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/5 text-accent-primary"
-                                        title="Edit batch"
+                                        title="Edit flock"
                                       >
                                         <Edit className="w-4 h-4" />
                                       </button>
@@ -1126,7 +1203,7 @@ export default function LivestockPage() {
                                           askDelete(item);
                                         }}
                                         className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/5 text-status-danger"
-                                        title="Delete batch"
+                                        title="Delete flock"
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
@@ -1153,7 +1230,7 @@ export default function LivestockPage() {
                         <thead className="text-lightText dark:text-darkText font-body">
                           <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-lightText dark:text-darkText">
                             <th className="text-left whitespace-nowrap">Type</th>
-                            <th className="text-left whitespace-nowrap">Group</th>
+                            <th className="text-left whitespace-nowrap">Flock</th>
                             <th className="text-right whitespace-nowrap">Quantity</th>
                             <th className="text-right whitespace-nowrap">Age</th>
                             <th className="text-left whitespace-nowrap">Origin</th>
@@ -1185,9 +1262,16 @@ export default function LivestockPage() {
                                 className="font-body cursor-pointer hover:bg-accent-primary/25 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
                               >
                                 <td className="text-left">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-start gap-2">
                                     <span>{typeEmoji(item.type)}</span>
-                                    <span>{formatType(item.type)}</span>
+                                    <div className="flex flex-col">
+                                      <span>{formatType(item.type)}</span>
+                                      {item.keepingMethod && (
+                                        <span className="text-[11px] text-lightMuted dark:text-darkMuted">
+                                          {formatKeepingMethod(item.keepingMethod)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="text-left font-semibold">
@@ -1223,7 +1307,7 @@ export default function LivestockPage() {
                                         openEdit(item);
                                       }}
                                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
-                                      title="Edit batch"
+                                      title="Edit flock"
                                     >
                                       <Edit className="w-5 h-5" />
                                     </button>
@@ -1233,7 +1317,7 @@ export default function LivestockPage() {
                                         askDelete(item);
                                       }}
                                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
-                                      title="Delete batch"
+                                      title="Delete flock"
                                     >
                                       <Trash2 className="w-5 h-5" />
                                     </button>
@@ -1254,19 +1338,19 @@ export default function LivestockPage() {
                       </div>
                       <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                         {hasActiveFilters
-                          ? "No groups match these filters"
-                          : "No groups yet"}
+                          ? "No flocks match what you selected"
+                          : "No flocks yet"}
                       </h4>
                       <p className="text-xs text-lightMuted dark:text-darkMuted leading-relaxed">
                         {hasActiveFilters
-                          ? "Clear filters to see more results."
-                          : "Add your first livestock batch to start tracking."}
+                          ? "Show everything to see more results."
+                          : "Add your first poultry flock to start tracking."}
                       </p>
                       <button
                         className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
                         onClick={hasActiveFilters ? clearFilters : openCreate}
                       >
-                        {hasActiveFilters ? "Clear Filters" : "Add Group"}
+                        {hasActiveFilters ? "Show everything" : "Add Flock"}
                       </button>
                     </div>
                   </div>
@@ -1406,7 +1490,7 @@ export default function LivestockPage() {
                     value={selectedGroupId}
                     onChange={(e) => setSelectedGroupId(e.target.value)}
                   >
-                    <option value="">Select group to update</option>
+                    <option value="">Select flock to update</option>
                     {items.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.batchName} ({formatType(item.type)})
@@ -1432,9 +1516,9 @@ export default function LivestockPage() {
 
           <ItemDetailsModal
             open={Boolean(detailItem)}
-            title={detailItem?.batchName || "Livestock Details"}
+            title={detailItem?.batchName || "Poultry Details"}
             subtitle={
-              detailItem?.id ? `Group ID #${detailItem.id}` : "Livestock Details"
+              detailItem?.id ? `Flock ID #${detailItem.id}` : "Poultry Details"
             }
             status={detailItem ? getLivestockStatus(detailItem) : undefined}
             fields={detailFields}
@@ -1459,7 +1543,7 @@ export default function LivestockPage() {
 
           <ConfirmModal
             open={confirmOpen}
-            title="Delete Group"
+            title="Delete flock"
             message={`Are you sure you want to delete "${deleteTarget?.batchName}"?`}
             confirmText="Delete"
             loading={false}
@@ -1473,7 +1557,7 @@ export default function LivestockPage() {
           <TrashModal
             open={trashOpen}
             onClose={() => setTrashOpen(false)}
-            title="Deleted groups"
+            title="Deleted flocks"
             fetchData={({ page = 0, size = 10 }) =>
               getDeletedLivestock({ page, size })
             }
@@ -1508,7 +1592,7 @@ export default function LivestockPage() {
               }
             }}
             columns={[
-              { key: "batchName", label: "Group" },
+              { key: "batchName", label: "Flock" },
               { key: "type", label: "Type" },
               { key: "currentStock", label: "Alive", align: "right" },
               { key: "arrivalDate", label: "Start date" },
@@ -1532,15 +1616,28 @@ export default function LivestockPage() {
               setEditing(null);
             }}
             initialData={editing}
-            onSuccess={() => {
+            onSuccess={(saved) => {
               setModalOpen(false);
               setEditing(null);
-              setToast({
-                message: `Group ${editing ? "updated" : "created"}`,
-                type: "success",
+              const pendingOffline = isOfflinePendingRecord(saved);
+
+              setItems((current) => {
+                if (editing) {
+                  return current.map((item) => (item.id === saved.id ? saved : item));
+                }
+                return [saved, ...current];
               });
-              fetchList(meta.page);
-              fetchOverview();
+
+              setToast({
+                message: pendingOffline
+                  ? "Flock saved offline. It will sync automatically."
+                  : `Flock ${editing ? "updated" : "created"}`,
+                type: pendingOffline ? "info" : "success",
+              });
+              if (!pendingOffline) {
+                fetchList(meta.page);
+                fetchOverview();
+              }
             }}
           />
 

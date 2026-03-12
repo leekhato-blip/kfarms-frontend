@@ -1,7 +1,20 @@
 import React, { useState } from "react";
-import { Box, AlertTriangle, Plus, Loader2 } from "lucide-react";
+import { Box, AlertTriangle, Plus, RefreshCw } from "lucide-react";
+import {
+  getInventoryItemName,
+  getInventoryQuantity,
+  getInventoryStatusKey,
+  getInventoryThreshold,
+  getInventoryUnit,
+  getRecommendedRestockQuantity,
+} from "../utils/inventoryStock";
 
-export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh }) {
+export default function FeedWatchlistPanel({
+  feeds = [],
+  onRestock,
+  onRefresh,
+  restockingId = null,
+}) {
   const [refreshing, setRefreshing] = useState(false);
   const LIST_LIMIT = 4;
 
@@ -39,9 +52,11 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
       </p>
       <button
         onClick={() => onRefresh?.()}
-        className="px-4 py-2 rounded-lg bg-accent-primary text-white text-sm shadow-soft"
+        title="Refresh feed stock status"
+        aria-label="Refresh feed stock status"
+        className="inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
       >
-        Refresh Inventory
+        <RefreshCw className="h-3.5 w-3.5" />
       </button>
     </div>
   );
@@ -67,13 +82,12 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
         <button
           onClick={handleRefresh}
           title="Refresh feed stock status"
-          className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+          disabled={refreshing}
+          className={`inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 ${
+            refreshing ? "cursor-not-allowed opacity-70" : ""
+          }`}
         >
-          <Loader2
-            className={`w-4 h-4 text-slate-500 ${
-              refreshing ? "animate-spin" : ""
-            }`}
-          />
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
         </button>
       </div>
 
@@ -83,8 +97,25 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
       ) : (
         <ul className="space-y-3">
           {feeds.slice(0, LIST_LIMIT).map((f) => {
-            const threshold = f.minThreshold ?? f.threshold ?? 0;
-            const remaining = Number(f.remaining || 0);
+            const name = getInventoryItemName(f);
+            const threshold = getInventoryThreshold(f);
+            const remaining = getInventoryQuantity(f);
+            const unit = getInventoryUnit(f);
+            const statusKey = getInventoryStatusKey(f);
+            const isPreviewOnly = Boolean(f?.readOnly);
+            const canRestock = typeof onRestock === "function" && !isPreviewOnly;
+            const recommendedQuantity = getRecommendedRestockQuantity(f);
+            const isRestocking = restockingId != null && String(restockingId) === String(f?.id);
+            const thresholdLabel =
+              threshold > 0
+                ? `Reorder at ${threshold} ${unit}`
+                : "No reorder level set";
+            const statusLabel =
+              statusKey === "out"
+                ? "Out of stock"
+                : statusKey === "low"
+                  ? "Low stock"
+                  : "Healthy";
 
             return (
               <li
@@ -94,8 +125,15 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   {/* Left */}
                   <div className="min-w-0">
-                    <div className="font-medium font-header truncate">
-                      {f.name}
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium font-header truncate">
+                        {name}
+                      </div>
+                      {isPreviewOnly ? (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                          Demo
+                        </span>
+                      ) : null}
                     </div>
                     <div
                       className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${pillColor(
@@ -103,7 +141,10 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
                         threshold
                       )}`}
                     >
-                      {remaining}/{threshold} {f.unit ?? ""}
+                      {remaining} {unit} left
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {statusLabel} • {thresholdLabel}
                     </div>
                   </div>
 
@@ -114,19 +155,30 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
                         Remaining
                       </div>
                       <div className="text-lg font-semibold font-header leading-none">
-                        {remaining} {f.unit ?? ""}
+                        {remaining} {unit}
                       </div>
                     </div>
 
                     {/* Mobile: icon only | Desktop: text */}
                     <button
                       onClick={() => onRestock?.(f)}
-                      title="Create a restock entry for this feed"
-                      className="h-9 w-9 sm:w-auto sm:px-3 rounded-md bg-accent-primary text-white shadow-soft flex items-center justify-center gap-2"
+                      disabled={!canRestock || isRestocking}
+                      title={
+                        isPreviewOnly
+                          ? "Demo suggestion only"
+                          : canRestock
+                          ? `Restock ${name} by ${recommendedQuantity} ${unit}`
+                          : "Restock action unavailable"
+                      }
+                      className="h-9 w-9 sm:w-auto sm:px-3 rounded-md bg-accent-primary text-white shadow-soft flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <Plus className="w-4 h-4" />
+                      {isRestocking ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
                       <span className="hidden sm:inline text-sm">
-                        Restock
+                        {isRestocking ? "Restocking..." : "Restock"}
                       </span>
                     </button>
                   </div>
@@ -138,7 +190,7 @@ export default function FeedWatchlistPanel({ feeds = [], onRestock, onRefresh })
       )}
 
       <div className="mt-4 text-xs text-slate-400">
-        Only livestock & fish feed items are shown.
+        Only poultry and fish feed items are shown.
       </div>
     </div>
   );

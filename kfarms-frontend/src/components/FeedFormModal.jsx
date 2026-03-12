@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Wheat, Hash, Wallet, StickyNote, X, Save, CalendarDays } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, Hash, Save, StickyNote, Wallet, Wheat } from "lucide-react";
+import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
 import { createFeed, updateFeed } from "../services/feedService";
 
 function defaultForm() {
@@ -12,21 +13,53 @@ function defaultForm() {
   };
 }
 
-const Required = () => <span className="text-red-500 ml-0.5">*</span>;
+const FEED_TYPES = [
+  "LAYER",
+  "BROILER",
+  "NOILER",
+  "DUCK",
+  "FISH",
+  "FOWL",
+  "TURKEY",
+  "OTHER",
+];
 
-const FEED_TYPES = ["LAYER", "BROILER", "NOILER", "DUCK", "FISH", "OTHER"];
+const FEED_STEPS = [
+  {
+    title: "What feed was used?",
+    description: "Choose the feed type, quantity, and unit cost.",
+  },
+  {
+    title: "When was it used?",
+    description: "Add the date and any simple note.",
+  },
+];
+
+const Required = () => <span className="ml-0.5 text-red-500">*</span>;
+
+function formatCurrencyInput(value) {
+  if (!value) return "";
+  return new Intl.NumberFormat("en-NG").format(value);
+}
+
+function parseCurrencyInput(value) {
+  return value.replace(/,/g, "");
+}
 
 export default function FeedFormModal({ open, onClose, initialData = null, onSuccess }) {
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
 
   const editing = Boolean(initialData?.id);
 
   useEffect(() => {
+    if (!open) return;
+
     if (initialData) {
       setForm({
         batchType: initialData.batchType ?? initialData.type ?? "LAYER",
-        quantity: initialData.quantity ?? "",
+        quantity: initialData.quantity ?? initialData.quantityUsed ?? "",
         unitCost: initialData.unitCost ?? "",
         date: initialData.date
           ? String(initialData.date).slice(0, 10)
@@ -38,209 +71,238 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
     } else {
       setForm(defaultForm());
     }
+
+    setStep(0);
   }, [initialData, open]);
 
-  if (!open) return null;
+  const total = useMemo(
+    () => Number(form.quantity || 0) * Number(form.unitCost || 0),
+    [form.quantity, form.unitCost],
+  );
 
-  const total = Number(form.quantity || 0) * Number(form.unitCost || 0);
+  const stepOneComplete = Boolean(
+    form.batchType && Number(form.quantity) > 0 && Number(form.unitCost) >= 0,
+  );
+  const stepTwoComplete = Boolean(form.date);
 
-  function formatCurrency(value) {
-    if (!value) return "";
-    return new Intl.NumberFormat("en-NG").format(value);
-  }
+  async function submit(event) {
+    event.preventDefault();
+    if (!stepOneComplete || !stepTwoComplete) return;
 
-  function parseCurrency(value) {
-    return value.replace(/,/g, "");
-  }
-
-  async function submit(e) {
-    e.preventDefault();
     setSaving(true);
 
     const payload = {
       batchType: form.batchType,
       quantity: Number(form.quantity),
       unitCost: Number(form.unitCost),
-      date: form.date ? form.date : null,
-      note: form.note || null,
+      date: form.date || null,
+      note: form.note.trim() || null,
     };
 
     try {
       const saved = editing
-        ? await updateFeed(initialData.id, payload)
+        ? await updateFeed(initialData.id, payload, { baseRecord: initialData })
         : await createFeed(payload);
-
       onSuccess?.(saved);
-    } catch (err) {
-      console.error("Feed submit failed");
-      if (err?.response) {
-        console.error(err.response.status);
-        console.error(err.response.data);
-      } else {
-        console.error(err?.message);
-      }
+    } catch (error) {
+      console.error("Feed submit failed", error);
     } finally {
       setSaving(false);
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose} />
+  const footer = (
+    <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500 dark:text-slate-300">
+        {step === 0 ? "Step 1 of 2: feed quantity and cost" : "Step 2 of 2: date and note"}
+      </p>
 
-      <form
-        onSubmit={submit}
-        className="relative w-full max-w-xl rounded-2xl p-1 animate-fadeIn"
-        aria-modal="true"
-        role="dialog"
-      >
-        <div className="rounded-2xl bg-darkCard/60 shadow-neo p-px">
-          <div className="rounded-2xl bg-white/70 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-6 space-y-5">
-            <div className="flex justify-between items-center">
-              <div className="flex items-start gap-3">
-                <div className="rounded-md bg-accent-primary/10 p-2 flex items-center justify-center">
-                  <Wheat className="w-5 h-5 text-accent-primary" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    {editing ? "Edit Feed" : "New Feed"}
-                    <span className="text-xs bg-white/10 text-slate-400 px-2 py-0.5 rounded-full">
-                      {editing ? "Editing" : "Create"}
-                    </span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Log feed usage, adjustments, or consumption
-                  </p>
-                </div>
-              </div>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((current) => Math.max(current - 1, 0))}
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+          >
+            Back
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+          >
+            Cancel
+          </button>
+        )}
 
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close modal"
-                className="p-2 rounded-md hover:bg-white/10"
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <Wheat className="w-4 h-4 text-slate-500" />
-                Batch Type <Required />
-              </label>
-              <select
-                value={form.batchType}
-                onChange={(e) => setForm({ ...form, batchType: e.target.value })}
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none"
-                required
-              >
-                {FEED_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <Hash className="w-4 h-4 text-slate-500" />
-                  Quantity <Required />
-                </label>
-                <input
-                  type="number"
-                  value={form.quantity}
-                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60"
-                  min="0"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs mb-1 flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-slate-500" />
-                  Unit Cost (₦) <Required />
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={formatCurrency(form.unitCost)}
-                  onChange={(e) => {
-                    const raw = parseCurrency(e.target.value);
-                    if (!/^\d*$/.test(raw)) return;
-                    setForm({ ...form, unitCost: raw });
-                  }}
-                  onBlur={() => {
-                    if (form.unitCost === "") return;
-                    setForm({ ...form, unitCost: String(Number(form.unitCost)) });
-                  }}
-                  className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center bg-white/40 dark:bg-black/40 rounded-lg p-3 text-sm">
-              <span className="text-slate-500 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-slate-400" />
-                Total Cost
-              </span>
-              <span className="font-semibold">₦{total.toLocaleString()}</span>
-            </div>
-
-            <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-slate-500" />
-                Date <Required />
-              </label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="text-xs mb-1 flex items-center gap-2">
-                <StickyNote className="w-4 h-4 text-slate-500" />
-                Note
-              </label>
-              <textarea
-                placeholder="Optional notes about this feed entry..."
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 h-20 resize-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-md bg-white/30"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-5 py-2 rounded-md bg-accent-primary text-white disabled:opacity-50 flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                {saving ? "Saving..." : "Save Feed"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
+        {step < FEED_STEPS.length - 1 ? (
+          <button
+            type="button"
+            disabled={!stepOneComplete}
+            onClick={() => setStep(1)}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Continue
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={saving || !stepOneComplete || !stepTwoComplete}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : editing ? "Save changes" : "Save feed entry"}
+          </button>
+        )}
+      </div>
     </div>
+  );
+
+  return (
+    <GuidedFormModal
+      open={open}
+      onClose={onClose}
+      onSubmit={submit}
+      saving={saving}
+      icon={Wheat}
+      title={editing ? "Edit feed entry" : "Record feed"}
+      description="Keep feed records simple. Start with the feed type and cost, then add the date."
+      editing={editing}
+      steps={FEED_STEPS}
+      currentStep={step}
+      maxWidth="max-w-2xl"
+      footer={footer}
+    >
+      {step === 0 ? (
+        <>
+          <GuidedFormSection
+            title="Feed details"
+            description="These are the main details for the feed record."
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Feed type <Required />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {FEED_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, batchType: type }))}
+                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                        form.batchType === type
+                          ? "border-accent-primary bg-accent-primary text-white"
+                          : "border-white/20 bg-white/50 text-slate-700 dark:bg-white/10 dark:text-slate-200"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 flex items-center gap-2 text-xs">
+                    <Hash className="h-4 w-4 text-slate-500" />
+                    Quantity <Required />
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.quantity}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, quantity: event.target.value }))
+                    }
+                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 flex items-center gap-2 text-xs">
+                    <Wallet className="h-4 w-4 text-slate-500" />
+                    Unit cost (Naira) <Required />
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatCurrencyInput(form.unitCost)}
+                    onChange={(event) => {
+                      const raw = parseCurrencyInput(event.target.value);
+                      if (!/^\d*$/.test(raw)) return;
+                      setForm((current) => ({ ...current, unitCost: raw }));
+                    }}
+                    onBlur={() => {
+                      if (form.unitCost === "") return;
+                      setForm((current) => ({
+                        ...current,
+                        unitCost: String(Number(current.unitCost)),
+                      }));
+                    }}
+                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </GuidedFormSection>
+
+          <GuidedFormSection
+            title="Quick total"
+            description="This updates automatically so you can confirm the amount."
+          >
+            <div className="flex items-center justify-between rounded-xl bg-white/50 px-4 py-3 dark:bg-white/[0.04]">
+              <span className="text-sm text-slate-600 dark:text-slate-300">Estimated total</span>
+              <span className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                ₦{total.toLocaleString()}
+              </span>
+            </div>
+          </GuidedFormSection>
+        </>
+      ) : (
+        <>
+          <GuidedFormSection
+            title="Date"
+            description="Add the day this feed entry happened."
+          >
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <CalendarDays className="h-4 w-4 text-slate-500" />
+              Date <Required />
+            </label>
+            <input
+              type="date"
+              value={form.date}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, date: event.target.value }))
+              }
+              className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+              required
+            />
+          </GuidedFormSection>
+
+          <GuidedFormSection
+            title="Optional note"
+            description="Use this only if there is anything helpful to remember later."
+          >
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <StickyNote className="h-4 w-4 text-slate-500" />
+              Note
+            </label>
+            <textarea
+              value={form.note}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, note: event.target.value }))
+              }
+              className="h-24 w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+              placeholder="Optional details about this feed entry"
+            />
+          </GuidedFormSection>
+        </>
+      )}
+    </GuidedFormModal>
   );
 }

@@ -1,17 +1,26 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Info, CheckCircle, Clock } from "lucide-react";
+import { Info, CheckCircle, Clock, RefreshCw } from "lucide-react";
 import SkeletonLoader from "./SkeletonLoader";
 
-export default function RecentTable({ items = [], loading = false }) {
+export default function RecentTable({
+  items = [],
+  loading = false,
+  onRefresh,
+  refreshing = false,
+}) {
   const navigate = useNavigate();
   const categoryRouteMap = {
     Sales: "/sales",
     Supplies: "/supplies",
     Fish: "/fish-ponds",
-    Livestock: "/livestock",
+    Poultry: "/poultry",
+    Livestock: "/poultry",
     Feed: "/feeds",
   };
+
+  const formatCategoryLabel = (category) =>
+    category === "Livestock" ? "Poultry" : category;
   if (loading) {
     return (
       <div className="font-body">
@@ -46,12 +55,29 @@ export default function RecentTable({ items = [], loading = false }) {
           Recent Activities
         </h3>
 
-        {/* Info badge */}
-        <div className="flex items-center gap-2 bg-accent-primary/10 text-accent-primary px-3 py-1 rounded-full border border-accent-primary/20">
-          <Info className="w-4 h-4" />
-          <span className="text-xs font-semibold">
-            {items.length} Activities
-          </span>
+        <div className="flex items-center gap-2">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              title="Refresh recent activities"
+              aria-label="Refresh recent activities"
+              className={`inline-flex items-center justify-center rounded-md border border-slate-200 p-1.5 text-xs text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 ${
+                refreshing ? "cursor-not-allowed opacity-70" : ""
+              }`}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          )}
+
+          {/* Info badge */}
+          <div className="flex items-center gap-2 bg-accent-primary/10 text-accent-primary px-3 py-1 rounded-full border border-accent-primary/20">
+            <Info className="w-4 h-4" />
+            <span className="text-xs font-semibold">
+              {items.length} Activities
+            </span>
+          </div>
         </div>
       </div>
 
@@ -97,7 +123,7 @@ export default function RecentTable({ items = [], loading = false }) {
                         }
                         className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold border border-white/10 bg-white/10 dark:bg-darkCard/70 hover:bg-white/20 transition"
                       >
-                        {r.category}
+                        {formatCategoryLabel(r.category)}
                       </button>
                     </td>
 

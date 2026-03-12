@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import SummaryCard from "../components/SummaryCard";
+import FarmerGuideCard from "../components/FarmerGuideCard";
+import FilteredResultsHint from "../components/FilteredResultsHint";
 import GlassToast from "../components/GlassToast";
 import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
@@ -9,6 +11,7 @@ import {
   getFishPonds,
   getFishPondSummary,
   deleteFishPond,
+  permanentDeleteFishPond,
   adjustFishPondStock,
   getDeletedFishPonds,
   restoreFishPond,
@@ -17,6 +20,7 @@ import {
   getFishHatches,
   getFishHatchSummary,
   deleteFishHatch,
+  permanentDeleteFishHatch,
   getDeletedFishHatches,
   restoreFishHatch,
 } from "../services/fishHatchService";
@@ -24,6 +28,11 @@ import FishPondFormModal from "../components/FishPondFormModal";
 import FishHatchFormModal from "../components/FishHatchFormModal";
 import { exportReport } from "../services/reportService";
 import ExportModal from "../components/ExportModal";
+import PlanUpgradePrompt from "../components/PlanUpgradePrompt";
+import { useTenant } from "../tenant/TenantContext";
+import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
+import { isOfflinePendingRecord } from "../offline/offlineResources";
+import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
 
 // icons
 import {
@@ -42,6 +51,7 @@ import {
   Skull,
   CircleOff,
   Download,
+  RefreshCw,
 } from "lucide-react";
 import { TbFish } from "react-icons/tb";
 
@@ -73,6 +83,64 @@ ChartJS.register(
   Legend,
   Filler,
 );
+
+function normalizeMonthKey(key) {
+  if (!key) return null;
+  const [yearRaw, monthRaw] = String(key).split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return null;
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function buildMonthlyTotals(items, dateKey, valueKey) {
+  if (!Array.isArray(items)) return {};
+  return items.reduce((acc, item) => {
+    const rawDate = item?.[dateKey];
+    if (!rawDate) return acc;
+    const parsed = new Date(rawDate);
+    if (Number.isNaN(parsed.getTime())) return acc;
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const key = `${year}-${month}`;
+    acc[key] = (acc[key] || 0) + Number(item?.[valueKey] || 0);
+    return acc;
+  }, {});
+}
+
+function normalizeMonthlyTotals(totals = {}) {
+  return Object.keys(totals).reduce((acc, key) => {
+    const normalized = normalizeMonthKey(key);
+    if (!normalized) return acc;
+    acc[normalized] = (acc[normalized] || 0) + Number(totals[key] || 0);
+    return acc;
+  }, {});
+}
+
+function mergeMonthlyTotals(baseTotals = {}, fallbackTotals = {}) {
+  const merged = { ...baseTotals };
+  Object.keys(fallbackTotals).forEach((key) => {
+    if (!(key in merged)) {
+      merged[key] = fallbackTotals[key];
+    }
+  });
+  return merged;
+}
+
+function getLatestYear(totals = {}) {
+  const years = Object.keys(totals)
+    .map((k) => Number(String(k).split("-")[0]))
+    .filter((y) => Number.isFinite(y));
+  if (years.length === 0) return new Date().getFullYear();
+  return Math.max(...years);
+}
+
+function getCalendarYearKeys(year) {
+  return Array.from({ length: 12 }, (_, idx) => {
+    const m = String(idx + 1).padStart(2, "0");
+    return `${year}-${m}`;
+  });
+}
 
 const neonShadowPlugin = {
   id: "neonShadow",
@@ -156,12 +224,13 @@ function MobileAccordion({ title, icon, children, defaultOpen = false }) {
 }
 
 export default function FishPondsPage() {
+  const { activeTenant } = useTenant();
+  const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
+  const canManageHatches = isPlanAtLeast(currentPlan, "PRO");
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
   );
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [showHeaderTooltips, setShowHeaderTooltips] = useState(true);
-  const [showHeaderSubtitle, setShowHeaderSubtitle] = useState(true);
 
   useEffect(() => {
     const updateTheme = () =>
@@ -177,26 +246,10 @@ export default function FishPondsPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setShowHeaderSubtitle(false);
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setShowHeaderTooltips(true);
-      return;
-    }
-    const timer = setTimeout(() => setShowHeaderTooltips(false), 4000);
-    return () => clearTimeout(timer);
-  }, [isMobile]);
 
   const axisTextColor = isDark ? "#E5EDFF" : "#334155";
   const gridColor = isDark ? "rgba(127,90,240,0.08)" : "rgba(15,23,42,0.08)";
@@ -269,6 +322,7 @@ export default function FishPondsPage() {
   const [hatchDetail, setHatchDetail] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [stockForm, setStockForm] = useState({
     pondId: "",
@@ -278,8 +332,8 @@ export default function FishPondsPage() {
   const [stockSaving, setStockSaving] = useState(false);
 
   // ------------------- FETCH (hook these to your services) -------------------
-  async function fetchPonds(page = 0, options = {}) {
-    const { showSkeleton = ponds.length === 0 } = options;
+  const fetchPonds = useCallback(async (page = 0, options = {}) => {
+    const { showSkeleton = false } = options;
     setLoadingPonds(showSkeleton);
     setPondPageLoading(!showSkeleton);
     try {
@@ -303,7 +357,7 @@ export default function FishPondsPage() {
       setLoadingPonds(false);
       setPondPageLoading(false);
     }
-  }
+  }, [pondFilters]);
 
   function focusPondTable() {
     if (!pondTableRef.current) return;
@@ -320,7 +374,7 @@ export default function FishPondsPage() {
     focusPondTable();
   }
 
-  async function fetchHatches() {
+  const fetchHatches = useCallback(async () => {
     setLoadingHatches(true);
     try {
       const res = await getFishHatches();
@@ -331,13 +385,13 @@ export default function FishPondsPage() {
     } finally {
       setLoadingHatches(false);
     }
-  }
+  }, []);
 
-  async function fetchSummaries() {
+  const fetchSummaries = useCallback(async () => {
     try {
       const [pondRes, hatchRes] = await Promise.all([
         getFishPondSummary(),
-        getFishHatchSummary(),
+        canManageHatches ? getFishHatchSummary() : Promise.resolve(null),
       ]);
 
       const normalizeNumber = (value) => {
@@ -357,14 +411,25 @@ export default function FishPondsPage() {
         alerts: pondRes?.alerts,
       });
 
-      setHatchSummary({
-        totalHatchRecords: normalizeNumber(hatchRes?.totalHatchRecords),
-        fryHatchedTotal: normalizeNumber(hatchRes?.fryHatchedTotal),
-        avgHatchRate: normalizeNumber(hatchRes?.avgHatchRate),
-        dueWaterChangeCount: normalizeNumber(hatchRes?.dueWaterChangeCount),
-        monthlyHatchTotals: hatchRes?.monthlyHatchTotals || {},
-        hatchCountByPondType: hatchRes?.hatchCountByPondType || {},
-      });
+      setHatchSummary(
+        canManageHatches
+          ? {
+              totalHatchRecords: normalizeNumber(hatchRes?.totalHatchRecords),
+              fryHatchedTotal: normalizeNumber(hatchRes?.fryHatchedTotal),
+              avgHatchRate: normalizeNumber(hatchRes?.avgHatchRate),
+              dueWaterChangeCount: normalizeNumber(hatchRes?.dueWaterChangeCount),
+              monthlyHatchTotals: hatchRes?.monthlyHatchTotals || {},
+              hatchCountByPondType: hatchRes?.hatchCountByPondType || {},
+            }
+          : {
+              totalHatchRecords: 0,
+              fryHatchedTotal: 0,
+              avgHatchRate: 0,
+              dueWaterChangeCount: 0,
+              monthlyHatchTotals: {},
+              hatchCountByPondType: {},
+            },
+      );
 
       const alertSource = pondRes?.alerts;
       const alertItems = Array.isArray(alertSource)
@@ -376,13 +441,18 @@ export default function FishPondsPage() {
     } catch (e) {
       console.error(e);
     }
-  }
+  }, [canManageHatches]);
 
   useEffect(() => {
     fetchPonds(0, { showSkeleton: true });
-    fetchHatches();
+    if (canManageHatches) {
+      fetchHatches();
+    } else {
+      setHatches([]);
+      setLoadingHatches(false);
+    }
     fetchSummaries();
-  }, [pondFilters]);
+  }, [canManageHatches, fetchHatches, fetchPonds, fetchSummaries]);
 
   function clearPondFilters() {
     setPondFilters({
@@ -571,62 +641,6 @@ export default function FishPondsPage() {
     const start = hatchPage * hatchPageSize;
     return hatches.slice(start, start + hatchPageSize);
   }, [hatches, hatchPage]);
-
-  const normalizeMonthKey = (key) => {
-    if (!key) return null;
-    const [yearRaw, monthRaw] = String(key).split("-");
-    const year = Number(yearRaw);
-    const month = Number(monthRaw);
-    if (!Number.isFinite(year) || !Number.isFinite(month)) return null;
-    return `${year}-${String(month).padStart(2, "0")}`;
-  };
-
-  const buildMonthlyTotals = (items, dateKey, valueKey) => {
-    if (!Array.isArray(items)) return {};
-    return items.reduce((acc, item) => {
-      const rawDate = item?.[dateKey];
-      if (!rawDate) return acc;
-      const parsed = new Date(rawDate);
-      if (Number.isNaN(parsed.getTime())) return acc;
-      const year = parsed.getFullYear();
-      const month = String(parsed.getMonth() + 1).padStart(2, "0");
-      const key = `${year}-${month}`;
-      acc[key] = (acc[key] || 0) + Number(item?.[valueKey] || 0);
-      return acc;
-    }, {});
-  };
-
-  const normalizeMonthlyTotals = (totals = {}) =>
-    Object.keys(totals).reduce((acc, key) => {
-      const normalized = normalizeMonthKey(key);
-      if (!normalized) return acc;
-      acc[normalized] = (acc[normalized] || 0) + Number(totals[key] || 0);
-      return acc;
-    }, {});
-
-  const mergeMonthlyTotals = (baseTotals = {}, fallbackTotals = {}) => {
-    const merged = { ...baseTotals };
-    Object.keys(fallbackTotals).forEach((key) => {
-      if (!(key in merged)) {
-        merged[key] = fallbackTotals[key];
-      }
-    });
-    return merged;
-  };
-
-  const getLatestYear = (totals = {}) => {
-    const years = Object.keys(totals)
-      .map((k) => Number(String(k).split("-")[0]))
-      .filter((y) => Number.isFinite(y));
-    if (years.length === 0) return new Date().getFullYear();
-    return Math.max(...years);
-  };
-
-  const getCalendarYearKeys = (year) =>
-    Array.from({ length: 12 }, (_, idx) => {
-      const m = String(idx + 1).padStart(2, "0");
-      return `${year}-${m}`;
-    });
 
   // ------------------- CHARTS (styled like Supplies) -------------------
   const pondTrendData = useMemo(() => {
@@ -936,14 +950,32 @@ export default function FishPondsPage() {
 
     setStockSaving(true);
     try {
-      await adjustFishPondStock(Number(stockForm.pondId), {
+      const basePond =
+        ponds.find((pond) => String(pond.id) === String(stockForm.pondId)) || null;
+      const saved = await adjustFishPondStock(Number(stockForm.pondId), {
         quantity: Number(stockForm.quantity),
         reason: stockForm.reason?.trim() || null,
+      }, {
+        baseRecord: basePond,
       });
-      await fetchPonds(pondMeta.page);
-      await fetchSummaries();
+      const pendingOffline = isOfflinePendingRecord(saved);
 
-      setToast({ message: "Stock updated", type: "success" });
+      setPonds((current) => current.map((pond) => (pond.id === saved.id ? saved : pond)));
+      if (pondDetail?.id === saved.id) {
+        setPondDetail(saved);
+      }
+
+      if (!pendingOffline) {
+        await fetchPonds(pondMeta.page);
+        await fetchSummaries();
+      }
+
+      setToast({
+        message: pendingOffline
+          ? "Stock adjustment saved offline. It will sync automatically."
+          : "Stock updated",
+        type: pendingOffline ? "info" : "success",
+      });
       setStockForm({ pondId: "", quantity: "", reason: "" });
     } catch (e) {
       console.error(e);
@@ -953,62 +985,138 @@ export default function FishPondsPage() {
     }
   }
 
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchPonds(pondMeta.page, { showSkeleton: false }),
+        fetchHatches(),
+        fetchSummaries(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const refreshPageData = useCallback(async () => {
+    await Promise.all([
+      fetchPonds(pondMeta.page ?? 0, { showSkeleton: false }),
+      fetchHatches(),
+      fetchSummaries(),
+    ]);
+  }, [fetchHatches, fetchPonds, fetchSummaries, pondMeta.page]);
+
+  useOfflineSyncRefresh(refreshPageData);
+
   return (
     <DashboardLayout>
       <div className="font-body space-y-8">
         <div className="space-y-8 animate-fadeIn">
-          {/* HEADER */}
-          <div className="animate-fadeIn flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <div>
-              <h1 className="text-xl sm:text-h2 font-semibold font-header">
-                Fish Ponds
-              </h1>
-              <div
-                className={`overflow-hidden transition-all duration-500 ${
-                  showHeaderSubtitle ? "max-h-10 opacity-100" : "max-h-0 opacity-0"
-                }`}
-              >
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-body">
-                  Monitor ponds, hatches, and stock movement in one place.
-                </p>
+          <div className="space-y-4">
+            {/* HEADER */}
+            <div className="relative isolate overflow-hidden rounded-2xl border border-sky-200/70 bg-slate-50/85 p-5 shadow-neo dark:border-sky-500/20 dark:bg-[#061024]/90 dark:shadow-[0_22px_40px_rgba(2,8,24,0.45)] md:p-6">
+              <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(108deg,rgba(37,99,235,0.17)_0%,rgba(14,116,144,0.14)_48%,rgba(16,185,129,0.12)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.13),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.14),transparent_38%)] dark:bg-[linear-gradient(108deg,rgba(6,19,43,0.96)_0%,rgba(7,32,63,0.9)_48%,rgba(6,58,55,0.84)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.16),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.18),transparent_38%)]" />
+
+              <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-accent-primary/35 bg-accent-primary/12 px-3 py-1 text-sm font-semibold text-accent-primary dark:border-blue-300/35 dark:bg-blue-500/20 dark:text-blue-100">
+                    <Droplets className="h-3.5 w-3.5" />
+                    Pond records
+                  </span>
+                  <h1 className="mt-3 text-3xl font-semibold font-header tracking-tight text-slate-900 dark:text-slate-50">
+                    Fish Ponds
+                  </h1>
+                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base font-body">
+                    Keep track of each pond, how many fish are inside, and when
+                    water or hatch activity needs attention.
+                  </p>
+                </div>
+
+                <div className="grid w-full grid-cols-2 auto-rows-fr gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-start lg:justify-end">
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    title="Refresh fish ponds"
+                    aria-label="Refresh fish ponds"
+                    className={`order-3 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4 dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20 ${
+                      refreshing ? "cursor-not-allowed opacity-70" : ""
+                    }`}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                    Refresh
+                  </button>
+                  <button
+                    onClick={openCreatePond}
+                    title="Create a new pond record"
+                    className="order-1 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent-primary px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4"
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={2.5} />
+                    Add pond
+                  </button>
+
+                  <button
+                    onClick={() => setExportOpen(true)}
+                    disabled={exporting}
+                    className="order-4 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4 dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+                    title="Download pond report"
+                  >
+                    <Download className="h-4 w-4" />
+                    {exporting ? "Downloading..." : "Download"}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (canManageHatches) {
+                        openCreateHatch();
+                        return;
+                      }
+                      setToast({
+                        message:
+                          "Hatch workflows are available on Pro. Upgrade to unlock deeper hatch tracking.",
+                        type: "info",
+                      });
+                    }}
+                    className={`order-2 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4 ${
+                      canManageHatches
+                        ? "border border-sky-400/35 bg-sky-500/15 text-sky-700 hover:bg-sky-500/20 dark:text-sky-200"
+                        : "border border-accent-primary/30 bg-accent-primary/15 text-accent-primary hover:bg-accent-primary/25 dark:text-blue-200"
+                    }`}
+                    title={
+                      canManageHatches
+                        ? "Log a hatch record"
+                        : "Available on Pro plan"
+                    }
+                  >
+                    <Egg className="h-4 w-4" />
+                    {canManageHatches
+                      ? "Record hatch"
+                      : isMobile
+                        ? "Hatch Pro"
+                        : "Record Hatch (Pro)"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative z-10 mt-3 text-left text-[11px] font-medium text-slate-600 dark:text-slate-200/80 sm:text-right">
+                Live pond and hatch activity
               </div>
             </div>
-
-            {/* ACTIONS (match Supplies layout) */}
-            <div className="flex flex-row gap-2 items-center w-full sm:justify-end sm:w-auto">
-              <button
-                onClick={openCreatePond}
-                title={
-                  showHeaderTooltips ? "Create a new pond record" : undefined
-                }
-                className="w-auto h-10 justify-center flex items-center gap-2 bg-accent-primary text-darkText px-4 py-2 rounded-lg hover:bg-primary/30 transition font-body"
-              >
-                <Plus className="w-4 h-4" strokeWidth={2.5} />
-                <span className="text-sm font-body">New Pond</span>
-              </button>
-
-              <button
-                onClick={() => setExportOpen(true)}
-                disabled={exporting}
-                className="w-auto h-10 justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 text-lightText dark:text-darkText hover:bg-white/20 transition font-medium disabled:opacity-50"
-                title="Export fish pond data"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline text-sm font-body">
-                  {exporting ? "Exporting..." : "Export"}
-                </span>
-              </button>
-
-              <button
-                onClick={openCreateHatch}
-                className="w-auto h-10 justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 hover:text-sky-300 transition font-medium"
-                title={showHeaderTooltips ? "Log a hatch record" : undefined}
-              >
-                <Egg className="w-4 h-4" />
-                <span className="text-sm font-body">New Hatch</span>
-              </button>
-            </div>
           </div>
+
+          <FarmerGuideCard
+            icon={Droplets}
+            title="How to use fish ponds"
+            description="Use this page to keep pond records clear and easy to follow."
+            storageKey="fishponds-guide"
+            steps={[
+              "Add a pond first, then keep its stock and water dates updated.",
+              "Use the hatch button whenever a hatch record is needed.",
+              "Use the find boxes only when you want to find one pond or one pond type.",
+            ]}
+            tip="The top boxes count all pond and hatch activity. The list below may show fewer rows when the find boxes are in use."
+          />
 
         {isLoadingSummary ? (
           <div className="md:hidden">
@@ -1102,7 +1210,7 @@ export default function FishPondsPage() {
             {/* FILTERS (match style) */}
             <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 dark:shadow-dark shadow-neo p-4">
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-                Filter ponds by name, type, status, or last water change.
+                Use these find boxes only when you want to narrow the pond list.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <input
@@ -1156,6 +1264,15 @@ export default function FishPondsPage() {
               </div>
             </div>
 
+            {!loadingPonds && (hasActivePondFilters || (pondSummary?.totalPonds > 0 && !hasPondsData)) && (
+              <FilteredResultsHint
+                summaryLabel="pond records"
+                tableLabel="pond list"
+                hasFilters={hasActivePondFilters}
+                onClear={clearPondFilters}
+              />
+            )}
+
             {/* TABLE CARD */}
             <div
               ref={pondTableRef}
@@ -1163,7 +1280,7 @@ export default function FishPondsPage() {
               className="rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6"
             >
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-header font-semibold">Pond Management</h2>
+                <h2 className="font-header font-semibold">Pond list</h2>
                 <button
                   onClick={() => setPondTrashOpen(true)}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-medium"
@@ -1171,12 +1288,12 @@ export default function FishPondsPage() {
                 >
                   <Trash2 className="w-4 h-4" />
                   <span className="hidden sm:inline text-xs font-semibold">
-                    Trash
+                    Deleted ponds
                   </span>
                 </button>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-                Active ponds with capacity, stock, and water-change dates.
+                Each row shows one pond, its stock level, and its water-change dates.
               </p>
 
               {loadingPonds && !hasPondsData ? (
@@ -1310,12 +1427,12 @@ export default function FishPondsPage() {
                     </div>
                     <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                       {hasActivePondFilters
-                        ? "No ponds match these filters"
+                        ? "No ponds match what you selected"
                         : "No ponds recorded yet"}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                       {hasActivePondFilters
-                        ? "Clear the filters to view more results."
+                        ? "Show everything to see more results."
                         : "Add your first pond to start tracking stock and water changes."}
                     </p>
                     <button
@@ -1324,7 +1441,7 @@ export default function FishPondsPage() {
                         hasActivePondFilters ? clearPondFilters : openCreatePond
                       }
                     >
-                      {hasActivePondFilters ? "Clear Filters" : "Add Pond"}
+                      {hasActivePondFilters ? "Show everything" : "Add Pond"}
                     </button>
                   </div>
                 </div>
@@ -1370,22 +1487,37 @@ export default function FishPondsPage() {
                 <h2 className="font-header font-semibold">
                   Hatchery Management
                 </h2>
-                <button
-                  onClick={() => setHatchTrashOpen(true)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-medium"
-                  title="View deleted hatch records"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline text-xs font-semibold">
-                    Trash
+                {canManageHatches ? (
+                  <button
+                    onClick={() => setHatchTrashOpen(true)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition font-medium"
+                    title="View deleted hatch records"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline text-xs font-semibold">
+                      Trash
+                    </span>
+                  </button>
+                ) : (
+                  <span className="rounded-full border border-accent-primary/40 bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary dark:border-blue-300/30 dark:bg-blue-500/20 dark:text-blue-100">
+                    Pro Feature
                   </span>
-                </button>
+                )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-                Recent hatch records with pond, quantity, and hatch rate.
+                {canManageHatches
+                  ? "Recent hatch records with pond, quantity, and hatch rate."
+                  : "Upgrade to Pro to unlock hatch logs, rate insights, and hatch history management."}
               </p>
 
-              {loadingHatches ? (
+              {!canManageHatches ? (
+                <PlanUpgradePrompt
+                  title="Unlock Hatchery Workflows"
+                  feature="hatch workflows"
+                  requiredPlan="PRO"
+                  description="You are currently on the Free plan. Upgrade to Pro to log hatch records, track hatch rates over time, and manage hatch history with restore support."
+                />
+              ) : loadingHatches ? (
                 <div className="overflow-x-auto md:overflow-visible hide-scrollbar">
                   <div className="space-y-3" aria-hidden="true">
                     {Array.from({ length: 5 }).map((_, idx) => (
@@ -1708,7 +1840,7 @@ export default function FishPondsPage() {
                 <button
                   onClick={submitStockAdjustment}
                   title="Apply the stock adjustment"
-                  className="px-2 py-1 text-xs rounded-md bg-accent-primary text-darkText hover:bg-primary/30 transition disabled:opacity-60"
+                  className="px-2 py-1 text-xs rounded-md bg-accent-primary text-white hover:bg-primary/30 transition disabled:opacity-60"
                   disabled={stockSaving}
                 >
                   {stockSaving ? "Updating..." : "Update Stock"}
@@ -2032,17 +2164,30 @@ export default function FishPondsPage() {
             setPondModalOpen(false);
             setPondEditing(null);
 
+            const pendingOffline = isOfflinePendingRecord(pond);
+
             setToast({
-              message: `"${pond.pondName}" ${pondEditing ? "updated" : "created"}`,
-              type: "success",
+              message: pendingOffline
+                ? `"${pond.pondName}" saved offline. It will sync automatically.`
+                : `"${pond.pondName}" ${pondEditing ? "updated" : "created"}`,
+              type: pendingOffline ? "info" : "success",
             });
 
-            if (pondEditing) {
-              await fetchPonds(pondMeta.page);
-            } else {
-              await fetchPonds(0);
+            setPonds((current) => {
+              if (pondEditing) {
+                return current.map((row) => (row.id === pond.id ? pond : row));
+              }
+              return [pond, ...current];
+            });
+
+            if (!pendingOffline) {
+              if (pondEditing) {
+                await fetchPonds(pondMeta.page);
+              } else {
+                await fetchPonds(0);
+              }
+              await fetchSummaries();
             }
-            await fetchSummaries();
           }}
         />
 
@@ -2054,17 +2199,30 @@ export default function FishPondsPage() {
           }}
           initialData={hatchEditing}
           pondOptions={ponds}
-          onSuccess={async () => {
+          onSuccess={async (saved) => {
             setHatchModalOpen(false);
             setHatchEditing(null);
 
+            const pendingOffline = isOfflinePendingRecord(saved);
+
             setToast({
-              message: `Hatch record ${hatchEditing ? "updated" : "created"}`,
-              type: "success",
+              message: pendingOffline
+                ? "Hatch record saved offline. It will sync automatically."
+                : `Hatch record ${hatchEditing ? "updated" : "created"}`,
+              type: pendingOffline ? "info" : "success",
             });
 
-            await fetchHatches();
-            await fetchSummaries();
+            setHatches((current) => {
+              if (hatchEditing) {
+                return current.map((row) => (row.id === saved.id ? saved : row));
+              }
+              return [saved, ...current];
+            });
+
+            if (!pendingOffline) {
+              await fetchHatches();
+              await fetchSummaries();
+            }
           }}
         />
 
@@ -2094,6 +2252,25 @@ export default function FishPondsPage() {
               message: `"${pond.pondName}" restored successfully`,
               type: "success",
             });
+          }}
+          onPermanentDelete={async (pond) => {
+            try {
+              await permanentDeleteFishPond(pond.id);
+              await fetchPonds(pondMeta.page);
+              await fetchSummaries();
+
+              setToast({
+                message: `"${pond.pondName}" deleted permanently`,
+                type: "success",
+              });
+            } catch (err) {
+              console.error("Permanent delete failed:", err);
+              setToast({
+                message: "Failed to delete permanently",
+                type: "error",
+              });
+              throw err;
+            }
           }}
           columns={[
             { key: "pondName", label: "Pond" },
@@ -2130,6 +2307,25 @@ export default function FishPondsPage() {
               message: "Hatch record restored successfully",
               type: "success",
             });
+          }}
+          onPermanentDelete={async (hatch) => {
+            try {
+              await permanentDeleteFishHatch(hatch.id);
+              await fetchHatches();
+              await fetchSummaries();
+
+              setToast({
+                message: "Hatch record deleted permanently",
+                type: "success",
+              });
+            } catch (err) {
+              console.error("Permanent delete failed:", err);
+              setToast({
+                message: "Failed to delete permanently",
+                type: "error",
+              });
+              throw err;
+            }
           }}
           columns={[
             { key: "hatchDate", label: "Date" },

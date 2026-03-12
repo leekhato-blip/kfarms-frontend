@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function PageLoader({ label = "Loading your workspace…" }) {
+export default function PageLoader({ label = "Opening your farm…" }) {
   const fallback = {
     position: "fixed",
     inset: 0,

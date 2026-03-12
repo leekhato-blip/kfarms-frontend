@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import SalesFormModal from "../components/SalesFormModal";
+import FarmerGuideCard from "../components/FarmerGuideCard";
+import FilteredResultsHint from "../components/FilteredResultsHint";
 import GlassToast from "../components/GlassToast";
 import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
@@ -17,6 +19,7 @@ import {
   permanentDeleteSale,
 } from "../services/salesService";
 import { exportReport } from "../services/reportService";
+import useQuickCreateModal from "../hooks/useQuickCreateModal";
 
 import { Line } from "react-chartjs-2";
 import {
@@ -31,6 +34,8 @@ import {
   Filler,
 } from "chart.js";
 import SummaryCard from "../components/SummaryCard";
+import { isOfflinePendingRecord } from "../offline/offlineResources";
+import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
 import {
   FileText,
   CalendarCheck,
@@ -41,6 +46,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  RefreshCw,
 } from "lucide-react";
 
 /* -------------------- Chart.js setup -------------------- */
@@ -80,9 +86,6 @@ export default function SalesPage() {
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
   );
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [showHeaderTooltips, setShowHeaderTooltips] = useState(true);
-  const [showHeaderSubtitle, setShowHeaderSubtitle] = useState(true);
 
   useEffect(() => {
     const updateTheme = () => {
@@ -100,28 +103,6 @@ export default function SalesPage() {
 
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setShowHeaderSubtitle(false);
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setShowHeaderTooltips(true);
-      return;
-    }
-    const timer = setTimeout(() => setShowHeaderTooltips(false), 4000);
-    return () => clearTimeout(timer);
-  }, [isMobile]);
 
   const axisTextColor = isDark ? "#E5EDFF" : "#334155";
 
@@ -153,6 +134,7 @@ export default function SalesPage() {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const hasSalesData = items.length > 0;
   const tableRef = useRef(null);
 
@@ -195,7 +177,7 @@ export default function SalesPage() {
       ]
     : [];
 
-  async function fetchSummary() {
+  const fetchSummary = useCallback(async () => {
     try {
       const res = await getSalesSummary();
       setSummary({
@@ -207,10 +189,10 @@ export default function SalesPage() {
     } catch (err) {
       console.error("Failed to fetch summary", err);
     }
-  }
+  }, []);
 
   /* -------------------- FETCH SALES -------------------- */
-  async function fetchSales(page = 0) {
+  const fetchSales = useCallback(async (page = 0) => {
     setLoading(true);
     try {
       const res = await getAllSales({
@@ -233,7 +215,7 @@ export default function SalesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filters]);
 
   function focusTable() {
     if (!tableRef.current) return;
@@ -277,7 +259,13 @@ export default function SalesPage() {
   useEffect(() => {
     fetchSales(0);
     fetchSummary();
-  }, [filters]);
+  }, [fetchSales, fetchSummary]);
+
+  const refreshPageData = useCallback(async () => {
+    await Promise.all([fetchSales(meta.page ?? 0), fetchSummary()]);
+  }, [fetchSales, fetchSummary, meta.page]);
+
+  useOfflineSyncRefresh(refreshPageData);
 
   function formatDateLabel(dateStr) {
     const d = new Date(dateStr);
@@ -338,7 +326,7 @@ export default function SalesPage() {
         },
       ],
     };
-  }, [items]);
+  }, [isDark, items]);
 
   const chartOptions = useMemo(
     () => ({
@@ -365,7 +353,7 @@ export default function SalesPage() {
         },
         title: {
           display: true,
-          text: "Sales Revenue Trend",
+          text: "Sales over time",
           color: isDark ? "#DDE6FF" : "#1e293b",
           font: { size: 16, weight: "600" },
         },
@@ -417,7 +405,7 @@ export default function SalesPage() {
         },
       },
     }),
-    [items, isDark],
+    [axisTextColor, gridColor, isDark],
   );
 
   /* -------------------- CRUD -------------------- */
@@ -444,6 +432,10 @@ export default function SalesPage() {
     setEditing(null);
     setModalOpen(true);
   }
+
+  useQuickCreateModal(() => {
+    openCreate();
+  });
 
   function openEdit(sale) {
     setEditing(sale);
@@ -472,7 +464,7 @@ export default function SalesPage() {
         message: `"${deleteTarget.itemName}" moved to trash successfully`,
         type: "success",
       });
-    } catch (err) {
+    } catch {
       setToast({
         message: "Failed to delete sale",
         type: "error",
@@ -486,49 +478,90 @@ export default function SalesPage() {
 
   const [trashOpen, setTrashOpen] = useState(false);
 
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchSales(meta.page), fetchSummary()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   /* -------------------- JSX -------------------- */
   return (
     <DashboardLayout>
       <div className="font-body space-y-8 animate-fadeIn">
-        {/* HEADER */}
-        <div className="animate-fadeIn flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div>
-            <h1 className="text-xl sm:text-h2 font-semibold font-header">
-              Sales
-            </h1>
-            <div
-              className={`overflow-hidden transition-all duration-500 ${
-                showHeaderSubtitle ? "max-h-10 opacity-100" : "max-h-0 opacity-0"
-              }`}
-            >
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-body">
-                Track sales records, revenue, and trends over time.
-              </p>
+        <div className="space-y-4">
+          {/* HEADER */}
+          <div className="relative isolate overflow-hidden rounded-2xl border border-sky-200/70 bg-slate-50/85 p-5 shadow-neo dark:border-sky-500/20 dark:bg-[#061024]/90 dark:shadow-[0_22px_40px_rgba(2,8,24,0.45)] md:p-6">
+            <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(108deg,rgba(37,99,235,0.17)_0%,rgba(14,116,144,0.14)_48%,rgba(16,185,129,0.12)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.13),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.14),transparent_38%)] dark:bg-[linear-gradient(108deg,rgba(6,19,43,0.96)_0%,rgba(7,32,63,0.9)_48%,rgba(6,58,55,0.84)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.16),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.18),transparent_38%)]" />
+
+            <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-accent-primary/35 bg-accent-primary/12 px-3 py-1 text-sm font-semibold text-accent-primary dark:border-blue-300/35 dark:bg-blue-500/20 dark:text-blue-100">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Sales records
+                </span>
+                <h1 className="mt-3 text-3xl font-semibold font-header tracking-tight text-slate-900 dark:text-slate-50">
+                  Sales
+                </h1>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base font-body">
+                  Record what was sold, who bought it, and how much money came in.
+                </p>
+              </div>
+
+              <div className="grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-start lg:justify-end">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh sales"
+                  aria-label="Refresh sales"
+                  className={`order-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 sm:order-none sm:w-auto dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20 ${
+                    refreshing ? "cursor-not-allowed opacity-70" : ""
+                  }`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+                <button
+                  onClick={openCreate}
+                  title="Record a new sale"
+                  className="order-1 col-span-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 sm:order-none sm:col-span-1 sm:w-auto"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.5} />
+                  Record sale
+                </button>
+                <button
+                  onClick={() => setExportOpen(true)}
+                  disabled={exporting}
+                  className="order-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 sm:order-none sm:w-auto dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+                  title="Download sales report"
+                >
+                  <Download className="h-4 w-4" />
+                  {exporting ? "Downloading..." : "Download"}
+                </button>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-3 text-left text-[11px] font-medium text-slate-600 dark:text-slate-200/80 sm:text-right">
+              Live sales data
             </div>
           </div>
 
-          {/* ACTIONS (right aligned) */}
-          <div className="flex flex-row gap-2 items-center w-full sm:justify-end sm:w-auto">
-            <button
-              onClick={openCreate}
-              title={showHeaderTooltips ? "Record a new sale" : undefined}
-              className="w-auto justify-center flex items-center gap-2 bg-accent-primary text-darkText px-4 py-2 rounded-lg hover:bg-primary/30 transition font-body"
-            >
-              <Plus className="w-4 h-4 font-body" strokeWidth={2.5} />
-              <span>New Sale</span>
-            </button>
-            <button
-              onClick={() => setExportOpen(true)}
-              disabled={exporting}
-              className="ml-auto w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-darkText dark:hover:bg-white/20 transition font-medium disabled:opacity-50"
-              title="Export sales"
-            >
-              <Download className="w-4 h-4" />
-              <span className="text-sm font-body">
-                {exporting ? "Exporting..." : "Export"}
-              </span>
-            </button>
-          </div>
+          <FarmerGuideCard
+            icon={Wallet}
+            title="How to use sales"
+            description="This page is for simple record keeping after something has been sold."
+            storageKey="sales-guide"
+            steps={[
+              "Use \"Record sale\" after a customer buys something.",
+              "Check the top cards to see today's sales, this month, and total revenue.",
+              "Use the table below when you want to review or change an old record.",
+            ]}
+            tip="The top boxes show all sales. The table below may show fewer rows when the find boxes are in use."
+          />
         </div>
 
         {/* SUMMARY CARDS */}
@@ -603,7 +636,7 @@ export default function SalesPage() {
             style={{ minHeight: 260 }}
           >
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-              Revenue trend based on recorded sales entries.
+              This chart uses the sales that have been recorded on this page.
             </p>
             <div className="h-[220px] sm:h-[260px] md:h-[300px]">
               {hasSalesData ? (
@@ -623,19 +656,19 @@ export default function SalesPage() {
                     </div>
                     <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                       {hasActiveFilters
-                        ? "No sales match these filters"
+                        ? "No sales match what you selected"
                         : "No sales recorded yet"}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                       {hasActiveFilters
-                        ? "Clear the filters to view more results."
+                        ? "Show everything to see more results."
                         : "Record your first sale to see the revenue trend here."}
                     </p>
                     <button
                       className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
                       onClick={hasActiveFilters ? clearFilters : openCreate}
                     >
-                      {hasActiveFilters ? "Clear Filters" : "Record Sale"}
+                      {hasActiveFilters ? "Show everything" : "Record Sale"}
                     </button>
                   </div>
                 </div>
@@ -658,7 +691,7 @@ export default function SalesPage() {
         ) : (
           <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 dark:shadow-dark shadow-neo p-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-              Use filters to narrow sales by item, category, or date.
+              Use these find boxes only when you want to find one sale or one day.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 flex-wrap gap-4">
             <input
@@ -681,7 +714,7 @@ export default function SalesPage() {
               <option value="">All Categories</option>
               <option value="LAYER">Layer</option>
               <option value="FISH">Fish</option>
-              <option value="LIVESTOCK">Livestock</option>
+              <option value="LIVESTOCK">Poultry</option>
               <option value="OTHER">Other</option>
             </select>
             <input
@@ -694,6 +727,15 @@ export default function SalesPage() {
             </div>
           </div>
         )}
+
+        {!loading && (hasActiveFilters || (hasSummaryData && !hasSalesData)) ? (
+          <FilteredResultsHint
+            summaryLabel="sales records"
+            tableLabel="sales table"
+            hasFilters={hasActiveFilters}
+            onClear={clearFilters}
+          />
+        ) : null}
 
         {/* TABLE CARD */}
         {loading ? (
@@ -725,19 +767,15 @@ export default function SalesPage() {
           >
             <div className="flex items-center justify-between gap-3 mb-3">
               <p className="text-xs text-slate-500 dark:text-slate-400 font-body">
-                Detailed sales records with edit and delete actions.
+                Each row below is one recorded sale that you can review, edit, or delete.
               </p>
               <button
                 onClick={() => setTrashOpen(true)}
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition font-medium"
-                title={
-                  showHeaderTooltips
-                    ? "View deleted sales and restore items"
-                    : undefined
-                }
+                title="View deleted sales and restore items"
               >
                 <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline text-sm font-body">Trash</span>
+                <span className="hidden sm:inline text-sm font-body">Deleted sales</span>
               </button>
             </div>
             {hasSalesData ? (
@@ -861,19 +899,19 @@ export default function SalesPage() {
                   </div>
                   <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                     {hasActiveFilters
-                      ? "No sales match these filters"
+                      ? "No sales match what you selected"
                       : "No sales records yet"}
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     {hasActiveFilters
-                      ? "Clear the filters to view more results."
+                      ? "Show everything to see more results."
                       : "Record a sale to see entries appear in this table."}
                   </p>
                   <button
                     className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
                     onClick={hasActiveFilters ? clearFilters : openCreate}
                   >
-                    {hasActiveFilters ? "Clear Filters" : "Record Sale"}
+                    {hasActiveFilters ? "Show everything" : "Record Sale"}
                   </button>
                 </div>
               </div>
@@ -893,12 +931,14 @@ export default function SalesPage() {
             setModalOpen(false);
             setEditing(null);
 
+            const pendingOffline = isOfflinePendingRecord(sale);
+
             // Toast
             setToast({
-              message: `"${sale.itemName}" ${
-                editing ? "updated" : "created"
-              } successfully`,
-              type: "success",
+              message: pendingOffline
+                ? `"${sale.itemName}" saved offline. It will sync automatically.`
+                : `"${sale.itemName}" ${editing ? "updated" : "created"} successfully`,
+              type: pendingOffline ? "info" : "success",
             });
 
             if (editing) {
@@ -911,8 +951,9 @@ export default function SalesPage() {
               setItems((prev) => [sale, ...prev]);
             }
 
-            // Refresh summary only
-            fetchSummary();
+            if (!pendingOffline) {
+              fetchSummary();
+            }
           }}
         />
 

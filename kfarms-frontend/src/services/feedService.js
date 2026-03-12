@@ -1,4 +1,5 @@
-import api from "./axios";
+import api from "../api/apiClient";
+import { buildOfflineMutationConfig } from "../offline/offlineStore";
 
 /**
  * Fetch feed summary for Feeds page.
@@ -31,18 +32,40 @@ export async function getFeedById(id) {
   return res.data.data;
 }
 
-export async function createFeed(payload) {
-  const res = await api.post("/feeds", payload);
+export async function createFeed(payload, options = {}) {
+  const res = await api.post(
+    "/feeds",
+    payload,
+    buildOfflineMutationConfig({
+      resource: "feeds",
+      action: "create",
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
-export async function updateFeed(id, payload) {
-  const res = await api.put(`/feeds/${id}`, payload);
+export async function updateFeed(id, payload, options = {}) {
+  const res = await api.put(
+    `/feeds/${id}`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "feeds",
+      action: "update",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }
 
 export async function deleteFeed(id) {
   const res = await api.delete(`/feeds/${id}`);
+  return res.data.success;
+}
+
+export async function permanentDeleteFeed(id) {
+  const res = await api.delete(`/feeds/${id}/permanent`);
   return res.data.success;
 }
 

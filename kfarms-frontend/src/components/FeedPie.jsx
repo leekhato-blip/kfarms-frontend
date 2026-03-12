@@ -1,28 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { formatFeedLabel, resolveFeedColor } from "../utils/feedChart";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const COLORS = {
-  layer: "#D7A86E",
-  poultry: "#D7A86E",
-  fish: "#1565C0",
-  duck: "#2E7D32",
-  ducks: "#2E7D32",
-  other: "#9CA3AF",
-  others: "#9CA3AF",
-};
-
-const getColor = (label = "") => {
-  const l = label.toLowerCase();
-  if (l.includes("layer") || l.includes("poul")) return COLORS.layer;
-  if (l.includes("fish")) return COLORS.fish;
-  if (l.includes("duck")) return COLORS.duck;
-  return COLORS.other;
-};
-
-export default function FeedPie({ breakdown = [] }) {
+export default function FeedPie({
+  breakdown = [],
+  emptyTitle = "No feed consumption recorded",
+  emptyMessage = "When you log feed usage for your layers, ducks, or fish, this chart will show the breakdown.",
+  emptyActionLabel = "Log Feed Consumption",
+  onEmptyAction,
+}) {
   const [darkMode, setDarkMode] = useState(null);
   const [chartKey, setChartKey] = useState(0);
 
@@ -50,19 +39,24 @@ export default function FeedPie({ breakdown = [] }) {
   }, []);
 
   /* Check meaningful data */
-  const hasData =
-    Array.isArray(breakdown) &&
-    breakdown.length > 0 &&
-    breakdown.some((b) => {
-      const numericValue = Number(b?.value);
-      if (Number.isFinite(numericValue)) return numericValue > 0;
-      return Boolean(b?.value);
-    });
+  const preparedBreakdown = useMemo(
+    () =>
+      (Array.isArray(breakdown) ? breakdown : [])
+        .map((item) => ({
+          label: formatFeedLabel(item?.label || "Others"),
+          value: Number(item?.value) || 0,
+        }))
+        .filter((item) => item.value > 0),
+    [breakdown],
+  );
+
+  const hasData = preparedBreakdown.length > 0;
 
   /* Prepare chart data */
-  const labels = breakdown.map((b) => b.label);
-  const values = breakdown.map((b) => Number(b?.value) || 0);
-  const colors = labels.map(getColor);
+  const labels = preparedBreakdown.map((item) => item.label);
+  const values = preparedBreakdown.map((item) => item.value);
+  const colors = labels.map(resolveFeedColor);
+  const total = values.reduce((sum, value) => sum + value, 0);
 
   const data = {
     labels,
@@ -70,10 +64,10 @@ export default function FeedPie({ breakdown = [] }) {
       {
         data: values,
         backgroundColor: colors,
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: darkMode ? "#1F2937" : "#fff",
-        hoverOffset: 12,
-        borderRadius: 8,
+        hoverOffset: 10,
+        borderRadius: 6,
       },
     ],
   };
@@ -84,6 +78,10 @@ export default function FeedPie({ breakdown = [] }) {
     responsive: true,
     maintainAspectRatio: false,
     layout: { padding: 12 },
+    animation: {
+      duration: 700,
+      easing: "easeOutQuart",
+    },
     plugins: {
       legend: {
         display: false,
@@ -95,11 +93,28 @@ export default function FeedPie({ breakdown = [] }) {
         bodyColor: textColor,
         borderColor: darkMode ? "#334155" : "#CBD5E1",
         borderWidth: 1,
+        displayColors: true,
+        callbacks: {
+          label(context) {
+            const raw = Number(context.parsed) || 0;
+            const percentage = total > 0 ? (raw / total) * 100 : 0;
+            return `${context.label}: ${raw.toFixed(1)} (${percentage.toFixed(1)}%)`;
+          },
+        },
       },
     },
   };
 
   /* Empty State */
+  const handleEmptyAction = () => {
+    if (typeof onEmptyAction === "function") {
+      onEmptyAction();
+      return;
+    }
+
+    window.location.href = "/feeds";
+  };
+
   const renderEmpty = () => (
     <div
       className="w-full h-full flex items-center justify-center p-4 font-body"
@@ -121,12 +136,11 @@ export default function FeedPie({ breakdown = [] }) {
         </div>
 
         <h3 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
-          No feed consumption recorded
+          {emptyTitle}
         </h3>
 
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-          When you log feed usage for your layers, ducks, or fish, this chart
-          will show the breakdown.
+          {emptyMessage}
         </p>
 
         <div className="mt-2 text-[13px] text-slate-400 dark:text-slate-500 flex items-center gap-2">
@@ -136,14 +150,14 @@ export default function FeedPie({ breakdown = [] }) {
           <span>Log a feed consumption or order to see this chart.</span>
         </div>
 
-        <button
-          className="mt-3 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
-          onClick={() => {
-            window.location.href = "/feed/add";
-          }}
-        >
-          Log Feed Consumption
-        </button>
+        {emptyActionLabel ? (
+          <button
+            className="mt-3 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
+            onClick={handleEmptyAction}
+          >
+            {emptyActionLabel}
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -158,5 +172,3 @@ export default function FeedPie({ breakdown = [] }) {
     </div>
   );
 }
-
-export { COLORS };

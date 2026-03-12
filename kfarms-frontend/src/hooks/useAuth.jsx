@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import { login as loginApi, logout as logoutApi, me as meApi } from "../services/authService";
+import { isDemoAccountUser, setDemoAccountHint } from "../auth/demoMode";
+import { clearQueuedMutations } from "../offline/offlineStore";
 
 export const AuthContext = React.createContext(null);
 const AUTH_SESSION_HINT_KEY = "kf_auth_session_hint";
@@ -32,6 +34,11 @@ export function AuthProvider({ children }) {
     setUser(userData);
     setIsAuthenticated(Boolean(userData));
     setSessionHint(Boolean(userData));
+    const demoAccount = isDemoAccountUser(userData);
+    setDemoAccountHint(demoAccount);
+    if (demoAccount) {
+      clearQueuedMutations();
+    }
   };
 
   const login = async ({ identifier, password }) => {
@@ -45,6 +52,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setIsAuthenticated(false);
     setSessionHint(false);
+    setDemoAccountHint(false);
   };
 
   const logout = async () => {

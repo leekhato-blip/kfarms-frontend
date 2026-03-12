@@ -1,4 +1,8 @@
-import api from "./axios";
+import api from "../api/apiClient";
+import {
+  clearOfflineAuthBootstrap,
+  primeCachedApiResponse,
+} from "../offline/offlineStore";
 
 /**
  * login (payload) -> POST /auth/login
@@ -12,11 +16,24 @@ export async function login({ identifier, password }) {
   // identifier may be email or username
   const body = { emailOrUsername: identifier, password };
   const res = await api.post("/auth/login", body);
-  return res.data?.data ?? res.data;
+  const payload = res.data?.data ?? res.data;
+  const user = payload?.user ?? payload;
+  if (user) {
+    primeCachedApiResponse({
+      path: "/api/auth/me",
+      data: {
+        success: true,
+        message: "OK",
+        data: user,
+      },
+    });
+  }
+  return payload;
 }
 
 export async function logout() {
   const res = await api.post("/auth/logout");
+  clearOfflineAuthBootstrap();
   return res.data?.data ?? res.data;
 }
 

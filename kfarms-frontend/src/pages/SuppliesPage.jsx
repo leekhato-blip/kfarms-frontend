@@ -1,12 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import SuppliesFormModal from "../components/SuppliesFormModal";
+import FarmerGuideCard from "../components/FarmerGuideCard";
+import FilteredResultsHint from "../components/FilteredResultsHint";
 import GlassToast from "../components/GlassToast";
 import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
 import ExportModal from "../components/ExportModal";
-import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Download, RefreshCw } from "lucide-react";
 
 import {
   getAllSupplies,
@@ -17,6 +19,8 @@ import {
   permanentDeleteSupply,
 } from "../services/suppliesService";
 import { exportReport } from "../services/reportService";
+import { isOfflinePendingRecord } from "../offline/offlineResources";
+import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
 
 import { Line } from "react-chartjs-2";
 import {
@@ -32,7 +36,7 @@ import {
 } from "chart.js";
 
 import SummaryCard from "../components/SummaryCard";
-import { FileText, CalendarCheck, CalendarDays, Wallet } from "lucide-react";
+import { FileText, CalendarCheck, CalendarDays, Truck, Wallet } from "lucide-react";
 
 /* -------------------- Chart.js setup -------------------- */
 ChartJS.register(
@@ -68,9 +72,6 @@ export default function SuppliesPage() {
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
   );
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [showHeaderTooltips, setShowHeaderTooltips] = useState(true);
-  const [showHeaderSubtitle, setShowHeaderSubtitle] = useState(true);
 
   useEffect(() => {
     const updateTheme = () =>
@@ -84,28 +85,6 @@ export default function SuppliesPage() {
     });
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setShowHeaderSubtitle(false);
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setShowHeaderTooltips(true);
-      return;
-    }
-    const timer = setTimeout(() => setShowHeaderTooltips(false), 4000);
-    return () => clearTimeout(timer);
-  }, [isMobile]);
 
   const axisTextColor = isDark ? "#E5EDFF" : "#334155";
   const gridColor = isDark ? "rgba(127,90,240,0.08)" : "rgba(15,23,42,0.08)";
@@ -138,6 +117,7 @@ export default function SuppliesPage() {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [toast, setToast] = useState({ message: "", type: "info" });
   const tableRef = useRef(null);
@@ -170,7 +150,7 @@ export default function SuppliesPage() {
       ]
     : [];
 
-  async function fetchSummary() {
+  const fetchSummary = useCallback(async () => {
     try {
       const res = await getSuppliesSummary();
       setSummary({
@@ -182,10 +162,10 @@ export default function SuppliesPage() {
     } catch (err) {
       console.error("Failed to fetch supplies summary", err);
     }
-  }
+  }, []);
 
   /* -------------------- FETCH LIST -------------------- */
-  async function fetchSupplies(page = 0) {
+  const fetchSupplies = useCallback(async (page = 0) => {
     setLoading(true);
     try {
       const res = await getAllSupplies({
@@ -208,7 +188,7 @@ export default function SuppliesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filters]);
 
   function focusTable() {
     if (!tableRef.current) return;
@@ -225,7 +205,13 @@ export default function SuppliesPage() {
   useEffect(() => {
     fetchSupplies(0);
     fetchSummary();
-  }, [filters]);
+  }, [fetchSupplies, fetchSummary]);
+
+  const refreshPageData = useCallback(async () => {
+    await Promise.all([fetchSupplies(meta.page ?? 0), fetchSummary()]);
+  }, [fetchSupplies, fetchSummary, meta.page]);
+
+  useOfflineSyncRefresh(refreshPageData);
 
   function clearFilters() {
     setFilters({ itemName: "", category: "", date: "" });
@@ -442,52 +428,89 @@ export default function SuppliesPage() {
 
   const [trashOpen, setTrashOpen] = useState(false);
 
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchSupplies(meta.page), fetchSummary()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="font-body space-y-8 animate-fadeIn">
-        {/* HEADER */}
-        <div className="animate-fadeIn flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div>
-            <h1 className="text-xl sm:text-h2 font-semibold font-header">
-              Supplies
-            </h1>
-            <div
-              className={`overflow-hidden transition-all duration-500 ${
-                showHeaderSubtitle ? "max-h-10 opacity-100" : "max-h-0 opacity-0"
-              }`}
-            >
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-body">
-                Track expenses, inventory inputs, and supplier activity.
-              </p>
+        <div className="space-y-4">
+          {/* HEADER */}
+          <div className="relative isolate overflow-hidden rounded-2xl border border-sky-200/70 bg-slate-50/85 p-5 shadow-neo dark:border-sky-500/20 dark:bg-[#061024]/90 dark:shadow-[0_22px_40px_rgba(2,8,24,0.45)] md:p-6">
+            <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(108deg,rgba(37,99,235,0.17)_0%,rgba(14,116,144,0.14)_48%,rgba(16,185,129,0.12)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.13),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.14),transparent_38%)] dark:bg-[linear-gradient(108deg,rgba(6,19,43,0.96)_0%,rgba(7,32,63,0.9)_48%,rgba(6,58,55,0.84)_100%),radial-gradient(circle_at_12%_22%,rgba(56,189,248,0.16),transparent_43%),radial-gradient(circle_at_90%_22%,rgba(16,185,129,0.18),transparent_38%)]" />
+
+            <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-accent-primary/35 bg-accent-primary/12 px-3 py-1 text-sm font-semibold text-accent-primary dark:border-blue-300/35 dark:bg-blue-500/20 dark:text-blue-100">
+                  <Truck className="h-3.5 w-3.5" />
+                  Purchase records
+                </span>
+                <h1 className="mt-3 text-3xl font-semibold font-header tracking-tight text-slate-900 dark:text-slate-50">
+                  Supplies
+                </h1>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base font-body">
+                  Record what the farm bought, how much was spent, and which supplier it came from.
+                </p>
+              </div>
+
+              <div className="grid w-full grid-cols-2 items-center gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-start lg:justify-end">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  title="Refresh supplies"
+                  aria-label="Refresh supplies"
+                  className={`order-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 sm:order-none sm:w-auto dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20 ${
+                    refreshing ? "cursor-not-allowed opacity-70" : ""
+                  }`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+                <button
+                  onClick={openCreate}
+                  title="Record a new supply purchase"
+                  className="order-1 col-span-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 sm:order-none sm:col-span-1 sm:w-auto"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.5} />
+                  Record purchase
+                </button>
+                <button
+                  onClick={() => setExportOpen(true)}
+                  disabled={exporting}
+                  className="order-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white/45 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 disabled:opacity-60 sm:order-none sm:w-auto dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+                  title="Download purchase report"
+                >
+                  <Download className="h-4 w-4" />
+                  {exporting ? "Downloading..." : "Download"}
+                </button>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-3 text-left text-[11px] font-medium text-slate-600 dark:text-slate-200/80 sm:text-right">
+              Live supply data
             </div>
           </div>
 
-          {/* ACTIONS (right aligned) */}
-          <div className="flex flex-row gap-2 items-center w-full sm:justify-end sm:w-auto">
-            <button
-              onClick={openCreate}
-              title={
-                showHeaderTooltips
-                  ? "Record a new supply purchase"
-                  : undefined
-              }
-              className="w-auto justify-center flex items-center gap-2 bg-accent-primary text-darkText px-4 py-2 rounded-lg hover:bg-primary/30 transition font-body"
-            >
-              <Plus className="w-4 h-4 font-body" strokeWidth={2.5} />
-              <span>New Supply</span>
-            </button>
-            <button
-              onClick={() => setExportOpen(true)}
-              disabled={exporting}
-              className="ml-auto w-auto justify-center flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/10 dark:text-darkText dark:hover:bg-white/20 transition font-medium disabled:opacity-50"
-              title="Export supplies"
-            >
-              <Download className="w-4 h-4" />
-              <span className="text-sm font-body">
-                {exporting ? "Exporting..." : "Export"}
-              </span>
-            </button>
-          </div>
+          <FarmerGuideCard
+            icon={Truck}
+            title="How to use supplies"
+            description="This page is for simple purchase records and spending history."
+            storageKey="supplies-guide"
+            steps={[
+              "Use \"Record purchase\" after buying feed, medicine, tools, or other farm inputs.",
+              "Check the top cards first to see today's spending and monthly spending.",
+              "Use the table below when you want to review or change an old purchase.",
+            ]}
+            tip="The top boxes show all purchases. The table below may show fewer rows when the find boxes are in use."
+          />
         </div>
 
         {/* SUMMARY CARDS */}
@@ -556,7 +579,7 @@ export default function SuppliesPage() {
           style={{ minHeight: 260 }}
         >
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-            Spend trend based on recorded supply purchases.
+            This chart uses the purchases that have been recorded on this page.
           </p>
           <div className="h-[220px] sm:h-[260px] md:h-[300px]">
             {loading ? (
@@ -576,19 +599,19 @@ export default function SuppliesPage() {
                   </div>
                   <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                     {hasActiveFilters
-                      ? "No supplies match these filters"
+                      ? "No supplies match what you selected"
                       : "No supply purchases recorded yet"}
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                     {hasActiveFilters
-                      ? "Clear the filters to view more results."
+                      ? "Show everything to see more results."
                       : "Record your first supply purchase to see the trend here."}
                   </p>
                   <button
                     className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
                     onClick={hasActiveFilters ? clearFilters : openCreate}
                   >
-                    {hasActiveFilters ? "Clear Filters" : "Record Supply"}
+                    {hasActiveFilters ? "Show everything" : "Record Supply"}
                   </button>
                 </div>
               </div>
@@ -601,7 +624,7 @@ export default function SuppliesPage() {
         {/* FILTERS */}
         <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 dark:shadow-dark shadow-neo p-4">
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-            Filter supplies by item, category, or purchase date.
+            Use these find boxes only when you want to find one purchase or one day.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <input
@@ -623,7 +646,7 @@ export default function SuppliesPage() {
           >
             <option value="">All Categories</option>
             <option value="FEED">Feed</option>
-            <option value="LIVESTOCK">Livestock</option>
+            <option value="LIVESTOCK">Poultry</option>
             <option value="FISH">Fish</option>
             <option value="MEDICINE">Medicine</option>
             <option value="EQUIPMENT">Equipment</option>
@@ -639,6 +662,15 @@ export default function SuppliesPage() {
           </div>
         </div>
 
+        {!loading && (hasActiveFilters || (hasSummaryData && !hasSuppliesData)) ? (
+          <FilteredResultsHint
+            summaryLabel="purchase records"
+            tableLabel="purchase table"
+            hasFilters={hasActiveFilters}
+            onClear={clearFilters}
+          />
+        ) : null}
+
         {/* TABLE CARD */}
         <div
           ref={tableRef}
@@ -647,19 +679,15 @@ export default function SuppliesPage() {
         >
           <div className="flex items-center justify-between gap-3 mb-3">
             <p className="text-xs text-slate-500 dark:text-slate-400 font-body">
-              Detailed supply records with edit and delete actions.
+              Each row below is one recorded purchase that you can review, edit, or delete.
             </p>
             <button
               onClick={() => setTrashOpen(true)}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition font-medium"
-              title={
-                showHeaderTooltips
-                  ? "View deleted supplies and restore items"
-                  : undefined
-              }
+              title="View deleted supplies and restore items"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline text-sm font-body">Trash</span>
+              <span className="hidden sm:inline text-sm font-body">Deleted purchases</span>
             </button>
           </div>
           {loading ? (
@@ -763,19 +791,19 @@ export default function SuppliesPage() {
                 </div>
                 <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                   {hasActiveFilters
-                    ? "No supplies match these filters"
+                    ? "No supplies match what you selected"
                     : "No supply records yet"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   {hasActiveFilters
-                    ? "Clear the filters to view more results."
+                    ? "Show everything to see more results."
                     : "Record a supply purchase to see entries appear here."}
                 </p>
                 <button
                   className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
                   onClick={hasActiveFilters ? clearFilters : openCreate}
                 >
-                  {hasActiveFilters ? "Clear Filters" : "Record Supply"}
+                  {hasActiveFilters ? "Show everything" : "Record Supply"}
                 </button>
               </div>
             </div>
@@ -824,9 +852,13 @@ export default function SuppliesPage() {
             setModalOpen(false);
             setEditing(null);
 
+            const pendingOffline = isOfflinePendingRecord(supply);
+
             setToast({
-              message: `"${supply.itemName}" ${editing ? "updated" : "created"} successfully`,
-              type: "success",
+              message: pendingOffline
+                ? `"${supply.itemName}" saved offline. It will sync automatically.`
+                : `"${supply.itemName}" ${editing ? "updated" : "created"} successfully`,
+              type: pendingOffline ? "info" : "success",
             });
 
             if (editing) {
@@ -837,7 +869,9 @@ export default function SuppliesPage() {
               setItems((prev) => [supply, ...prev]);
             }
 
-            fetchSummary();
+            if (!pendingOffline) {
+              fetchSummary();
+            }
           }}
         />
 

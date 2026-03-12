@@ -20,7 +20,13 @@ ChartJS.register(
   Legend
 );
 
-export default function ProductionChart({ productionData, loading = false }) {
+export default function ProductionChart({
+  productionData,
+  loading = false,
+  onCreate,
+  actionHref = "/productions",
+  actionLabel = "Record Production",
+}) {
   // Helper to format "YYYY-MM" → "Jan '25"
   const formatMonth = (value) => {
     const [year, month] = value.split("-");
@@ -94,14 +100,20 @@ export default function ProductionChart({ productionData, loading = false }) {
             trends.
           </p>
 
-          <button
-            className="w-full sm:w-auto px-6 py-3 text-sm font-medium rounded-lg bg-accent-primary text-white hover:opacity-90 active:scale-[0.98] mb-8 transition"
-            onClick={() => {
-              window.location.href = "/production/add";
-            }}
-          >
-            Record Production
-          </button>
+          {(onCreate || actionHref) && (
+            <button
+              className="mb-8 w-full rounded-lg bg-accent-primary px-6 py-3 text-sm font-medium text-white transition hover:opacity-90 active:scale-[0.98] sm:w-auto"
+              onClick={() => {
+                if (onCreate) {
+                  onCreate();
+                  return;
+                }
+                window.location.href = actionHref;
+              }}
+            >
+              {actionLabel}
+            </button>
+          )}
         </div>
       </div>
     );

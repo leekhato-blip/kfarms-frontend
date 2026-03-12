@@ -2,13 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Building2, Check, ChevronDown } from "lucide-react";
 import { useTenant } from "../tenant/TenantContext";
+import { normalizePlanId } from "../constants/plans";
 
 function formatLabel(value, fallback) {
   if (!value) return fallback;
   return String(value).replace(/_/g, " ");
 }
 
-export default function OrgSwitcher() {
+export default function OrgSwitcher({ dropUp = false, fullWidth = false }) {
   const {
     tenants,
     activeTenant,
@@ -74,28 +75,44 @@ export default function OrgSwitcher() {
     window.location.reload();
   };
 
+  const menuPositionClass = dropUp
+    ? fullWidth
+      ? "bottom-full left-0 mb-2 origin-bottom-left"
+      : "bottom-full right-0 mb-2 origin-bottom-right"
+    : fullWidth
+      ? "left-0 mt-2 origin-top-left"
+      : "right-0 mt-2 origin-top-right";
+
+  const menuWidthClass = fullWidth
+    ? "w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)]"
+    : "w-80 max-w-[calc(100vw-2rem)]";
+
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className={`relative ${fullWidth ? "w-full" : ""}`}>
       <button
         type="button"
         onClick={toggleMenu}
-        className="flex items-center gap-2 rounded-xl border border-slate-700 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition"
+        className={`flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 text-left transition hover:bg-white/85 dark:border-slate-700 dark:bg-white/5 dark:hover:bg-white/10 ${
+          fullWidth ? "w-full justify-between" : ""
+        }`}
         aria-haspopup="true"
         aria-expanded={open}
-        aria-label="Switch organization"
+        aria-label="Switch farm"
       >
-        <Building2 className="h-4 w-4 text-slate-400" />
+        <Building2 className="h-4 w-4 text-slate-500 dark:text-slate-400" />
         <div className="leading-tight">
-          <div className="max-w-[9rem] truncate text-sm font-semibold">
-            {activeTenant?.name || "Choose organization"}
+          <div className="max-w-[9rem] truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {activeTenant?.name || "Choose farm"}
           </div>
-          <div className="text-xs text-slate-400">{activeTenant?.myRole || "No role selected"}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {activeTenant?.myRole || "No role selected"}
+          </div>
         </div>
-        <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 text-slate-500 transition dark:text-slate-300 ${open ? "rotate-180" : ""}`} />
       </button>
 
       <div
-        className={`absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] origin-top-right overflow-hidden rounded-xl border border-white/10 bg-lightbg shadow-lg transition-all dark:border-slate-700 dark:bg-darkCard z-50 ${
+        className={`absolute overflow-hidden rounded-xl border border-white/10 bg-lightbg shadow-lg transition-all dark:border-slate-700 dark:bg-darkCard z-[70] ${menuPositionClass} ${menuWidthClass} ${
           open ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
         }`}
       >
@@ -106,17 +123,17 @@ export default function OrgSwitcher() {
         )}
 
         <div className="border-b border-white/10 px-3 py-2 text-xs text-slate-500 dark:border-slate-800">
-          Your organizations
+          Your farms
         </div>
 
         <div className="max-h-72 overflow-y-auto">
           {loadingTenants && (
-            <div className="px-3 py-3 text-sm text-slate-500">Loading your organizations…</div>
+            <div className="px-3 py-3 text-sm text-slate-500">Loading your farms…</div>
           )}
 
           {!loadingTenants && tenants.length === 0 && (
             <div className="px-3 py-3 text-sm text-slate-500">
-              You don&apos;t have an organization yet. Create one to get started.
+              You don&apos;t have a farm here yet. Create one to get started.
             </div>
           )}
 
@@ -141,7 +158,7 @@ export default function OrgSwitcher() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-medium">{tenant?.name || "Untitled organization"}</div>
+                      <div className="text-sm font-medium">{tenant?.name || "Untitled farm"}</div>
                       <div className="text-xs text-slate-500">
                         Role: {tenant?.myRole || "Member"}
                       </div>
@@ -150,7 +167,7 @@ export default function OrgSwitcher() {
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs">
                     <span className="rounded-full bg-slate-200 px-2 py-0.5 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                      {formatLabel(tenant?.plan, "FREE")}
+                      {normalizePlanId(tenant?.plan, "FREE")}
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 ${
@@ -173,7 +190,7 @@ export default function OrgSwitcher() {
             onClick={() => setOpen(false)}
             className="rounded-md border border-white/10 px-2 py-1.5 text-center hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
           >
-            Create organization
+            Create farm
           </Link>
           <Link
             to="/onboarding/accept-invite"

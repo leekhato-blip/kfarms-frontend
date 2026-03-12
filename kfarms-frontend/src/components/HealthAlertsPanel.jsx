@@ -5,12 +5,17 @@ import {
   CheckCircle,
   Phone,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 
 export default function HealthAlertsPanel({
   alerts = [],
+  onRefresh,
+  refreshing = false,
   onAcknowledge = () => {},
+  onHandle = () => {},
   onCall = () => {},
+  processingId = null,
 }) {
   const MOBILE_LIMIT = 3;
 
@@ -108,8 +113,22 @@ export default function HealthAlertsPanel({
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters + Refresh */}
         <div className="flex gap-2 overflow-x-auto pb-1 font-body">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              title="Refresh health alerts"
+              aria-label="Refresh health alerts"
+              className={`inline-flex shrink-0 items-center justify-center rounded-md border border-slate-200 p-1.5 text-xs text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 ${
+                refreshing ? "cursor-not-allowed opacity-70" : ""
+              }`}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          )}
           <FilterChip
             label="All"
             active={filter === "ALL"}
@@ -145,7 +164,9 @@ export default function HealthAlertsPanel({
                 alert={alert}
                 meta={severityMap[alert.severity] || severityMap.INFO}
                 onAcknowledge={onAcknowledge}
+                onHandle={onHandle}
                 onCall={onCall}
+                processingId={processingId}
               />
             ))}
           </div>
@@ -172,8 +193,14 @@ export default function HealthAlertsPanel({
 }
 
 /* Alert Item */
-function AlertItem({ alert, meta, onAcknowledge, onCall }) {
+function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId }) {
   const [open, setOpen] = useState(false);
+  const normalizedStatus = String(alert.status || "NEW").toUpperCase();
+  const busy = String(processingId || "") === String(alert.id || "");
+  const isPreviewOnly = Boolean(alert.readOnly);
+  const acknowledgementLocked =
+    isPreviewOnly || normalizedStatus === "ACKNOWLEDGED" || normalizedStatus === "HANDLED";
+  const handleLocked = isPreviewOnly || normalizedStatus === "HANDLED";
 
   return (
     <div className="flex flex-col w-full border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-sm font-body">
@@ -195,17 +222,57 @@ function AlertItem({ alert, meta, onAcknowledge, onCall }) {
       </div>
 
       {alert.contextNote && (
-        <div className="text-xs text-slate-500 mt-1 truncate">
+        <div className="mt-1 line-clamp-2 text-xs text-slate-500">
           {alert.contextNote}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 mt-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${meta.colorClass}`}
+        >
+          {meta.icon}
+          {meta.label}
+        </span>
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {formatStatusLabel(normalizedStatus)}
+        </span>
+        {isPreviewOnly ? (
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            Demo scenario
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           onClick={() => onAcknowledge(alert.id)}
-          className="text-xs px-2 py-1 rounded bg-slate-100 dark:bg-slate-800"
+          disabled={busy || acknowledgementLocked}
+          title={isPreviewOnly ? "Preview only in demo mode" : "Acknowledge alert"}
+          className="rounded bg-slate-100 px-2 py-1 text-xs transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800"
         >
-          Acknowledge
+          {busy
+            ? "Saving..."
+            : isPreviewOnly
+              ? "Preview"
+              : acknowledgementLocked
+                ? "Acknowledged"
+                : "Acknowledge"}
+        </button>
+
+        <button
+          onClick={() => onHandle(alert.id)}
+          disabled={busy || handleLocked}
+          title={isPreviewOnly ? "Preview only in demo mode" : "Mark alert handled"}
+          className="rounded bg-emerald-500 px-2 py-1 text-xs text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy
+            ? "Saving..."
+            : isPreviewOnly
+              ? "Preview"
+              : handleLocked
+                ? "Handled"
+                : "Mark handled"}
         </button>
 
         {alert.contact && (
@@ -288,4 +355,12 @@ function formatDate(iso) {
   } catch {
     return iso || "—";
   }
+}
+
+function formatStatusLabel(status) {
+  const normalized = String(status || "").trim().toUpperCase();
+  if (normalized === "ACKNOWLEDGED") return "Acknowledged";
+  if (normalized === "HANDLED") return "Handled";
+  if (normalized === "EXPIRED") return "Expired";
+  return "New";
 }
