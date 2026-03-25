@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bell,
@@ -194,16 +194,43 @@ export default function HealthAlertsPanel({
 
 /* Alert Item */
 function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId }) {
+  const MAX_STEPS_HEIGHT = 176;
   const [open, setOpen] = useState(false);
+  const [stepsHeight, setStepsHeight] = useState(0);
+  const stepsRef = useRef(null);
   const normalizedStatus = String(alert.status || "NEW").toUpperCase();
   const busy = String(processingId || "") === String(alert.id || "");
   const isPreviewOnly = Boolean(alert.readOnly);
+  const hasAdviceSteps = Array.isArray(alert.adviceSteps) && alert.adviceSteps.length > 0;
   const acknowledgementLocked =
     isPreviewOnly || normalizedStatus === "ACKNOWLEDGED" || normalizedStatus === "HANDLED";
   const handleLocked = isPreviewOnly || normalizedStatus === "HANDLED";
 
+  useEffect(() => {
+    const stepsElement = stepsRef.current;
+    if (!stepsElement || !open) {
+      setStepsHeight(0);
+      return undefined;
+    }
+
+    const syncStepsHeight = () => {
+      setStepsHeight(Math.min(stepsElement.scrollHeight, MAX_STEPS_HEIGHT));
+    };
+
+    syncStepsHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(syncStepsHeight);
+    observer.observe(stepsElement);
+
+    return () => observer.disconnect();
+  }, [MAX_STEPS_HEIGHT, alert.adviceSteps, open]);
+
   return (
-    <div className="flex flex-col w-full border border-slate-200 dark:border-slate-700 rounded-lg p-3 shadow-sm font-body">
+    <div className="flex h-full w-full flex-col rounded-lg border border-slate-200 p-3 shadow-sm font-body dark:border-slate-700">
       <div className="flex items-center gap-3">
         <div
           className={`w-10 h-10 flex items-center justify-center rounded ${meta.colorClass}`}
@@ -222,7 +249,7 @@ function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId 
       </div>
 
       {alert.contextNote && (
-        <div className="mt-1 line-clamp-2 text-xs text-slate-500">
+        <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
           {alert.contextNote}
         </div>
       )}
@@ -283,36 +310,39 @@ function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId 
             <Phone className="w-4 h-4" />
           </button>
         )}
-
-        {alert.adviceSteps?.length > 0 && (
-          <button
-            onClick={() => setOpen(!open)}
-            className="text-xs text-accent-primary flex items-center gap-1"
-          >
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
-            />
-            {open ? "Close steps" : "Recommended steps"}
-          </button>
-        )}
       </div>
 
-      {alert.adviceSteps?.length > 0 && (
+      {hasAdviceSteps && (
+        <button
+          onClick={() => setOpen(!open)}
+          className="mt-2 inline-flex items-center gap-1 self-start text-xs font-medium text-accent-primary"
+        >
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+          {open ? "Close steps" : "Recommended steps"}
+        </button>
+      )}
+
+      {hasAdviceSteps && (
         <div
-          className="overflow-hidden transition-[max-height] duration-300 mt-2"
+          aria-hidden={!open}
+          className={`mt-2 overflow-hidden transition-[max-height,opacity] duration-300 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
           style={{
-            maxHeight: open ? `${alert.adviceSteps.length * 24}px` : "0",
+            maxHeight: open ? `${stepsHeight}px` : "0px",
           }}
         >
-          <ul className="space-y-1">
+          <ul ref={stepsRef} className="max-h-44 space-y-2 overflow-y-auto pb-1 pr-1">
             {alert.adviceSteps.map((step, i) => (
               <li
                 key={i}
-                className="flex gap-2 text-xs text-slate-600 dark:text-slate-300"
+                className="flex gap-2 text-xs leading-5 text-slate-600 dark:text-slate-300"
               >
-                <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-accent-primary" />
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-primary" />
                 <span>{step}</span>
               </li>
             ))}

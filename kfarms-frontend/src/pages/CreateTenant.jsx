@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2 } from "lucide-react";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import PageWrapper from "../components/PageWrapper";
 import FarmModuleSelector from "../components/FarmModuleSelector";
 import { useTenant } from "../tenant/TenantContext";
@@ -40,7 +41,7 @@ export default function CreateTenant() {
   const [modules, setModules] = React.useState(() =>
     Array.isArray(prefill.modules) && prefill.modules.length > 0
       ? prefill.modules
-      : [FARM_MODULES.POULTRY],
+      : [],
   );
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState(() => String(location.state?.onboardingError || ""));
@@ -57,7 +58,7 @@ export default function CreateTenant() {
     }
 
     if (activeTenantId) {
-      navigate("/dashboard", { replace: true });
+      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
       return;
     }
 
@@ -67,7 +68,7 @@ export default function CreateTenant() {
   const switchTenant = (tenantId) => {
     setActiveTenant(tenantId);
     clearTenantSwitchMessage();
-    navigate("/dashboard", { replace: true });
+    navigate(toKfarmsAppPath("/dashboard"), { replace: true });
   };
 
   const handleLogoutTo = async (path) => {
@@ -122,7 +123,7 @@ export default function CreateTenant() {
       }
 
       clearTenantSwitchMessage();
-      navigate("/dashboard", { replace: true });
+      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
     } catch (err) {
       setError(readErrorMessage(err));
     } finally {

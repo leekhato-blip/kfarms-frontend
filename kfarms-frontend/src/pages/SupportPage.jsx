@@ -19,6 +19,7 @@ import GlassToast from "../components/GlassToast";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
+import { getUserDisplayName } from "../services/userProfileService";
 import {
   FARMER_GUIDES,
   SUPPORT_CHANNELS,
@@ -32,7 +33,7 @@ import {
 
 const TABS = [
   { id: "guides", label: "Guides", icon: BookOpenText },
-  { id: "tickets", label: "Help requests", icon: MessageCircle },
+  { id: "tickets", label: "Messages", icon: MessageCircle },
   { id: "faq", label: "Common questions", icon: CircleHelp },
 ];
 
@@ -89,6 +90,13 @@ function priorityLabel(priority) {
   return "Normal";
 }
 
+function supportLaneLabel(lane) {
+  const normalized = String(lane || "").toUpperCase();
+  if (normalized === "DEDICATED") return "Dedicated lane";
+  if (normalized === "PRIORITY") return "Priority lane";
+  return "Standard lane";
+}
+
 function buildGuideSearchText(guide) {
   const steps = Array.isArray(guide?.steps) ? guide.steps.join(" ") : "";
   return `${guide?.title || ""} ${guide?.summary || ""} ${guide?.category || ""} ${steps} ${guide?.tip || ""}`.toLowerCase();
@@ -125,7 +133,7 @@ export default function SupportPage() {
   const [updatingTicketStatus, setUpdatingTicketStatus] = React.useState(false);
   const [toast, setToast] = React.useState({ message: "", type: "info" });
 
-  const displayName = user?.username || user?.email || "Farmer";
+  const displayName = getUserDisplayName(user, "Farmer");
 
   const loadSupport = React.useCallback(async (options = {}) => {
     if (options.silent) {
@@ -400,6 +408,12 @@ export default function SupportPage() {
   }
 
   const workspaceName = activeTenant?.name || "your farm";
+  const supportLane =
+    String(activeTenant?.plan || "").toUpperCase() === "ENTERPRISE"
+      ? "DEDICATED"
+      : String(activeTenant?.plan || "").toUpperCase() === "PRO"
+        ? "PRIORITY"
+        : "STANDARD";
   const headerPanelClass =
     "rounded-2xl border border-sky-200/70 bg-slate-50/85 shadow-neo dark:border-sky-500/20 dark:bg-[#061024]/90 dark:shadow-[0_22px_40px_rgba(2,8,24,0.45)]";
   const panelClass = "rounded-2xl border border-white/10 bg-white/10 shadow-neo dark:bg-darkCard/70 dark:shadow-dark";
@@ -411,7 +425,7 @@ export default function SupportPage() {
   const supportStats = [
     {
       id: "total",
-      label: "Help requests",
+      label: "Message threads",
       value: ticketStats.total,
       icon: MessageCircle,
       valueClass: "text-lightText dark:text-darkText",
@@ -455,11 +469,14 @@ export default function SupportPage() {
                 Help and support
               </div>
               <h1 className="mt-3 text-2xl font-header font-semibold text-slate-900 dark:text-slate-100 md:text-[1.9rem]">
-                Get help
+                Message platform support
               </h1>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700/90 dark:text-slate-300/85">
-                Read simple guides, find answers fast, and ask for help when something is not working on{" "}
+                Read simple guides, find answers fast, and message the platform team when something is not working on{" "}
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{workspaceName}</span>.
+              </p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                {supportLaneLabel(supportLane)}
               </p>
             </div>
 
@@ -470,7 +487,7 @@ export default function SupportPage() {
                 className="order-1 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-primary via-blue-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:brightness-105 md:h-auto md:min-h-0 md:w-auto"
               >
                 <PlusCircle className="h-4 w-4" />
-                Ask for help
+                New message
               </button>
               <button
                 type="button"
@@ -488,12 +505,12 @@ export default function SupportPage() {
         <FarmerGuideCard
           icon={LifeBuoy}
           title="How to get help quickly"
-          description="Start with a guide if you need instructions. Ask for help when you want us to track the problem and reply."
+          description="Start with a guide if you need instructions. Open a message thread when you want the platform team to track the issue and reply."
           storageKey="support-guide"
           steps={[
             "Search guides for the task or problem you need help with.",
-            "Ask for help and explain what happened in simple words.",
-            "Check replies here and add more details if the team asks questions.",
+            "Open a message thread and explain what happened in simple words.",
+            "Check replies here and add more details when the platform team asks questions.",
           ]}
           tip="If the top boxes show numbers but a list looks empty, clear the find boxes first. The page may only be showing a smaller set."
         />
@@ -505,7 +522,7 @@ export default function SupportPage() {
         )}
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {supportStats.map((item) => {
+        {supportStats.map((item) => {
             const Icon = item.icon;
             return (
               <article key={item.id} className={`${panelClass} p-4`}>
@@ -524,8 +541,8 @@ export default function SupportPage() {
                 </div>
               </article>
             );
-          })}
-        </div>
+        })}
+      </div>
 
         <div className={`${panelClass} p-2`}>
           <div className="flex flex-wrap gap-2">

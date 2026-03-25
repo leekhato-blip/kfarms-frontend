@@ -30,11 +30,11 @@ export default function ConfirmDialog({
         <h3 className="text-lg font-semibold text-[var(--atlas-text-strong)]">{title}</h3>
         <p className="mt-2 text-sm text-[var(--atlas-muted)]">{message}</p>
 
-        <div className="mt-5 flex justify-end gap-3">
-          <Button variant="outline" onClick={onCancel}>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto sm:min-w-[9rem]">
             {cancelLabel}
           </Button>
-          <Button onClick={onConfirm} disabled={loading}>
+          <Button onClick={onConfirm} disabled={loading} className="w-full sm:w-auto sm:min-w-[9rem]">
             {loading ? "Processing..." : confirmLabel}
           </Button>
         </div>

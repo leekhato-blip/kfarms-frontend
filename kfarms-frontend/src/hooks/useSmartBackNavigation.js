@@ -16,11 +16,7 @@ export default function useSmartBackNavigation({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const canGoBack = React.useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return hasInAppHistory(window.history.state);
-  }, [location.key]);
+  const canGoBack = typeof window !== "undefined" && hasInAppHistory(window.history.state);
 
   const showBackButton = !isHiddenPath(location.pathname, hiddenPaths);
 

@@ -4,6 +4,10 @@ import {
   isTenantOnboardingPath,
   isTenantScopedPath,
 } from "./tenantRouting";
+import {
+  KFARMS_BASE_PATH,
+  KFARMS_ROUTE_REGISTRY,
+} from "../apps/kfarms/paths";
 
 describe("tenantRouting", () => {
   it("detects onboarding routes", () => {
@@ -14,8 +18,11 @@ describe("tenantRouting", () => {
 
   it("detects tenant-scoped paths and nested routes", () => {
     expect(isTenantScopedPath("/dashboard")).toBe(true);
+    expect(isTenantScopedPath(KFARMS_ROUTE_REGISTRY.dashboard.appPath)).toBe(true);
     expect(isTenantScopedPath("/sales/123")).toBe(true);
+    expect(isTenantScopedPath(`${KFARMS_ROUTE_REGISTRY.sales.appPath}/123`)).toBe(true);
     expect(isTenantScopedPath("/productions")).toBe(true);
+    expect(isTenantScopedPath(KFARMS_BASE_PATH)).toBe(true);
     expect(isTenantScopedPath("/platform/tenants")).toBe(false);
     expect(isTenantScopedPath("")).toBe(false);
   });
@@ -31,7 +38,15 @@ describe("tenantRouting", () => {
         "/livestock",
         "/feeds",
         "/productions",
+        "/inventory",
+        "/billing",
+        "/search",
+        "/support",
+        "/users",
         "/settings",
+        KFARMS_BASE_PATH,
+        KFARMS_ROUTE_REGISTRY.dashboard.appPath,
+        KFARMS_ROUTE_REGISTRY.billing.appPath,
       ]),
     );
   });

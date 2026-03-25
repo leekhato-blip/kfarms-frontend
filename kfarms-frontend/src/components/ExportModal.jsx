@@ -194,11 +194,11 @@ export default function ExportModal({
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-md bg-transparent border border-white/10 hover:bg-white/5"
+                className="w-full rounded-md border border-white/10 bg-transparent px-4 py-2 hover:bg-white/5 sm:w-auto sm:min-w-[8.5rem]"
               >
                 Cancel
               </button>
@@ -206,7 +206,7 @@ export default function ExportModal({
                 <button
                   type="submit"
                   disabled={exporting}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent-primary text-white hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white hover:opacity-90 disabled:opacity-50 sm:w-auto sm:min-w-[8.5rem]"
                 >
                   <Download className="w-4 h-4" />
                   {exporting ? "Downloading..." : "Download"}
@@ -214,7 +214,7 @@ export default function ExportModal({
               ) : (
                 <Link
                   to="/billing?plan=PRO"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent-primary text-white hover:opacity-90"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white hover:opacity-90 sm:w-auto sm:min-w-[8.5rem]"
                 >
                   <Download className="w-4 h-4" />
                   Upgrade to Export

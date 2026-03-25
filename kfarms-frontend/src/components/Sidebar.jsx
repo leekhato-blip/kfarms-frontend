@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { Squares2X2Icon } from "@heroicons/react/16/solid";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Droplets } from "lucide-react";
+import { KFARMS_ROUTE_REGISTRY } from "../apps/kfarms/paths";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import OrgSwitcher from "./OrgSwitcher";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
-import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
+import { getPlanById, isPlanAtLeast, normalizePlanId } from "../constants/plans";
 import { getCachedOrganizationSettings } from "../services/settingsService";
+import { getUserDisplayName } from "../services/userProfileService";
 import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
 import {
   getWorkspaceRoleLabel,
@@ -30,53 +32,63 @@ import {
   LifeBuoy,
   Building2,
   ChevronDown,
+  ChevronRight,
   LogOut,
+  Palette,
   PanelLeftClose,
   PanelLeftOpen,
+  UserCircle2,
   Users,
 } from "lucide-react";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: Squares2X2Icon, minPlan: "FREE" },
-  { to: "/sales", label: "Sales", icon: Wallet, minPlan: "FREE" },
-  { to: "/supplies", label: "Supplies", icon: Truck, minPlan: "FREE" },
+  { to: KFARMS_ROUTE_REGISTRY.dashboard.appPath, label: "Dashboard", icon: Squares2X2Icon, minPlan: "FREE" },
+  { to: KFARMS_ROUTE_REGISTRY.sales.appPath, label: "Sales", icon: Wallet, minPlan: "FREE" },
+  { to: KFARMS_ROUTE_REGISTRY.supplies.appPath, label: "Supplies", icon: Truck, minPlan: "FREE" },
   {
-    to: "/fish-ponds",
+    to: KFARMS_ROUTE_REGISTRY.fishPonds.appPath,
     label: "Fish Ponds",
     icon: Droplets,
     minPlan: "FREE",
     modules: [FARM_MODULES.FISH_FARMING],
   },
   {
-    to: "/poultry",
+    to: KFARMS_ROUTE_REGISTRY.poultry.appPath,
     label: "Poultry",
     icon: Feather,
     minPlan: "FREE",
     modules: [FARM_MODULES.POULTRY],
   },
-  { to: "/feeds", label: "Feeds", icon: Wheat, minPlan: "FREE" },
+  { to: KFARMS_ROUTE_REGISTRY.feeds.appPath, label: "Feeds", icon: Wheat, minPlan: "FREE" },
   {
-    to: "/productions",
+    to: KFARMS_ROUTE_REGISTRY.productions.appPath,
     label: "Productions",
     icon: Egg,
     minPlan: "FREE",
     modules: [FARM_MODULES.POULTRY],
   },
-  { to: "/inventory", label: "Inventory", icon: Archive, minPlan: "FREE" },
+  { to: KFARMS_ROUTE_REGISTRY.inventory.appPath, label: "Inventory", icon: Archive, minPlan: "FREE" },
   {
-    to: "/billing",
+    to: KFARMS_ROUTE_REGISTRY.billing.appPath,
     label: "Billing",
     icon: CreditCard,
     minPlan: "FREE",
+    placement: "profile",
     allow: (tenant) =>
       hasAnyWorkspacePermission(tenant, [
         WORKSPACE_PERMISSIONS.BILLING_VIEW,
         WORKSPACE_PERMISSIONS.BILLING_MANAGE,
       ]),
   },
-  { to: "/support", label: "Support", icon: LifeBuoy, minPlan: "FREE" },
   {
-    to: "/users",
+    to: KFARMS_ROUTE_REGISTRY.support.appPath,
+    label: "Support",
+    icon: LifeBuoy,
+    minPlan: "FREE",
+    placement: "profile",
+  },
+  {
+    to: KFARMS_ROUTE_REGISTRY.users.appPath,
     label: "Users",
     icon: Users,
     minPlan: "PRO",
@@ -88,10 +100,11 @@ const navItems = [
       ]),
   },
   {
-    to: "/settings",
+    to: KFARMS_ROUTE_REGISTRY.settings.appPath,
     label: "Settings",
     icon: Settings,
     minPlan: "FREE",
+    placement: "profile",
     allow: (tenant) =>
       hasAnyWorkspacePermission(tenant, [
         WORKSPACE_PERMISSIONS.SETTINGS_VIEW,
@@ -121,14 +134,133 @@ function PlanBadge({ planId }) {
   return null;
 }
 
+function getUserHandle(user) {
+  const raw =
+    user?.username ||
+    (typeof user?.email === "string" ? user.email.split("@")[0] : "") ||
+    "farmer";
+
+  const normalized = String(raw || "").trim().replace(/\s+/g, "").toLowerCase();
+  if (!normalized) return "@farmer";
+  return normalized.startsWith("@") ? normalized : `@${normalized}`;
+}
+
+function getInitials(label) {
+  const parts = String(label || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (!parts.length) return "KF";
+  return parts.map((part) => part[0]?.toUpperCase() || "").join("");
+}
+
+function isSettingsSection(pathname, section, expectedSection) {
+  if (pathname !== KFARMS_ROUTE_REGISTRY.settings.appPath) return false;
+  return section === expectedSection;
+}
+
+function ProfileMenuPanel({
+  displayName,
+  displayRole,
+  userHandle,
+  currentPlan,
+  menuGroups,
+  onNavigate,
+  onLogout,
+}) {
+  const initials = getInitials(displayName);
+
+  return (
+    <div className="overflow-hidden rounded-[1.6rem] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(241,245,249,0.95))] p-3 text-slate-800 shadow-[0_28px_60px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/55 backdrop-blur-xl dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.97),rgba(17,24,39,0.95))] dark:text-slate-100 dark:ring-white/5">
+      <div className="flex items-center gap-3 px-2 py-1">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-xs font-semibold uppercase tracking-[0.08em] text-white shadow-[0_12px_26px_rgba(59,130,246,0.26)]">
+          {initials}
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-[1rem] font-semibold leading-tight text-slate-900 dark:text-white">
+            {displayName}
+          </div>
+          <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+            {userHandle}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 h-px bg-slate-200/75 dark:bg-white/10" />
+
+      <div className="mt-3 space-y-3">
+        {menuGroups.map((group, groupIndex) => (
+          <div key={`profile-menu-group-${groupIndex}`} className="space-y-1.5">
+            {group.map((item) => {
+              const Icon = item.icon;
+              const activeClasses = item.active
+                ? "bg-accent-primary/12 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] dark:text-white"
+                : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-100/92 dark:hover:bg-white/6";
+
+              if (item.action === "logout") {
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={onLogout}
+                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${activeClasses}`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
+                    <span className="text-[0.98rem] font-medium">{item.label}</span>
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  onClick={onNavigate}
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${activeClasses}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[0.98rem] font-medium">{item.label}</div>
+                    {item.meta ? (
+                      <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                        {item.meta}
+                      </div>
+                    ) : null}
+                  </div>
+                  {item.trailing ? (
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 rounded-[1.15rem] border border-slate-200/80 bg-slate-50/85 px-3 py-2.5 dark:border-white/8 dark:bg-white/5">
+        <div className="truncate text-xs font-medium text-slate-900 dark:text-white">
+          {displayName}
+        </div>
+        <div className="mt-0.5 truncate text-[11px] text-accent-primary dark:text-sky-300">
+          {currentPlan?.name || "Free"} · {displayRole}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
   const { user, logout } = useAuth();
   const { activeTenant } = useTenant();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const userMenuRef = React.useRef(null);
   const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
+  const currentPlanMeta = getPlanById(currentPlan, "FREE");
   const cachedBranding = React.useMemo(
     () =>
       activeTenant?.tenantId
@@ -143,7 +275,9 @@ export default function Sidebar() {
       item.modules.length === 0 ||
       item.modules.some((moduleId) => hasFarmModule(activeTenant, moduleId))),
   );
-  const displayName = user?.username || "Farmer";
+  const primaryNavItems = visibleNavItems.filter((item) => item.placement !== "profile");
+  const displayName = getUserDisplayName(user, "Farmer");
+  const userHandle = getUserHandle(user);
   const displayRole =
     activeTenant?.roleLabel || getWorkspaceRoleLabel(activeTenant?.myRole || user?.role || "STAFF");
   const enterpriseBrandingEnabled = currentPlan === "ENTERPRISE";
@@ -157,11 +291,89 @@ export default function Sidebar() {
       ? cachedBranding.brandPrimaryColor
       : "#2563EB";
   const badge = <PlanBadge planId={currentPlan} />;
-  const avatarUrl =
-    user?.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      displayName,
-    )}&background=4ADE80&color=fff&rounded=true&size=64`;
+  const avatarUrl = user?.avatar || "";
+  const settingsSection = React.useMemo(
+    () => new URLSearchParams(location.search).get("section") || "",
+    [location.search],
+  );
+  const canViewWorkspaceSettings = hasAnyWorkspacePermission(activeTenant, [
+    WORKSPACE_PERMISSIONS.SETTINGS_VIEW,
+    WORKSPACE_PERMISSIONS.SETTINGS_MANAGE,
+  ]);
+  const canManageBilling = hasAnyWorkspacePermission(activeTenant, [
+    WORKSPACE_PERMISSIONS.BILLING_VIEW,
+    WORKSPACE_PERMISSIONS.BILLING_MANAGE,
+  ]);
+  const profileMenuGroups = React.useMemo(() => {
+    const billingItem = canManageBilling
+      ? {
+          id: "upgrade-plan",
+          label: "Upgrade plan",
+          to: KFARMS_ROUTE_REGISTRY.billing.appPath,
+          icon: CreditCard,
+          meta: `${currentPlanMeta?.name || "Free"} workspace plan`,
+          active: location.pathname === KFARMS_ROUTE_REGISTRY.billing.appPath,
+        }
+      : null;
+
+    const personalizationItem = {
+      id: "personalization",
+      label: "Personalization",
+      to: `${KFARMS_ROUTE_REGISTRY.settings.appPath}?section=preferences`,
+      icon: Palette,
+      active: isSettingsSection(location.pathname, settingsSection, "preferences"),
+    };
+
+    const profileItem = {
+      id: "profile",
+      label: "Profile",
+      to: `${KFARMS_ROUTE_REGISTRY.settings.appPath}?section=profile`,
+      icon: UserCircle2,
+      active: isSettingsSection(location.pathname, settingsSection, "profile"),
+    };
+
+    const settingsItem = canViewWorkspaceSettings
+      ? {
+          id: "settings",
+          label: "Settings",
+          to: `${KFARMS_ROUTE_REGISTRY.settings.appPath}?section=workspace`,
+          icon: Settings,
+          active:
+            isSettingsSection(location.pathname, settingsSection, "workspace") ||
+            (location.pathname === KFARMS_ROUTE_REGISTRY.settings.appPath &&
+              (!settingsSection || settingsSection === "overview" || settingsSection === "security")),
+        }
+      : null;
+
+    const helpItem = {
+      id: "help",
+      label: "Help",
+      to: KFARMS_ROUTE_REGISTRY.support.appPath,
+      icon: LifeBuoy,
+      trailing: true,
+      active: location.pathname === KFARMS_ROUTE_REGISTRY.support.appPath,
+    };
+
+    return [
+      [billingItem, personalizationItem].filter(Boolean),
+      [profileItem, settingsItem].filter(Boolean),
+      [
+        helpItem,
+        {
+          id: "logout",
+          label: "Log out",
+          icon: LogOut,
+          action: "logout",
+        },
+      ],
+    ].filter((group) => group.length > 0);
+  }, [
+    canManageBilling,
+    canViewWorkspaceSettings,
+    currentPlanMeta?.name,
+    location.pathname,
+    settingsSection,
+  ]);
 
   React.useEffect(() => {
     const onClickOutside = (event) => {
@@ -277,7 +489,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className={`flex-1 flex flex-col gap-1 font-body ${open ? "" : "items-center"}`}>
-        {visibleNavItems.map((it) => {
+        {primaryNavItems.map((it) => {
           const Icon = it.icon;
 
           return (
@@ -342,22 +554,28 @@ export default function Sidebar() {
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((state) => !state)}
-                className="flex w-full items-center gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 text-left transition hover:bg-white/85 dark:border-slate-700 dark:bg-white/5 dark:hover:bg-white/10"
+                className="group flex w-full items-center gap-3 rounded-[1.35rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(241,245,249,0.9))] px-3 py-3 text-left shadow-[0_16px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(15,23,42,0.12)] dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.97),rgba(17,24,39,0.95))] dark:shadow-[0_22px_44px_rgba(2,6,23,0.32)]"
                 aria-haspopup="true"
                 aria-expanded={userMenuOpen}
                 aria-label="User menu"
               >
-                <img
-                  src={avatarUrl}
-                  alt="avatar"
-                  className="h-8 w-8 rounded-full object-cover"
-                />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-xs font-semibold uppercase tracking-[0.08em] text-white shadow-[0_12px_24px_rgba(59,130,246,0.22)]">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="avatar"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    getInitials(displayName)
+                  )}
+                </div>
                 <div className="min-w-0 leading-tight">
-                  <div className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+                  <div className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
                     {displayName}
                   </div>
-                  <div className="truncate text-xs text-slate-500 dark:text-slate-400">
-                    {displayRole}
+                  <div className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                    {currentPlanMeta?.name || "Free"} · {displayRole}
                   </div>
                 </div>
                 <ChevronDown
@@ -368,31 +586,24 @@ export default function Sidebar() {
               </button>
 
               <div
-                className={`absolute bottom-full left-0 z-[90] mb-2 w-full origin-bottom overflow-hidden rounded-lg border border-white/10 bg-white shadow-lg transition-all dark:border-slate-700 dark:bg-darkCard ${
+                className={`absolute bottom-full left-0 z-[90] mb-3 w-full origin-bottom transition-all ${
                   userMenuOpen
                     ? "scale-100 opacity-100"
                     : "pointer-events-none scale-95 opacity-0"
                 }`}
               >
-                <div className="p-3 text-sm">
-                  Signed in as{" "}
-                  <div className="truncate font-medium">
-                    {user?.email || user?.username || "No account"}
-                  </div>
-                </div>
-                <div className="border-t p-2 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmingLogout(true);
-                      setUserMenuOpen(false);
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-md bg-red-600 p-2 text-white hover:opacity-95"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </button>
-                </div>
+                <ProfileMenuPanel
+                  displayName={displayName}
+                  displayRole={displayRole}
+                  userHandle={userHandle}
+                  currentPlan={currentPlanMeta}
+                  menuGroups={profileMenuGroups}
+                  onNavigate={() => setUserMenuOpen(false)}
+                  onLogout={() => {
+                    setConfirmingLogout(true);
+                    setUserMenuOpen(false);
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -414,44 +625,43 @@ export default function Sidebar() {
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((state) => !state)}
-                className="group relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-300/70 bg-white/70 transition hover:bg-accent-primary/10 dark:border-slate-700 dark:bg-darkCard"
+                className="group relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-slate-300/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(241,245,249,0.86))] shadow-[0_14px_28px_rgba(15,23,42,0.08)] transition hover:bg-accent-primary/10 dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.97),rgba(17,24,39,0.95))] dark:shadow-[0_18px_34px_rgba(2,6,23,0.28)]"
                 aria-haspopup="true"
                 aria-expanded={userMenuOpen}
                 aria-label="User menu"
               >
-                <img
-                  src={avatarUrl}
-                  alt="avatar"
-                  className="h-full w-full object-cover"
-                />
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="avatar"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-xs font-semibold uppercase tracking-[0.08em] text-white">
+                    {getInitials(displayName)}
+                  </span>
+                )}
               </button>
 
               <div
-                className={`absolute bottom-0 left-full z-[90] ml-2 w-56 origin-left overflow-hidden rounded-lg border border-white/10 bg-white shadow-lg transition-all dark:border-slate-700 dark:bg-darkCard ${
+                className={`absolute bottom-0 left-full z-[90] ml-3 w-72 origin-left transition-all ${
                   userMenuOpen
                     ? "scale-100 opacity-100"
                     : "pointer-events-none scale-95 opacity-0"
                 }`}
               >
-                <div className="p-3 text-sm">
-                  Signed in as{" "}
-                  <div className="truncate font-medium">
-                    {user?.email || user?.username || "No account"}
-                  </div>
-                </div>
-                <div className="border-t p-2 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmingLogout(true);
-                      setUserMenuOpen(false);
-                    }}
-                    className="flex w-full items-center justify-center gap-2 rounded-md bg-red-600 p-2 text-white hover:opacity-95"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </button>
-                </div>
+                <ProfileMenuPanel
+                  displayName={displayName}
+                  displayRole={displayRole}
+                  userHandle={userHandle}
+                  currentPlan={currentPlanMeta}
+                  menuGroups={profileMenuGroups}
+                  onNavigate={() => setUserMenuOpen(false)}
+                  onLogout={() => {
+                    setConfirmingLogout(true);
+                    setUserMenuOpen(false);
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -468,11 +678,11 @@ export default function Sidebar() {
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                   Are you sure you want to logout?
                 </p>
-                <div className="mt-4 flex justify-end gap-2">
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setConfirmingLogout(false)}
-                    className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    className="w-full rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto sm:min-w-[8.5rem]"
                   >
                     Cancel
                   </button>
@@ -482,7 +692,7 @@ export default function Sidebar() {
                       setConfirmingLogout(false);
                       logout();
                     }}
-                    className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
+                    className="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 sm:w-auto sm:min-w-[8.5rem]"
                   >
                     Logout
                   </button>

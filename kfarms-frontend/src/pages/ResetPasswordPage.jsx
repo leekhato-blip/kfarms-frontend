@@ -10,6 +10,10 @@ import FloatingInput from "../components/FloatingInput";
 import { getAuthTrustText } from "../constants/authCopy";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
+import {
+  ACCOUNT_PASSWORD_MIN_LENGTH,
+  validateAccountPassword,
+} from "../utils/accountValidation";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -48,8 +52,9 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (newPassword.trim().length < 8) {
-      setInlineError("Use at least 8 characters for your new password.");
+    const passwordError = validateAccountPassword(newPassword, ACCOUNT_PASSWORD_MIN_LENGTH);
+    if (passwordError) {
+      setInlineError(passwordError);
       return;
     }
 
@@ -153,7 +158,7 @@ export default function ResetPasswordPage() {
                 />
 
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Use at least 8 characters and choose something new.
+                  Use at least 6 characters with letters and numbers, and choose something new.
                 </p>
 
                 <div className="flex items-center justify-between">

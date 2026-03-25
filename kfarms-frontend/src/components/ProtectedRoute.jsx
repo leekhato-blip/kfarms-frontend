@@ -12,6 +12,7 @@ import {
   hasAnyWorkspacePermission,
   normalizeWorkspacePermission,
 } from "../utils/workspacePermissions";
+import { KFARMS_DEFAULT_APP_PATH } from "../apps/kfarms/paths";
 import { isTenantPathEnabled } from "../tenant/tenantModules";
 
 /**
@@ -25,7 +26,7 @@ export default function ProtectedRoute({
   allowedWorkspaceRoles = null,
   requiredPermissions = null,
   requiredModules = null,
-  redirectTo = "/dashboard",
+  redirectTo = KFARMS_DEFAULT_APP_PATH,
   planRedirectTo = null,
   roleRedirectTo = null,
 }) {

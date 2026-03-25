@@ -10,6 +10,7 @@ import FloatingInput from "../components/FloatingInput";
 import PageLoader from "../components/PageLoader";
 import { getAuthTrustText } from "../constants/authCopy";
 import { useTenant } from "../tenant/TenantContext";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import {
   DEMO_ACCOUNT_EMAIL,
   DEMO_ACCOUNT_PASSWORD,
@@ -18,6 +19,7 @@ import {
 } from "../auth/demoMode";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
+import { writePendingContactVerification } from "../auth/contactVerificationStorage";
 
 /**
  * Login page:
@@ -128,10 +130,26 @@ export default function LoginPage() {
         type: "success",
       });
 
-      navigate(hasTenants ? "/dashboard" : "/onboarding/create-tenant", {
+      navigate(hasTenants ? toKfarmsAppPath("/dashboard") : "/onboarding/create-tenant", {
         replace: true,
       });
     } catch (err) {
+      const verificationPayload = err?.response?.data?.data;
+      if (verificationPayload?.verificationRequired) {
+        writePendingContactVerification({
+          email: verificationPayload.email || nextIdentifier,
+          maskedEmail: verificationPayload.maskedEmail || "",
+          maskedPhoneNumber: verificationPayload.maskedPhoneNumber || "",
+          emailVerified: Boolean(verificationPayload.emailVerified),
+          phoneVerified: Boolean(verificationPayload.phoneVerified),
+          preview: verificationPayload.preview || null,
+        });
+        navigate("/auth/verify-contact", {
+          replace: true,
+          state: verificationPayload,
+        });
+        return;
+      }
       setInlineError(getLoginErrorMessage(err));
     } finally {
       const elapsed = Date.now() - loaderStartRef.current;

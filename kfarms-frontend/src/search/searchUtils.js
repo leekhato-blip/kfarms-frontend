@@ -1,3 +1,5 @@
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
+
 const LEGACY_ROUTE_ALIASES = [
   [/^\/fish-hatches(?:\/.*)?$/i, "/fish-ponds"],
   [/^\/health-events(?:\/.*)?$/i, "/dashboard"],
@@ -16,7 +18,7 @@ function normalizeRoute(url) {
   }
 
   const matchedAlias = LEGACY_ROUTE_ALIASES.find(([pattern]) => pattern.test(pathname));
-  return matchedAlias ? matchedAlias[1] : raw;
+  return toKfarmsAppPath(matchedAlias ? matchedAlias[1] : raw);
 }
 
 export function resolveSearchTarget(result) {
@@ -39,23 +41,23 @@ export function resolveSearchTarget(result) {
     .toLowerCase();
 
   if (haystack.includes("egg") || haystack.includes("production")) {
-    return "/productions";
+    return toKfarmsAppPath("/productions");
   }
 
   if (haystack.includes("feed")) {
-    return "/feeds";
+    return toKfarmsAppPath("/feeds");
   }
 
   if (haystack.includes("inventory") || haystack.includes("stock item")) {
-    return "/inventory";
+    return toKfarmsAppPath("/inventory");
   }
 
   if (haystack.includes("supply") || haystack.includes("purchase")) {
-    return "/supplies";
+    return toKfarmsAppPath("/supplies");
   }
 
   if (haystack.includes("sale") || haystack.includes("invoice") || haystack.includes("revenue")) {
-    return "/sales";
+    return toKfarmsAppPath("/sales");
   }
 
   if (
@@ -64,14 +66,14 @@ export function resolveSearchTarget(result) {
     haystack.includes("flock") ||
     haystack.includes("batch")
   ) {
-    return "/poultry";
+    return toKfarmsAppPath("/poultry");
   }
 
   if (haystack.includes("pond") || haystack.includes("hatch") || haystack.includes("fish")) {
-    return "/fish-ponds";
+    return toKfarmsAppPath("/fish-ponds");
   }
 
-  return "/dashboard";
+  return toKfarmsAppPath("/dashboard");
 }
 
 export function normalizeSearchResult(result) {

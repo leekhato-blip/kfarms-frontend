@@ -35,10 +35,15 @@ import { getLivestock } from "../services/livestockService";
 import { resolveSearchTarget } from "../search/searchUtils";
 import useSmartBackNavigation from "../hooks/useSmartBackNavigation";
 import {
+  KFARMS_ROUTE_REGISTRY,
+  toKfarmsAppPath,
+} from "../apps/kfarms/paths";
+import {
   SETTINGS_THEME_EVENT,
   THEME_STORAGE_KEY,
   getStoredThemeMode,
 } from "../constants/settings";
+import { getUserDisplayName } from "../services/userProfileService";
 import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
 
 async function fetchNotifications() {
@@ -173,7 +178,7 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("livestock")
     || haystack.includes("bird")
   ) {
-    return "/poultry";
+    return KFARMS_ROUTE_REGISTRY.poultry.appPath;
   }
   if (
     haystack.includes("fish")
@@ -181,7 +186,7 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("water")
     || haystack.includes("hatch")
   ) {
-    return "/fish-ponds";
+    return KFARMS_ROUTE_REGISTRY.fishPonds.appPath;
   }
   if (
     haystack.includes("sale")
@@ -189,7 +194,7 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("finance")
     || haystack.includes("cash")
   ) {
-    return "/sales";
+    return KFARMS_ROUTE_REGISTRY.sales.appPath;
   }
   if (
     haystack.includes("inventory")
@@ -197,10 +202,10 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("feed")
     || haystack.includes("stock")
   ) {
-    return "/inventory";
+    return KFARMS_ROUTE_REGISTRY.inventory.appPath;
   }
 
-  return "/dashboard";
+  return KFARMS_ROUTE_REGISTRY.dashboard.appPath;
 }
 
 function getNotificationMeta(type) {
@@ -294,14 +299,14 @@ export default function Topbar() {
   const { activeTenant, activeTenantId } = useTenant();
   const navigate = useNavigate();
   const { goBack, showBackButton } = useSmartBackNavigation({
-    fallbackPath: "/dashboard",
-    hiddenPaths: ["/dashboard"],
+    fallbackPath: KFARMS_ROUTE_REGISTRY.dashboard.appPath,
+    hiddenPaths: [KFARMS_ROUTE_REGISTRY.dashboard.appPath],
   });
 
   const hr = new Date().getHours();
   const greet =
     hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-  const name = user?.username || "Farmer";
+  const name = getUserDisplayName(user, "Farmer");
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
 
   const rootRef = React.useRef(null);
@@ -555,7 +560,7 @@ export default function Topbar() {
       return;
     }
 
-    navigate("/dashboard");
+    navigate(KFARMS_ROUTE_REGISTRY.dashboard.appPath);
   }
 
   const [theme, setTheme] = React.useState(getStoredThemeMode);
@@ -807,7 +812,7 @@ export default function Topbar() {
                   onClick={() => {
                     setShowSearch(false);
                     setMobileSearchOpen(false);
-                    navigate("/search?q=" + encodeURIComponent(query));
+                    navigate(`${toKfarmsAppPath("/search")}?q=${encodeURIComponent(query)}`);
                   }}
                   className="w-full text-left"
                 >
@@ -909,7 +914,7 @@ export default function Topbar() {
                 <button
                   onClick={() => {
                     setShowSearch(false);
-                    navigate("/search?q=" + encodeURIComponent(query));
+                    navigate(`${toKfarmsAppPath("/search")}?q=${encodeURIComponent(query)}`);
                   }}
                   className="w-full text-left"
                 >

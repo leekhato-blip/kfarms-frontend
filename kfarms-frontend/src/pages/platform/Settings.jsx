@@ -1,39 +1,44 @@
 import React from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
+  Activity,
+  ArrowUpRight,
+  BellRing,
+  Blocks,
+  Building2,
   Globe2,
   LockKeyhole,
   RefreshCw,
   Shield,
+  ShieldCheck,
   SlidersHorizontal,
+  UserCircle2,
   Users,
 } from "lucide-react";
 import Card from "../../components/Card";
-import Badge from "../../components/Badge";
 import Button from "../../components/Button";
+import Badge from "../../components/Badge";
+import PlatformMetricCard from "../../components/PlatformMetricCard";
 import { useToast } from "../../components/ToastProvider";
+import { usePlatformAuth } from "../../auth/AuthProvider";
 import { PLATFORM_ENDPOINTS } from "../../api/endpoints";
 import {
   getApiErrorMessage,
   platformAxios,
   unwrapApiResponse,
 } from "../../api/platformClient";
-import { formatNumber, normalizePagination } from "../../utils/formatters";
+import { TIMEZONE_OPTIONS } from "../../constants/settings";
 import {
-  CURRENCY_OPTIONS,
-  DEFAULT_ORGANIZATION_SETTINGS,
-  DEFAULT_USER_PREFERENCES,
-  LANDING_PAGE_OPTIONS,
-  THEME_OPTIONS,
-  TIMEZONE_OPTIONS,
-} from "../../constants/settings";
-import { PLAN_FEATURE_MATRIX, PLAN_TIER_CONFIG } from "../../constants/plans";
+  createPlatformUserProfileDraft,
+  savePlatformUserProfile,
+} from "../../services/userProfileService";
+import { formatNumber } from "../../utils/formatters";
+import { getPlatformRoleLabel } from "../../utils/platformRoles";
 import {
-  buildPlanDistribution,
-  buildTenantPressureList,
-  getTenantMemberLimit,
+  resolvePlatformAccessTier,
   resolvePlatformUserEnabled,
-  resolvePlatformUserRole,
 } from "./platformInsights";
+import { buildPlatformDemoSnapshot } from "./platformWorkbench";
 
 const FALLBACK_OVERVIEW = {
   totalTenants: 0,
@@ -43,461 +48,1139 @@ const FALLBACK_OVERVIEW = {
   platformAdmins: 0,
 };
 
+const PLATFORM_CONTROL_SETTINGS_KEY = "kf_platform_control_settings";
+const PLATFORM_ACCOUNT_SETTINGS_KEY = "kf_platform_account_settings";
+
+const DEFAULT_PLATFORM_CONTROL_SETTINGS = Object.freeze({
+  controlPlaneName: "ROOTS Network",
+  operationsEmail: "",
+  timezone: "Africa/Lagos",
+  releaseChannel: "production",
+  auditRetentionDays: "180",
+  adminChangeAlerts: true,
+  revenueVisibility: true,
+  riskyActionConfirmation: true,
+  maintenanceBannerEnabled: false,
+});
+
+const DEFAULT_PLATFORM_ACCOUNT_SETTINGS = Object.freeze({
+  startPage: "/platform",
+  timezone: "Africa/Lagos",
+  emailUpdates: true,
+  securityAlerts: true,
+  weeklyDigest: true,
+  compactNavigation: false,
+  commandHints: true,
+});
+
+const RELEASE_CHANNEL_OPTIONS = Object.freeze([
+  { value: "production", label: "Production" },
+  { value: "staged", label: "Staged rollout" },
+  { value: "internal", label: "Internal only" },
+]);
+
+const AUDIT_RETENTION_OPTIONS = Object.freeze([
+  { value: "30", label: "30 days" },
+  { value: "90", label: "90 days" },
+  { value: "180", label: "180 days" },
+  { value: "365", label: "365 days" },
+]);
+
+const PLATFORM_START_PAGE_OPTIONS = Object.freeze([
+  { value: "/platform", label: "Hub" },
+  { value: "/platform/apps", label: "Apps" },
+  { value: "/platform/tenants", label: "Tenants" },
+  { value: "/platform/users", label: "Users" },
+  { value: "/platform/health", label: "Health" },
+  { value: "/platform/settings", label: "Settings" },
+]);
+
+const PLATFORM_SETTINGS_SECTIONS = Object.freeze([
+  {
+    id: "platform",
+    label: "Platform",
+    description: "ROOTS-wide defaults and safeguards",
+    icon: SlidersHorizontal,
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    description: "How this admin account appears",
+    icon: UserCircle2,
+  },
+  {
+    id: "preferences",
+    label: "Preferences",
+    description: "Personal ROOTS navigation and alerts",
+    icon: BellRing,
+  },
+  {
+    id: "links",
+    label: "Links",
+    description: "Jump to related platform areas",
+    icon: ArrowUpRight,
+  },
+  {
+    id: "posture",
+    label: "Posture",
+    description: "Access boundary and platform posture",
+    icon: Shield,
+  },
+]);
+
+const inputClassName =
+  "mt-1 h-11 w-full rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-[color:var(--atlas-border-strong)]";
+
+function cn(...values) {
+  return values.filter(Boolean).join(" ");
+}
+
+function readStoredState(key, fallback, normalize) {
+  if (typeof window === "undefined") {
+    return normalize(fallback);
+  }
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return normalize(fallback);
+    return normalize(JSON.parse(raw));
+  } catch {
+    return normalize(fallback);
+  }
+}
+
+function writeStoredState(key, value) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
 function findLabel(options, value, fallback = value) {
   return options.find((option) => option.value === value)?.label || fallback;
 }
 
-function SummaryTile({ icon, label, value, hint }) {
-  const IconComponent = icon;
+function isSame(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
 
+function normalizePlatformControlSettings(settings = {}) {
+  return {
+    controlPlaneName: String(
+      settings.controlPlaneName ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.controlPlaneName,
+    ).trim(),
+    operationsEmail: String(
+      settings.operationsEmail ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.operationsEmail,
+    ).trim(),
+    timezone: String(settings.timezone ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.timezone).trim(),
+    releaseChannel: String(
+      settings.releaseChannel ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.releaseChannel,
+    ).trim(),
+    auditRetentionDays: String(
+      settings.auditRetentionDays ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.auditRetentionDays,
+    ).trim(),
+    adminChangeAlerts:
+      settings.adminChangeAlerts ??
+      DEFAULT_PLATFORM_CONTROL_SETTINGS.adminChangeAlerts,
+    revenueVisibility:
+      settings.revenueVisibility ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.revenueVisibility,
+    riskyActionConfirmation:
+      settings.riskyActionConfirmation ??
+      DEFAULT_PLATFORM_CONTROL_SETTINGS.riskyActionConfirmation,
+    maintenanceBannerEnabled:
+      settings.maintenanceBannerEnabled ??
+      DEFAULT_PLATFORM_CONTROL_SETTINGS.maintenanceBannerEnabled,
+  };
+}
+
+function normalizePlatformAccountSettings(settings = {}) {
+  return {
+    startPage: String(
+      settings.startPage ?? DEFAULT_PLATFORM_ACCOUNT_SETTINGS.startPage,
+    ).trim(),
+    timezone: String(settings.timezone ?? DEFAULT_PLATFORM_ACCOUNT_SETTINGS.timezone).trim(),
+    emailUpdates:
+      settings.emailUpdates ?? DEFAULT_PLATFORM_ACCOUNT_SETTINGS.emailUpdates,
+    securityAlerts:
+      settings.securityAlerts ?? DEFAULT_PLATFORM_ACCOUNT_SETTINGS.securityAlerts,
+    weeklyDigest:
+      settings.weeklyDigest ?? DEFAULT_PLATFORM_ACCOUNT_SETTINGS.weeklyDigest,
+    compactNavigation:
+      settings.compactNavigation ??
+      DEFAULT_PLATFORM_ACCOUNT_SETTINGS.compactNavigation,
+    commandHints:
+      settings.commandHints ?? DEFAULT_PLATFORM_ACCOUNT_SETTINGS.commandHints,
+  };
+}
+
+function SettingsField({ label, hint, children }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-          {label}
-        </div>
-        <IconComponent size={16} className="text-[var(--atlas-muted)]" />
+    <label className="block">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+        {label}
       </div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-[var(--atlas-text-strong)]">
-        {value}
+      {hint ? (
+        <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">{hint}</div>
+      ) : null}
+      {children}
+    </label>
+  );
+}
+
+function ToggleRow({ label, hint, checked, onChange }) {
+  return (
+    <label className="flex items-start justify-between gap-4 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-4 py-3">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">{label}</div>
+        <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">{hint}</div>
       </div>
-      <div className="mt-1 text-xs text-[var(--atlas-muted)]">{hint}</div>
-    </Card>
+      <span className="mt-0.5 shrink-0">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="h-4 w-4 rounded border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] text-blue-500 focus:ring-blue-400/40"
+        />
+      </span>
+    </label>
   );
 }
 
 export default function PlatformSettingsPage() {
+  const navigate = useNavigate();
   const { notify } = useToast();
+  const { user: currentUser, profileLoading, updateProfile } = usePlatformAuth();
+  const {
+    customApps = [],
+    platformDataMode = "live",
+    platformLimitedAccess = false,
+  } = useOutletContext() || {};
+  const demoSnapshot = React.useMemo(
+    () => buildPlatformDemoSnapshot(customApps),
+    [customApps],
+  );
 
   const [overview, setOverview] = React.useState(FALLBACK_OVERVIEW);
-  const [tenants, setTenants] = React.useState([]);
-  const [users, setUsers] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
+  const [savingPlatform, setSavingPlatform] = React.useState(false);
+  const [savingAccount, setSavingAccount] = React.useState(false);
+  const [savingProfile, setSavingProfile] = React.useState(false);
+  const [activeSection, setActiveSection] = React.useState("platform");
+  const [platformSettings, setPlatformSettings] = React.useState(() =>
+    readStoredState(
+      PLATFORM_CONTROL_SETTINGS_KEY,
+      DEFAULT_PLATFORM_CONTROL_SETTINGS,
+      normalizePlatformControlSettings,
+    ),
+  );
+  const [accountSettings, setAccountSettings] = React.useState(() =>
+    readStoredState(
+      PLATFORM_ACCOUNT_SETTINGS_KEY,
+      DEFAULT_PLATFORM_ACCOUNT_SETTINGS,
+      normalizePlatformAccountSettings,
+    ),
+  );
+  const [userProfile, setUserProfile] = React.useState(() =>
+    createPlatformUserProfileDraft(currentUser),
+  );
+  const [userProfileSnapshot, setUserProfileSnapshot] = React.useState(() =>
+    createPlatformUserProfileDraft(currentUser),
+  );
 
-  const loadSnapshot = React.useCallback(async () => {
+  const loadOverview = React.useCallback(async () => {
     setLoading(true);
     setError("");
 
-    try {
-      const [overviewResponse, tenantsResponse, usersResponse] = await Promise.all([
-        platformAxios.get(PLATFORM_ENDPOINTS.overview),
-        platformAxios.get(PLATFORM_ENDPOINTS.tenants, {
-          params: { page: 0, size: 100 },
-        }),
-        platformAxios.get(PLATFORM_ENDPOINTS.users, {
-          params: { page: 0, size: 100 },
-        }),
-      ]);
+    if (platformDataMode === "demo") {
+      setOverview(demoSnapshot.metrics);
+      setLoading(false);
+      return;
+    }
 
-      const overviewPayload = unwrapApiResponse(
-        overviewResponse.data,
+    try {
+      const response = await platformAxios.get(PLATFORM_ENDPOINTS.overview);
+      const payload = unwrapApiResponse(
+        response.data,
         "Failed to load platform overview",
       );
-      const tenantPayload = unwrapApiResponse(
-        tenantsResponse.data,
-        "Failed to load tenants",
+      const nextOverview = { ...FALLBACK_OVERVIEW, ...(payload || {}) };
+      const hasLiveOverviewData = Boolean(
+        Number(nextOverview.totalTenants || 0) ||
+          Number(nextOverview.totalUsers || 0) ||
+          Number(nextOverview.platformAdmins || 0),
       );
-      const userPayload = unwrapApiResponse(usersResponse.data, "Failed to load users");
-
-      setOverview({ ...FALLBACK_OVERVIEW, ...(overviewPayload || {}) });
-      setTenants(normalizePagination(tenantPayload, { page: 0, size: 100 }).items || []);
-      setUsers(normalizePagination(userPayload, { page: 0, size: 100 }).items || []);
-    } catch (snapshotError) {
-      setOverview(FALLBACK_OVERVIEW);
-      setTenants([]);
-      setUsers([]);
-      setError(getApiErrorMessage(snapshotError, "Failed to load platform settings"));
+      setOverview(hasLiveOverviewData ? nextOverview : demoSnapshot.metrics);
+    } catch (loadError) {
+      setOverview(demoSnapshot.metrics);
+      setError(
+        platformLimitedAccess
+          ? ""
+          : getApiErrorMessage(loadError, "Failed to load platform settings"),
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [demoSnapshot.metrics, platformDataMode, platformLimitedAccess]);
 
   React.useEffect(() => {
-    loadSnapshot();
-  }, [loadSnapshot]);
+    loadOverview();
+  }, [loadOverview]);
 
   React.useEffect(() => {
-    if (error) {
-      notify("Platform settings are showing partial data right now.", "info");
+    if (platformDataMode === "live" && error && !platformLimitedAccess) {
+      notify("Platform settings are showing partial live data right now.", "info");
     }
-  }, [error, notify]);
+  }, [error, notify, platformDataMode, platformLimitedAccess]);
 
-  const enabledUsers = React.useMemo(
-    () => users.filter((user) => resolvePlatformUserEnabled(user)).length,
-    [users],
-  );
-  const activeAdmins = React.useMemo(
-    () =>
-      users.filter(
-        (user) =>
-          resolvePlatformUserEnabled(user) &&
-          resolvePlatformUserRole(user) === "PLATFORM_ADMIN",
-      ).length,
-    [users],
-  );
+  React.useEffect(() => {
+    const nextProfile = createPlatformUserProfileDraft(currentUser);
+    setUserProfile(nextProfile);
+    setUserProfileSnapshot(nextProfile);
+  }, [currentUser]);
 
-  const pressureCount = React.useMemo(
-    () =>
-      buildTenantPressureList(tenants).filter(
-        ({ seatUsage }) => seatUsage.nearLimit || seatUsage.overLimit,
-      ).length,
-    [tenants],
-  );
-
-  const planDistribution = React.useMemo(
-    () => buildPlanDistribution(tenants),
-    [tenants],
-  );
-
-  const timezoneLabel = findLabel(
+  const platformTimezoneLabel = findLabel(
     TIMEZONE_OPTIONS,
-    DEFAULT_ORGANIZATION_SETTINGS.timezone,
-    DEFAULT_ORGANIZATION_SETTINGS.timezone,
+    platformSettings.timezone,
+    platformSettings.timezone,
   );
-  const currencyLabel = findLabel(
-    CURRENCY_OPTIONS,
-    DEFAULT_ORGANIZATION_SETTINGS.currency,
-    DEFAULT_ORGANIZATION_SETTINGS.currency,
+  const accountTimezoneLabel = findLabel(
+    TIMEZONE_OPTIONS,
+    accountSettings.timezone,
+    accountSettings.timezone,
   );
-  const landingPageLabel = findLabel(
-    LANDING_PAGE_OPTIONS,
-    DEFAULT_USER_PREFERENCES.landingPage,
-    DEFAULT_USER_PREFERENCES.landingPage,
+  const startPageLabel = findLabel(
+    PLATFORM_START_PAGE_OPTIONS,
+    accountSettings.startPage,
+    accountSettings.startPage,
   );
-  const themeLabel = findLabel(
-    THEME_OPTIONS,
-    DEFAULT_USER_PREFERENCES.themePreference,
-    DEFAULT_USER_PREFERENCES.themePreference,
+  const currentAccessTier = React.useMemo(
+    () => resolvePlatformAccessTier(currentUser),
+    [currentUser],
   );
+  const currentUserEnabled = React.useMemo(
+    () => resolvePlatformUserEnabled(currentUser),
+    [currentUser],
+  );
+  const releaseChannelLabel = findLabel(
+    RELEASE_CHANNEL_OPTIONS,
+    platformSettings.releaseChannel,
+    platformSettings.releaseChannel,
+  );
+  const profileDirty = !isSame(userProfile, userProfileSnapshot);
+  const activeSectionMeta =
+    PLATFORM_SETTINGS_SECTIONS.find((section) => section.id === activeSection) ||
+    PLATFORM_SETTINGS_SECTIONS[0];
 
-  const planCards = React.useMemo(
-    () =>
-      PLAN_TIER_CONFIG.map((plan) => {
-        const tenantCount = tenants.filter((tenant) => String(tenant?.plan || "").toUpperCase() === plan.id).length;
-        const activeCount = tenants.filter(
-          (tenant) =>
-            String(tenant?.plan || "").toUpperCase() === plan.id &&
-            String(tenant?.status || "").toUpperCase() === "ACTIVE",
-        ).length;
-        const featureRows = PLAN_FEATURE_MATRIX.filter((feature) => feature.minPlan === plan.id).slice(
-          0,
-          plan.id === "ENTERPRISE" ? 6 : 4,
-        );
+  const quickLinks = [
+    {
+      title: "Access control",
+      detail: "Review operator roles, admin coverage, and account state.",
+      to: "/platform/users",
+      icon: Users,
+    },
+    {
+      title: "Tenant posture",
+      detail: "Inspect workspace lifecycle, plan state, and suspension posture.",
+      to: "/platform/tenants",
+      icon: Building2,
+    },
+    {
+      title: "Platform health",
+      detail: "Watch platform health, risk, and capacity.",
+      to: "/platform/health",
+      icon: Activity,
+    },
+    {
+      title: "App portfolio",
+      detail: "See apps, revenue visibility, and product status.",
+      to: "/platform/apps",
+      icon: Blocks,
+    },
+  ];
 
-        return {
-          ...plan,
-          tenantCount,
-          activeCount,
-          memberLimit: getTenantMemberLimit(plan.id),
-          featureRows,
+  function savePlatformSettings() {
+    const nextSettings = normalizePlatformControlSettings(platformSettings);
+    setSavingPlatform(true);
+    writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
+    setPlatformSettings(nextSettings);
+    window.setTimeout(() => {
+      setSavingPlatform(false);
+      notify(
+        "Platform settings saved locally for this session.",
+        "success",
+      );
+    }, 220);
+  }
+
+  function saveAccountSettings() {
+    const nextSettings = normalizePlatformAccountSettings(accountSettings);
+    setSavingAccount(true);
+    writeStoredState(PLATFORM_ACCOUNT_SETTINGS_KEY, nextSettings);
+    setAccountSettings(nextSettings);
+    window.setTimeout(() => {
+      setSavingAccount(false);
+      notify("Account preferences saved locally for this admin session.", "success");
+    }, 220);
+  }
+
+  function resetPlatformSettings() {
+    const nextSettings = normalizePlatformControlSettings(
+      DEFAULT_PLATFORM_CONTROL_SETTINGS,
+    );
+    setPlatformSettings(nextSettings);
+    writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
+    notify("Platform settings reset to the default baseline.", "info");
+  }
+
+  function resetAccountSettings() {
+    const nextSettings = normalizePlatformAccountSettings(
+      DEFAULT_PLATFORM_ACCOUNT_SETTINGS,
+    );
+    setAccountSettings(nextSettings);
+    writeStoredState(PLATFORM_ACCOUNT_SETTINGS_KEY, nextSettings);
+    notify("Account preferences reset to their default admin profile.", "info");
+  }
+
+  function saveUserProfile() {
+    if (!currentUser) return;
+
+    setSavingProfile(true);
+
+    try {
+      const savedProfile = savePlatformUserProfile({
+        user: currentUser,
+        profile: userProfile,
+      });
+      const nextUser =
+        updateProfile?.(savedProfile) ||
+        {
+          ...currentUser,
+          displayName: savedProfile.displayName || currentUser?.displayName,
+          phoneNumber: savedProfile.phoneNumber || currentUser?.phoneNumber,
+          jobTitle: savedProfile.jobTitle || currentUser?.jobTitle,
+          bio: savedProfile.bio || currentUser?.bio,
         };
-      }),
-    [tenants],
-  );
+      const nextProfile = createPlatformUserProfileDraft(nextUser);
+      setUserProfile(nextProfile);
+      setUserProfileSnapshot(nextProfile);
+      notify("Profile details updated for this admin session.", "success");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
+  function resetUserProfile() {
+    setUserProfile(userProfileSnapshot);
+    notify("Profile changes discarded.", "info");
+  }
 
   return (
     <div className="space-y-4">
-      <Card className="p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-blue-500/15 via-violet-500/10 to-emerald-500/10 p-3">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+      <Card className="atlas-stage-card p-5">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="max-w-2xl">
+            <div className="atlas-signal-chip w-fit">
+              <SlidersHorizontal size={12} />
               Platform Settings
             </div>
-            <div className="mt-1 text-sm text-[var(--atlas-text-strong)]">
-              Live policy defaults, commercial guardrails, and access boundaries for the control plane.
+            <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.3rem]">
+              Manage how ROOTS works for admins.
+            </h1>
+            <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
+              Update platform defaults, safeguards, and your account preferences.
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={loadSnapshot} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={loadOverview} disabled={loading}>
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Refresh
           </Button>
         </div>
       </Card>
 
-      {error && (
+      {error ? (
         <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
           {error}
         </div>
-      )}
+      ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryTile
-          icon={Shield}
-          label="Active Admin Coverage"
-          value={formatNumber(activeAdmins)}
-          hint="Enabled platform administrators protecting the control plane."
+      <div className="atlas-platform-metric-grid-compact">
+        <PlatformMetricCard
+          icon={ShieldCheck}
+          label="ROOTS Admins"
+          value={formatNumber(overview.platformAdmins || 0)}
+          hint="Accounts with full platform access."
+          tone="green"
         />
-        <SummaryTile
+        <PlatformMetricCard
+          icon={Building2}
+          label="Managed Workspaces"
+          value={formatNumber(overview.totalTenants || 0)}
+          hint={`${formatNumber(overview.activeTenants || 0)} active workspaces.`}
+          tone="blue"
+        />
+        <PlatformMetricCard
           icon={Users}
-          label="Enabled Users"
-          value={formatNumber(enabledUsers)}
-          hint={`${formatNumber(overview.totalUsers || 0)} total platform users loaded.`}
+          label="Total Operators"
+          value={formatNumber(overview.totalUsers || 0)}
+          hint="Platform-visible users across ROOTS."
+          tone="purple"
         />
-        <SummaryTile
-          icon={Globe2}
-          label="Default Workspace Locale"
-          value={DEFAULT_ORGANIZATION_SETTINGS.currency}
-          hint={`${timezoneLabel} · ${currencyLabel}`}
-        />
-        <SummaryTile
-          icon={LockKeyhole}
-          label="Seat Guardrails"
-          value={formatNumber(pressureCount)}
-          hint="Tenants currently near or above their seat cap."
+        <PlatformMetricCard
+          icon={UserCircle2}
+          label="Current Account"
+          value={getPlatformRoleLabel(currentAccessTier)}
+          hint={profileLoading ? "Loading current admin profile..." : currentUser?.email || "Admin session"}
+          tone="blue"
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_380px]">
-        <div className="space-y-4">
-          <Card className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Plan Enforcement
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Current commercial tiers, seat ceilings, and the features unlocked at each level.
-              </p>
+      <section className="rounded-[1.4rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 px-4 py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+              Settings sections
+            </div>
+            <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+              Work through one platform settings area at a time instead of scanning the full page.
+            </div>
+          </div>
+          <div className="rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--atlas-text-strong)]">
+            Viewing: {activeSectionMeta.label}
+          </div>
+        </div>
+
+        <div className="hide-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1">
+          {PLATFORM_SETTINGS_SECTIONS.map((section) => {
+            const Icon = section.icon;
+            const isActive = section.id === activeSection;
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm transition",
+                  isActive
+                    ? "border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] text-[var(--atlas-text-strong)]"
+                    : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]",
+                )}
+                aria-pressed={isActive}
+              >
+                <Icon size={15} />
+                <span className="font-medium">{section.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 text-xs text-[var(--atlas-muted)]">
+          {activeSectionMeta.description}
+        </div>
+      </section>
+
+      {activeSection === "platform" ? (
+        <Card className="atlas-stage-card p-5">
+          <div className="relative z-10">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="max-w-2xl">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+                  Platform configuration
+                </div>
+                <h2 className="mt-1 text-xl font-semibold text-[var(--atlas-text-strong)]">
+                  Shared ROOTS settings
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                  These settings apply at the platform level, not inside a single workspace.
+                </p>
+              </div>
+              <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                  Current setup
+                </div>
+                <div className="mt-2 text-lg font-semibold text-[var(--atlas-text-strong)]">
+                  {releaseChannelLabel}
+                </div>
+                <div className="mt-1 text-xs text-[var(--atlas-muted)]">
+                  {platformTimezoneLabel} · {platformSettings.auditRetentionDays} day audit window
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {planCards.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-4"
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <SettingsField
+                label="Platform identity"
+                hint="Shown as the main platform name."
+              >
+                <input
+                  type="text"
+                  value={platformSettings.controlPlaneName}
+                  onChange={(event) =>
+                    setPlatformSettings((current) => ({
+                      ...current,
+                      controlPlaneName: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                  placeholder="ROOTS Network"
+                />
+              </SettingsField>
+
+              <SettingsField
+                label="Operations email"
+                hint="Contact mailbox for platform issues and admin escalation."
+              >
+                <input
+                  type="email"
+                  value={platformSettings.operationsEmail}
+                  onChange={(event) =>
+                    setPlatformSettings((current) => ({
+                      ...current,
+                      operationsEmail: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                  placeholder="ops@roots.local"
+                />
+              </SettingsField>
+
+              <SettingsField
+                label="Platform timezone"
+                hint="Shared timezone for ROOTS timestamps and operational reviews."
+              >
+                <select
+                  value={platformSettings.timezone}
+                  onChange={(event) =>
+                    setPlatformSettings((current) => ({
+                      ...current,
+                      timezone: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge kind="plan" value={plan.id} />
-                        <span className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                          {plan.name}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm text-[var(--atlas-muted)]">{plan.tagline}</p>
-                    </div>
-                    <div className="text-right">
+                  {TIMEZONE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SettingsField>
+
+              <SettingsField
+                label="Release channel"
+                hint="How quickly new platform changes spread through ROOTS."
+              >
+                <select
+                  value={platformSettings.releaseChannel}
+                  onChange={(event) =>
+                    setPlatformSettings((current) => ({
+                      ...current,
+                      releaseChannel: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  {RELEASE_CHANNEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SettingsField>
+
+              <SettingsField
+                label="Audit retention"
+                hint="How long platform decisions should stay in the audit trail."
+              >
+                <select
+                  value={platformSettings.auditRetentionDays}
+                  onChange={(event) =>
+                    setPlatformSettings((current) => ({
+                      ...current,
+                      auditRetentionDays: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  {AUDIT_RETENTION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SettingsField>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <ToggleRow
+                label="Admin change alerts"
+                hint="Notify platform operators when admin roles or sign-in access are changed across ROOTS."
+                checked={platformSettings.adminChangeAlerts}
+                onChange={(checked) =>
+                  setPlatformSettings((current) => ({
+                    ...current,
+                    adminChangeAlerts: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Revenue visibility across ROOTS"
+                hint="Keep portfolio revenue and commercial rollups visible in ROOTS analytics."
+                checked={platformSettings.revenueVisibility}
+                onChange={(checked) =>
+                  setPlatformSettings((current) => ({
+                    ...current,
+                    revenueVisibility: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="High-risk action confirmation"
+                hint="Require explicit confirmation before high-impact ROOTS actions."
+                checked={platformSettings.riskyActionConfirmation}
+                onChange={(checked) =>
+                  setPlatformSettings((current) => ({
+                    ...current,
+                    riskyActionConfirmation: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Maintenance banner"
+                hint="Prepare a platform-wide maintenance message for admins."
+                checked={platformSettings.maintenanceBannerEnabled}
+                onChange={(checked) =>
+                  setPlatformSettings((current) => ({
+                    ...current,
+                    maintenanceBannerEnabled: checked,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-4 py-3">
+              <div className="text-sm leading-6 text-[var(--atlas-muted)]">
+                These controls are stored locally for now. We can wire them to a backend ROOTS
+                settings API next so they apply across devices and admins.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={resetPlatformSettings}>
+                  Reset
+                </Button>
+                <Button size="sm" onClick={savePlatformSettings} disabled={savingPlatform}>
+                  {savingPlatform ? "Saving..." : "Save platform config"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {activeSection === "profile" ? (
+        <Card className="atlas-stage-card p-5">
+          <div className="relative z-10">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+              Account profile
+            </div>
+            <h2 className="mt-1 text-xl font-semibold text-[var(--atlas-text-strong)]">
+              How this admin account appears around ROOTS
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+              Update the visible identity for this platform account without changing workspace settings.
+            </p>
+
+            <div className="mt-5 rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 p-4">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] text-[var(--atlas-text-strong)]">
+                  <UserCircle2 size={20} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                    {profileLoading
+                      ? "Loading current profile..."
+                      : currentUser?.displayName || currentUser?.username || "ROOTS admin"}
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--atlas-muted)]">
+                    {currentUser?.email || "No account email available"}
+                  </div>
+                  <div className="mt-1 text-xs text-[var(--atlas-muted)]">
+                    {currentUser?.jobTitle || "Platform operator"}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Badge kind="platform-role" value={currentAccessTier} />
+                    <Badge kind="active" value={currentUserEnabled ? "ENABLED" : "DISABLED"} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <SettingsField
+                label="Display name"
+                hint="How this account should appear around ROOTS."
+              >
+                <input
+                  type="text"
+                  value={userProfile.displayName}
+                  onChange={(event) =>
+                    setUserProfile((current) => ({
+                      ...current,
+                      displayName: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                  placeholder="ROOTS operator name"
+                />
+              </SettingsField>
+
+              <SettingsField
+                label="Phone number"
+                hint="A direct number for platform coordination."
+              >
+                <input
+                  type="text"
+                  value={userProfile.phoneNumber}
+                  onChange={(event) =>
+                    setUserProfile((current) => ({
+                      ...current,
+                      phoneNumber: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                  placeholder="+234..."
+                />
+              </SettingsField>
+
+              <SettingsField
+                label="Work title"
+                hint="A short descriptor for your platform responsibility."
+              >
+                <input
+                  type="text"
+                  value={userProfile.jobTitle}
+                  onChange={(event) =>
+                    setUserProfile((current) => ({
+                      ...current,
+                      jobTitle: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                  placeholder="Platform owner, operations lead, support..."
+                />
+              </SettingsField>
+
+              <SettingsField
+                label="Account email"
+                hint="Email remains managed by platform authentication."
+              >
+                <input
+                  type="text"
+                  value={currentUser?.email || ""}
+                  disabled
+                  className={`${inputClassName} cursor-not-allowed opacity-75`}
+                  placeholder="No account email available"
+                />
+              </SettingsField>
+
+              <div className="md:col-span-2">
+                <SettingsField
+                  label="Short bio"
+                  hint="A quick note about what you handle across ROOTS."
+                >
+                  <textarea
+                    rows={3}
+                    value={userProfile.bio}
+                    onChange={(event) =>
+                      setUserProfile((current) => ({
+                        ...current,
+                        bio: event.target.value,
+                      }))
+                    }
+                    className={`${inputClassName} min-h-[108px] py-3`}
+                    placeholder="Briefly describe your focus across the platform."
+                  />
+                </SettingsField>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-4 py-3">
+              <div className="text-sm leading-6 text-[var(--atlas-muted)]">
+                Profile changes update the visible ROOTS shell on this device right away.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetUserProfile}
+                  disabled={!profileDirty || savingProfile}
+                >
+                  Reset
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveUserProfile}
+                  disabled={!profileDirty || savingProfile}
+                >
+                  {savingProfile ? "Saving..." : "Save profile"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {activeSection === "preferences" ? (
+        <Card className="atlas-stage-card p-5">
+          <div className="relative z-10">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+              Account preferences
+            </div>
+            <h2 className="mt-1 text-xl font-semibold text-[var(--atlas-text-strong)]">
+              Preferences for the admin account guiding this session
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+              Personalize how you move through ROOTS without changing product-specific settings inside KFarms or any future app.
+            </p>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <SettingsField
+                label="Start page"
+                hint="Which ROOTS view should feel like home when this account begins work."
+              >
+                <select
+                  value={accountSettings.startPage}
+                  onChange={(event) =>
+                    setAccountSettings((current) => ({
+                      ...current,
+                      startPage: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  {PLATFORM_START_PAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SettingsField>
+
+              <SettingsField
+                label="Timestamp timezone"
+                hint="How this account prefers to read ROOTS timestamps and reviews."
+              >
+                <select
+                  value={accountSettings.timezone}
+                  onChange={(event) =>
+                    setAccountSettings((current) => ({
+                      ...current,
+                      timezone: event.target.value,
+                    }))
+                  }
+                  className={inputClassName}
+                >
+                  {TIMEZONE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </SettingsField>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <ToggleRow
+                label="Email updates"
+                hint="Receive ROOTS digest and action summaries by email."
+                checked={accountSettings.emailUpdates}
+                onChange={(checked) =>
+                  setAccountSettings((current) => ({
+                    ...current,
+                    emailUpdates: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Security alerts"
+                hint="Prioritize warnings about access changes, login risk, and admin coverage."
+                checked={accountSettings.securityAlerts}
+                onChange={(checked) =>
+                  setAccountSettings((current) => ({
+                    ...current,
+                    securityAlerts: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Weekly digest"
+                hint="Receive a summary of workspace activity and ROOTS posture once a week."
+                checked={accountSettings.weeklyDigest}
+                onChange={(checked) =>
+                  setAccountSettings((current) => ({
+                    ...current,
+                    weeklyDigest: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Compact navigation"
+                hint="Favor denser navigation behavior for faster admin work."
+                checked={accountSettings.compactNavigation}
+                onChange={(checked) =>
+                  setAccountSettings((current) => ({
+                    ...current,
+                    compactNavigation: checked,
+                  }))
+                }
+              />
+              <ToggleRow
+                label="Command hints"
+                hint="Keep keyboard and command-palette affordances visible inside ROOTS."
+                checked={accountSettings.commandHints}
+                onChange={(checked) =>
+                  setAccountSettings((current) => ({
+                    ...current,
+                    commandHints: checked,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-4 py-3">
+              <div className="text-sm leading-6 text-[var(--atlas-muted)]">
+                Start page: {startPageLabel} · Timezone: {accountTimezoneLabel}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={resetAccountSettings}>
+                  Reset
+                </Button>
+                <Button size="sm" onClick={saveAccountSettings} disabled={savingAccount}>
+                  {savingAccount ? "Saving..." : "Save account settings"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {activeSection === "links" ? (
+        <Card className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
+              Platform links
+            </h2>
+            <p className="mt-1 text-sm text-[var(--atlas-muted)]">
+              Open the areas these settings affect.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {quickLinks.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => navigate(item.to)}
+                  className="flex w-full items-start justify-between gap-3 rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/80 px-4 py-3 text-left transition hover:border-[color:var(--atlas-border-strong)] hover:bg-[color:var(--atlas-surface-hover)]"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] text-[var(--atlas-text-strong)]">
+                      <Icon size={18} />
+                    </span>
+                    <div className="min-w-0">
                       <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                        {formatNumber(plan.tenantCount)} tenant(s)
+                        {item.title}
                       </div>
-                      <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                        {formatNumber(plan.activeCount)} active
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-3">
-                      <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                        Seat limit
-                      </div>
-                      <div className="mt-2 text-lg font-semibold text-[var(--atlas-text-strong)]">
-                        {plan.memberLimit ?? "Unlimited"}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-3">
-                      <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                        Organizations
-                      </div>
-                      <div className="mt-2 text-lg font-semibold text-[var(--atlas-text-strong)]">
-                        {plan.limits.find((limit) => limit.label === "Organizations")?.value || "-"}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-3">
-                      <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                        Pricing
-                      </div>
-                      <div className="mt-2 text-lg font-semibold text-[var(--atlas-text-strong)]">
-                        {plan.priceLabel}
+                      <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">
+                        {item.detail}
                       </div>
                     </div>
                   </div>
+                  <ArrowUpRight size={16} className="shrink-0 text-[var(--atlas-muted)]" />
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      ) : null}
 
-                  <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                        Highlights
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        {plan.highlights.slice(0, 3).map((highlight) => (
-                          <div
-                            key={highlight}
-                            className="rounded-lg border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-2 text-sm text-[var(--atlas-text)]"
-                          >
-                            {highlight}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+      {activeSection === "posture" ? (
+        <Card className="space-y-4">
+          <div className="flex items-center gap-2 text-[var(--atlas-text-strong)]">
+            <LockKeyhole size={16} />
+            <h2 className="text-lg font-semibold">Platform posture</h2>
+          </div>
 
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                        Features introduced here
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        {plan.featureRows.map((feature) => (
-                          <div
-                            key={feature.id}
-                            className="rounded-lg border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-2 text-sm text-[var(--atlas-text)]"
-                          >
-                            {feature.feature}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Workspace Defaults
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                The baseline experience new tenants inherit when they onboard.
-              </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                Access boundary
+              </div>
+              <div className="mt-2 text-base font-semibold text-[var(--atlas-text-strong)]">
+                Platform-admin only
+              </div>
+              <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                Platform routes are reserved for platform administrators, separate from tenant-scoped app operations.
+              </div>
             </div>
 
-            <div className="space-y-2">
-              {[
-                { label: "Timezone", value: timezoneLabel },
-                { label: "Currency", value: currencyLabel },
-                { label: "Theme preference", value: themeLabel },
-                { label: "Landing page", value: landingPageLabel },
-                {
-                  label: "Weekly summary",
-                  value: DEFAULT_USER_PREFERENCES.weeklySummary ? "Enabled" : "Disabled",
-                },
-                {
-                  label: "Email notifications",
-                  value: DEFAULT_USER_PREFERENCES.emailNotifications ? "Enabled" : "Disabled",
-                },
-              ].map((row) => (
-                <div
-                  key={row.label}
-                  className="flex items-center justify-between rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3"
-                >
-                  <span className="text-sm text-[var(--atlas-muted)]">{row.label}</span>
-                  <span className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Access Guardrails
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Current identity posture and the operational boundaries we are enforcing.
-              </p>
+            <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                Suspended workspaces
+              </div>
+              <div className="mt-2 text-base font-semibold text-[var(--atlas-text-strong)]">
+                {formatNumber(overview.suspendedTenants || 0)} flagged
+              </div>
+              <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                Paused workspaces that may require commercial, access, or health review.
+              </div>
             </div>
 
-            <div className="space-y-2">
-              {[
-                {
-                  label: "Platform admins",
-                  value: formatNumber(activeAdmins),
-                  detail: "Global control-plane management",
-                },
-                {
-                  label: "Enabled users",
-                  value: formatNumber(enabledUsers),
-                  detail: "Platform sign-in access",
-                },
-                {
-                  label: "Tenant-scoped workspaces",
-                  value: formatNumber(overview.totalTenants || 0),
-                  detail: "Operational records isolated per tenant",
-                },
-                {
-                  label: "Tenants under seat pressure",
-                  value: formatNumber(pressureCount),
-                  detail: "Commercial limits still requiring attention",
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {item.label}
-                    </div>
-                    <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {item.value}
-                    </div>
-                  </div>
-                  <div className="mt-1 text-xs text-[var(--atlas-muted)]">{item.detail}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Live Plan Mix
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                How the current tenant base is distributed across tiers.
-              </p>
+            <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                Revenue visibility
+              </div>
+              <div className="mt-2 text-base font-semibold text-[var(--atlas-text-strong)]">
+                {platformSettings.revenueVisibility ? "Visible in platform" : "Hidden in platform"}
+              </div>
+              <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                Revenue visibility is controlled here at the platform level.
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {planDistribution.map((planItem) => {
-                const ratio =
-                  tenants.length > 0 ? planItem.count / Math.max(tenants.length, 1) : 0;
-
-                return (
-                  <div key={planItem.id}>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-semibold text-[var(--atlas-text-strong)]">
-                        {planItem.label}
-                      </span>
-                      <span className="text-[var(--atlas-muted)]">
-                        {formatNumber(planItem.count)} tenant(s)
-                      </span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-[color:var(--atlas-border)]">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-violet-500 to-emerald-500"
-                        style={{ width: `${ratio * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-4">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                Current account scope
+              </div>
+              <div className="mt-2 text-base font-semibold text-[var(--atlas-text-strong)]">
+                {getPlatformRoleLabel(currentAccessTier)}
+              </div>
+              <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                {(currentUser?.displayName || currentUser?.email || "Signed-in admin session")} uses a personal preference profile separate from workspace defaults.
+              </div>
             </div>
-          </Card>
+          </div>
 
-          <Card className="space-y-3">
+          <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-4">
             <div className="flex items-center gap-2 text-[var(--atlas-text-strong)]">
-              <SlidersHorizontal size={16} />
-              <h2 className="text-lg font-semibold">Policy Notes</h2>
+              <BellRing size={15} />
+              <div className="text-sm font-semibold">Current setup</div>
             </div>
-            <div className="space-y-2 text-sm text-[var(--atlas-text)]">
-              <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3">
-                Tenant operational APIs are expected to execute with tenant context so records do not leak across organizations.
+            <div className="mt-3 space-y-2 text-sm text-[var(--atlas-text)]">
+              <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-3">
+                This page is focused on platform settings instead of tenant settings.
               </div>
-              <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3">
-                Platform APIs remain global and are reserved for `PLATFORM_ADMIN` accounts only.
+              <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-3">
+                Platform settings and account preferences are separated clearly.
               </div>
-              <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3">
-                Commercial guardrails should be reviewed whenever seat pressure rises or a tenant is suspended.
+              <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-strong)] px-3 py-3">
+                These controls stay local until a backend settings API is added.
               </div>
             </div>
-          </Card>
-        </div>
-      </div>
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -1,10 +1,14 @@
 import axios from "axios";
 import { PLATFORM_API_BASE_URL } from "./endpoints";
+import { clearPlatformDevSession, isPlatformDevToken } from "../auth/platformDevSession";
 
 export const PLATFORM_TOKEN_KEY = "roots_platform_token";
 export const PLATFORM_JWT_FALLBACK_KEY = "jwt";
 export const PLATFORM_FLASH_KEY = "roots_platform_flash";
 export const PLATFORM_ACTIVE_TENANT_KEY = "activeTenantId";
+
+const DEFAULT_PLATFORM_ROUTE_MODE = "api";
+let preferredPlatformRouteMode = DEFAULT_PLATFORM_ROUTE_MODE;
 
 export function getPlatformToken() {
   if (typeof window === "undefined") return "";
@@ -18,6 +22,16 @@ export function getPlatformToken() {
 export function getPlatformTenantId() {
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem(PLATFORM_ACTIVE_TENANT_KEY) || "";
+}
+
+export function setPlatformTenantId(tenantId) {
+  if (typeof window === "undefined") return;
+
+  if (tenantId || tenantId === 0) {
+    window.localStorage.setItem(PLATFORM_ACTIVE_TENANT_KEY, String(tenantId));
+  } else {
+    window.localStorage.removeItem(PLATFORM_ACTIVE_TENANT_KEY);
+  }
 }
 
 export function setPlatformToken(token) {
@@ -36,6 +50,7 @@ export function clearPlatformSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(PLATFORM_TOKEN_KEY);
   window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
+  clearPlatformDevSession();
 }
 
 function setFlashMessage(message) {
@@ -47,6 +62,82 @@ function redirectToPlatformLogin() {
   if (typeof window === "undefined") return;
   if (window.location.pathname === "/platform/login") return;
   window.location.assign("/platform/login");
+}
+
+function resolveRequestPath(requestUrl) {
+  if (!requestUrl) return "";
+  if (/^https?:\/\//i.test(requestUrl)) {
+    try {
+      return new URL(requestUrl).pathname;
+    } catch {
+      return requestUrl;
+    }
+  }
+  return requestUrl;
+}
+
+function normalizePlatformRouteMode(value) {
+  return value === "api" || value === "direct" ? value : "";
+}
+
+function isApiPlatformPath(pathname) {
+  return pathname === "/api/platform" || pathname.startsWith("/api/platform/");
+}
+
+function isDirectPlatformPath(pathname) {
+  return pathname === "/platform" || pathname.startsWith("/platform/");
+}
+
+export function getPlatformRouteMode() {
+  return preferredPlatformRouteMode;
+}
+
+export function setPlatformRouteMode(mode) {
+  const normalized = normalizePlatformRouteMode(mode);
+  if (!normalized) return;
+  preferredPlatformRouteMode = normalized;
+}
+
+export function applyPlatformRouteMode(pathname, mode = getPlatformRouteMode()) {
+  const normalizedMode = normalizePlatformRouteMode(mode);
+
+  if (!normalizedMode) return pathname;
+  if (normalizedMode === "api" && isDirectPlatformPath(pathname)) {
+    return `/api${pathname}`;
+  }
+  if (normalizedMode === "direct" && isApiPlatformPath(pathname)) {
+    return pathname.replace(/^\/api/, "");
+  }
+
+  return pathname;
+}
+
+export function getAlternatePlatformPath(pathname) {
+  if (isApiPlatformPath(pathname)) {
+    return pathname.replace(/^\/api/, "");
+  }
+  if (isDirectPlatformPath(pathname)) {
+    return `/api${pathname}`;
+  }
+  return "";
+}
+
+function rememberPlatformRouteMode(pathname) {
+  if (isApiPlatformPath(pathname)) {
+    setPlatformRouteMode("api");
+    return;
+  }
+  if (isDirectPlatformPath(pathname)) {
+    setPlatformRouteMode("direct");
+  }
+}
+
+export function shouldAttachPlatformTenantHeader(pathname) {
+  if (!pathname.startsWith("/api/")) return false;
+  if (pathname === "/api/auth" || pathname.startsWith("/api/auth/")) return false;
+  if (pathname === "/api/tenants" || pathname === "/api/tenants/") return false;
+  if (pathname === "/api/tenants/my" || pathname === "/api/tenants/invites/accept") return false;
+  return true;
 }
 
 export function unwrapApiResponse(payload, fallbackMessage = "Request failed") {
@@ -64,15 +155,50 @@ export function unwrapApiResponse(payload, fallbackMessage = "Request failed") {
   return payload.data;
 }
 
+function getNonEmptyMessage(value) {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
 export function getApiErrorMessage(error, fallbackMessage = "Something went wrong") {
   const payload = error?.response?.data;
 
-  if (typeof payload?.message === "string") return payload.message;
-  if (typeof payload?.error === "string") return payload.error;
-  if (typeof payload === "string") return payload;
-  if (typeof error?.message === "string") return error.message;
+  const message =
+    getNonEmptyMessage(payload?.message) ||
+    getNonEmptyMessage(payload?.error) ||
+    getNonEmptyMessage(payload) ||
+    getNonEmptyMessage(error?.message);
+
+  if (message) return message;
 
   return fallbackMessage;
+}
+
+export function enrichPlatformRequestConfig(config, context = {}) {
+  const token =
+    Object.prototype.hasOwnProperty.call(context, "token") ? context.token : getPlatformToken();
+  const tenantId =
+    Object.prototype.hasOwnProperty.call(context, "tenantId")
+      ? context.tenantId
+      : getPlatformTenantId();
+  const requestUrl = String(config?.url || "");
+  const normalizedPath = resolveRequestPath(requestUrl);
+
+  config.headers = config.headers || {};
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (
+    shouldAttachPlatformTenantHeader(normalizedPath) &&
+    tenantId &&
+    !config.headers["X-Tenant-Id"]
+  ) {
+    config.headers["X-Tenant-Id"] = tenantId;
+  }
+
+  return config;
 }
 
 const platformAxios = axios.create({
@@ -84,43 +210,44 @@ const platformAxios = axios.create({
 });
 
 platformAxios.interceptors.request.use((config) => {
-  const token = getPlatformToken();
-  const tenantId = getPlatformTenantId();
-  const requestUrl = String(config?.url || "");
-  const isAuthRoute = requestUrl.includes("/auth/");
-  const normalizedPath = (() => {
-    if (!requestUrl) return "";
-    if (/^https?:\/\//i.test(requestUrl)) {
-      try {
-        return new URL(requestUrl).pathname;
-      } catch {
-        return requestUrl;
-      }
-    }
-    return requestUrl;
-  })();
-  const isPlatformRoute = normalizedPath.startsWith("/platform/");
+  const nextConfig = enrichPlatformRequestConfig(config);
+  const requestPath = resolveRequestPath(String(nextConfig?.url || ""));
+  const preferredPath = applyPlatformRouteMode(requestPath);
 
-  config.headers = config.headers || {};
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (preferredPath && preferredPath !== requestPath) {
+    nextConfig.url = preferredPath;
   }
 
-  if (!isAuthRoute && !isPlatformRoute && tenantId && !config.headers["X-Tenant-Id"]) {
-    config.headers["X-Tenant-Id"] = tenantId;
-  }
-
-  return config;
+  return nextConfig;
 });
 
 platformAxios.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    rememberPlatformRouteMode(resolveRequestPath(response?.config?.url || ""));
+    return response;
+  },
   (error) => {
     const status = error?.response?.status;
     const skipAuthHandling = Boolean(error?.config?.skipPlatformAuthHandling);
+    const requestPath = resolveRequestPath(String(error?.config?.url || ""));
+    const alternatePath = getAlternatePlatformPath(requestPath);
+    const hasRouteRetried = Boolean(error?.config?._platformRouteRetried);
 
-    if (status === 401 && !skipAuthHandling) {
+    if (
+      !hasRouteRetried &&
+      alternatePath &&
+      [400, 403, 404, 405].includes(Number(status))
+    ) {
+      setPlatformRouteMode(isApiPlatformPath(alternatePath) ? "api" : "direct");
+
+      return platformAxios({
+        ...error.config,
+        url: alternatePath,
+        _platformRouteRetried: true,
+      });
+    }
+
+    if (status === 401 && !skipAuthHandling && !isPlatformDevToken(getPlatformToken())) {
       clearPlatformSession();
       setFlashMessage("Session expired. Please log in again.");
       redirectToPlatformLogin();

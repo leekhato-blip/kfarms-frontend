@@ -4,7 +4,7 @@ const WORKSPACE_ROLE_LABELS = Object.freeze({
   MANAGER: "Manager",
   USER: "Staff",
   STAFF: "Staff",
-  PLATFORM_ADMIN: "Platform Admin",
+  PLATFORM_ADMIN: "ROOTS Admin",
 });
 
 export const MUTABLE_WORKSPACE_ROLE_OPTIONS = Object.freeze([
@@ -12,6 +12,14 @@ export const MUTABLE_WORKSPACE_ROLE_OPTIONS = Object.freeze([
   { value: "MANAGER", label: "Manager" },
   { value: "STAFF", label: "Staff" },
 ]);
+
+const WORKSPACE_ROLE_RANKS = Object.freeze({
+  STAFF: 100,
+  MANAGER: 200,
+  ADMIN: 300,
+  OWNER: 400,
+  PLATFORM_ADMIN: 500,
+});
 
 export function normalizeWorkspaceRole(value, fallback = "STAFF") {
   const normalized = String(value ?? "").trim().toUpperCase();
@@ -31,6 +39,24 @@ export function toBackendWorkspaceRole(value) {
 export function getWorkspaceRoleLabel(value) {
   const normalized = String(value ?? "").trim().toUpperCase();
   return WORKSPACE_ROLE_LABELS[normalized] || WORKSPACE_ROLE_LABELS[normalizeWorkspaceRole(value)];
+}
+
+export function getWorkspaceRoleRank(value) {
+  return WORKSPACE_ROLE_RANKS[normalizeWorkspaceRole(value)] || WORKSPACE_ROLE_RANKS.STAFF;
+}
+
+export function canManageWorkspaceMember(actorRole, targetRole) {
+  return getWorkspaceRoleRank(actorRole) > getWorkspaceRoleRank(targetRole);
+}
+
+export function canAssignWorkspaceRole(actorRole, targetRole) {
+  return getWorkspaceRoleRank(actorRole) > getWorkspaceRoleRank(targetRole);
+}
+
+export function getManageableWorkspaceRoleOptions(actorRole) {
+  return MUTABLE_WORKSPACE_ROLE_OPTIONS.filter((option) =>
+    canAssignWorkspaceRole(actorRole, option.value),
+  );
 }
 
 export function canViewWorkspaceUsers(value) {

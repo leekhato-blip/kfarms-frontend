@@ -4,6 +4,66 @@ export function formatNumber(value) {
   return parsed.toLocaleString();
 }
 
+export function replaceCurrencyCodeWithSymbol(value) {
+  if (typeof value !== "string") return value;
+
+  return value.replace(/NGN(?:\s|\u00A0)*/g, "₦");
+}
+
+export function formatCurrencyValue(value, currency = "NGN", options = {}) {
+  const parsed = Number(value);
+  const normalizedCurrency = String(currency || "NGN").toUpperCase();
+  if (!Number.isFinite(parsed)) {
+    return replaceCurrencyCodeWithSymbol(`${normalizedCurrency} 0`);
+  }
+
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: normalizedCurrency,
+    maximumFractionDigits: 0,
+    ...options,
+  }).format(parsed);
+
+  return replaceCurrencyCodeWithSymbol(formatted);
+}
+
+export function formatCompactCurrencyValue(value, currency = "NGN", options = {}) {
+  const parsed = Number(value);
+  const normalizedCurrency = String(currency || "NGN").toUpperCase();
+
+  if (!Number.isFinite(parsed)) {
+    return replaceCurrencyCodeWithSymbol(`${normalizedCurrency} 0`);
+  }
+
+  const absolute = Math.abs(parsed);
+  const compactSteps = [
+    { threshold: 1_000_000_000_000, suffix: "T" },
+    { threshold: 1_000_000_000, suffix: "B" },
+    { threshold: 1_000_000, suffix: "M" },
+    { threshold: 1_000, suffix: "K" },
+  ];
+  const fractionDigits =
+    typeof options.maximumFractionDigits === "number"
+      ? options.maximumFractionDigits
+      : 1;
+  const compactStep = compactSteps.find((step) => absolute >= step.threshold);
+
+  if (!compactStep) {
+    return formatCurrencyValue(parsed, normalizedCurrency, {
+      maximumFractionDigits: 0,
+      ...options,
+    });
+  }
+
+  const compactValue = parsed / compactStep.threshold;
+  const compactNumber = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: fractionDigits,
+  }).format(compactValue);
+
+  return replaceCurrencyCodeWithSymbol(`${normalizedCurrency} ${compactNumber}${compactStep.suffix}`);
+}
+
 export function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);

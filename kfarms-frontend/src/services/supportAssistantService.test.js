@@ -131,7 +131,7 @@ describe("supportAssistantService", () => {
     });
 
     expect(result.reply).toContain("local assistant mode");
-    expect(result.actions.some((action) => action.target === "/sales")).toBe(true);
+    expect(result.actions.some((action) => action.target === "/app/kfarms/sales")).toBe(true);
     expect(result.suggestions).toContain("What sales fields are mandatory?");
   });
 
@@ -164,6 +164,40 @@ describe("supportAssistantService", () => {
     expect(result.source).toBe("api");
     expect(result.suggestions.length).toBeGreaterThan(0);
     expect(result.actions.length).toBeGreaterThan(0);
-    expect(result.actions.some((action) => action.target === "/inventory")).toBe(true);
+    expect(result.actions.some((action) => action.target === "/app/kfarms/inventory")).toBe(true);
+  });
+
+  it("replaces generic snapshot replies with a smarter topic-specific answer", async () => {
+    apiPost.mockResolvedValue({
+      data: {
+        data: {
+          reply: [
+            "Here is the current workspace snapshot for Delta Farm:",
+            "- Inventory: 0 low stock, 0 out of stock.",
+            "- Tasks: 2 overdue, 0 due soon.",
+            "- Unread alerts include \"No Sales Activity\".",
+          ].join("\n"),
+          messages: [],
+          suggestions: [],
+          actions: [],
+        },
+      },
+    });
+
+    const { askSupportAssistant } = await import("./supportAssistantService");
+    const result = await askSupportAssistant({
+      tenantId: 18,
+      tenantName: "Delta Farm",
+      userName: "Lee",
+      message: "how can i add new sale?",
+      context: {
+        currentPath: "/dashboard",
+        modules: ["POULTRY"],
+      },
+    });
+
+    expect(result.source).toBe("hybrid");
+    expect(result.reply.toLowerCase()).toContain("to add a new sale");
+    expect(result.actions.some((action) => action.target === "/app/kfarms/sales")).toBe(true);
   });
 });

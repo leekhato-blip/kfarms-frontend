@@ -1,3 +1,9 @@
+import {
+  KFARMS_DEFAULT_LEGACY_PATH,
+  normalizeKfarmsLegacyPath,
+  toKfarmsAppPath,
+} from "../apps/kfarms/paths";
+
 export const FARM_MODULES = Object.freeze({
   POULTRY: "POULTRY",
   FISH_FARMING: "FISH_FARMING",
@@ -10,7 +16,7 @@ export const FARM_MODULE_OPTIONS = Object.freeze([
     shortLabel: "Poultry",
     description:
       "Track flocks, egg production, bird health, and day-to-day poultry work.",
-    route: "/poultry",
+    route: toKfarmsAppPath("/poultry"),
     accentClassName:
       "from-amber-400/20 via-orange-400/10 to-rose-400/10 text-amber-700 dark:text-amber-200",
   },
@@ -20,7 +26,7 @@ export const FARM_MODULE_OPTIONS = Object.freeze([
     shortLabel: "Fish",
     description:
       "Manage ponds, stocking, hatch batches, and pond performance in one place.",
-    route: "/fish-ponds",
+    route: toKfarmsAppPath("/fish-ponds"),
     accentClassName:
       "from-cyan-400/20 via-sky-400/10 to-emerald-400/10 text-cyan-700 dark:text-cyan-200",
   },
@@ -108,7 +114,7 @@ export function hasFarmModule(tenant, moduleId) {
 
 export function getRequiredModulesForPath(pathname) {
   if (!pathname) return [];
-  const normalizedPath = pathname === "/livestock" ? "/poultry" : pathname;
+  const normalizedPath = normalizeKfarmsLegacyPath(pathname);
   return Object.entries(MODULE_PATH_REQUIREMENTS).find(([path]) =>
     normalizedPath === path || normalizedPath.startsWith(`${path}/`)
   )?.[1] ?? [];
@@ -121,9 +127,12 @@ export function isTenantPathEnabled(pathname, tenant) {
 }
 
 export function resolveTenantLandingPage(pathname, tenant) {
-  const normalizedPath = pathname === "/livestock" ? "/poultry" : pathname;
-  if (!normalizedPath) return "/dashboard";
-  return isTenantPathEnabled(normalizedPath, tenant) ? normalizedPath : "/dashboard";
+  if (!pathname) return KFARMS_DEFAULT_LEGACY_PATH;
+  const normalizedPath = normalizeKfarmsLegacyPath(pathname);
+  if (!normalizedPath) return KFARMS_DEFAULT_LEGACY_PATH;
+  return isTenantPathEnabled(normalizedPath, tenant)
+    ? normalizedPath
+    : KFARMS_DEFAULT_LEGACY_PATH;
 }
 
 export function getEnabledModuleOptions(tenant) {

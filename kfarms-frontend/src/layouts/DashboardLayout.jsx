@@ -48,7 +48,9 @@ export default function DashboardLayout({ children }) {
               </p>
             </section>
           )}
-          <main className="mt-6 flex-1 pb-8">{children}</main>
+          <main data-route-scroll className="mt-6 flex-1 pb-8">
+            {children}
+          </main>
 
           <footer className="mt-auto -mx-4 overflow-hidden border-t border-white/10 bg-white/70 shadow-neo backdrop-blur-xl md:-mx-6 dark:bg-darkCard/75 dark:shadow-dark">
             <div className="relative px-4 py-4 md:px-6">
@@ -64,13 +66,13 @@ export default function DashboardLayout({ children }) {
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                   <a
                     className="rounded-full border border-white/20 bg-white/50 px-3 py-1 text-slate-600 transition hover:border-accent-primary/35 hover:text-accent-primary dark:bg-white/10 dark:text-slate-200"
-                    href="/company-profile#plans"
+                    href="/product-profile#plans"
                   >
                     Pricing
                   </a>
                   <a
                     className="rounded-full border border-white/20 bg-white/50 px-3 py-1 text-slate-600 transition hover:border-accent-primary/35 hover:text-accent-primary dark:bg-white/10 dark:text-slate-200"
-                    href="/company-profile#contact"
+                    href="/product-profile#contact"
                   >
                     Contact
                   </a>

@@ -21,15 +21,21 @@ import PageLoader from "../components/PageLoader";
 import PageWrapper from "../components/PageWrapper";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import { getAuthTrustText } from "../constants/authCopy";
-import { useAuth } from "../hooks/useAuth";
-import { login as loginApi, signUser } from "../services/authService";
-import { createTenant } from "../services/tenantService";
+import { signUser } from "../services/authService";
 import {
   FARM_MODULE_OPTIONS,
   FARM_MODULES,
 } from "../tenant/tenantModules";
-import { useTenant } from "../tenant/TenantContext";
 import { slugifyWorkspaceName } from "../utils/slugify";
+import {
+  ACCOUNT_PASSWORD_MIN_LENGTH,
+  looksLikeEmail,
+  looksLikePhoneNumber,
+  normalizeEmail,
+  normalizePhoneNumber,
+  validateAccountPassword,
+} from "../utils/accountValidation";
+import { writePendingContactVerification } from "../auth/contactVerificationStorage";
 
 const SIGNUP_STEPS = [
   {
@@ -67,15 +73,8 @@ function extractErrorMessage(error, fallback) {
   return fallback;
 }
 
-function looksLikeEmail(value) {
-  return /\S+@\S+\.\S+/.test(String(value || "").trim());
-}
-
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { refreshMe } = useAuth();
-  const { ensureActiveTenant, refreshTenants, setActiveTenant } = useTenant();
-  const recoveryRedirectRef = React.useRef(null);
   const brandName = "KFarms";
   const brandLogo = kfarmsLogo;
   const brandPrimaryColor = "#2563EB";
@@ -83,11 +82,12 @@ export default function SignupPage() {
   const [form, setForm] = React.useState({
     email: "",
     username: "",
+    phoneNumber: "",
     password: "",
     confirmPassword: "",
     farmName: "",
     farmSlug: "",
-    modules: [FARM_MODULES.POULTRY],
+    modules: [],
   });
   const [slugEdited, setSlugEdited] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -96,9 +96,10 @@ export default function SignupPage() {
   const [currentStep, setCurrentStep] = React.useState(0);
 
   const accountStepComplete = Boolean(
-    form.email.trim() &&
+    looksLikeEmail(form.email) &&
       form.username.trim() &&
-      form.password.length >= 8 &&
+      looksLikePhoneNumber(form.phoneNumber) &&
+      !validateAccountPassword(form.password, ACCOUNT_PASSWORD_MIN_LENGTH) &&
       form.confirmPassword &&
       form.password === form.confirmPassword,
   );
@@ -131,14 +132,6 @@ export default function SignupPage() {
     setInlineError("");
   }, [currentStep]);
 
-  React.useEffect(() => {
-    return () => {
-      if (recoveryRedirectRef.current) {
-        window.clearTimeout(recoveryRedirectRef.current);
-      }
-    };
-  }, []);
-
   function updateField(key, value) {
     setForm((current) => ({
       ...current,
@@ -149,6 +142,7 @@ export default function SignupPage() {
   function validateStep(stepIndex) {
     const email = form.email.trim();
     const username = form.username.trim();
+    const phoneNumber = form.phoneNumber.trim();
     const password = form.password;
     const confirmPassword = form.confirmPassword;
     const farmName = form.farmName.trim();
@@ -156,7 +150,7 @@ export default function SignupPage() {
     const modules = Array.isArray(form.modules) ? form.modules : [];
 
     if (stepIndex === 0) {
-      if (!email || !username || !password || !confirmPassword) {
+      if (!email || !username || !phoneNumber || !password || !confirmPassword) {
         setInlineError("Please complete your account details.");
         return false;
       }
@@ -166,8 +160,14 @@ export default function SignupPage() {
         return false;
       }
 
-      if (password.length < 8) {
-        setInlineError("Use at least 8 characters for your password.");
+      if (!looksLikePhoneNumber(phoneNumber)) {
+        setInlineError("Please enter a valid phone number.");
+        return false;
+      }
+
+      const passwordError = validateAccountPassword(password, ACCOUNT_PASSWORD_MIN_LENGTH);
+      if (passwordError) {
+        setInlineError(passwordError);
         return false;
       }
 
@@ -205,91 +205,44 @@ export default function SignupPage() {
     setCurrentStep((step) => Math.max(step - 1, 0));
   }
 
-  function redirectToLoginAfterRecovery(message, email) {
-    setInlineError(message);
-
-    if (recoveryRedirectRef.current) {
-      window.clearTimeout(recoveryRedirectRef.current);
-    }
-
-    recoveryRedirectRef.current = window.setTimeout(() => {
-      navigate("/auth/login", {
-        replace: true,
-        state: {
-          signupRecoveryMessage: message,
-          prefillIdentifier: email,
-        },
-      });
-    }, 1800);
-  }
-
   async function completeSignup() {
-    const email = form.email.trim();
+    const email = normalizeEmail(form.email);
     const username = form.username.trim();
+    const phoneNumber = normalizePhoneNumber(form.phoneNumber);
     const password = form.password;
     const farmName = form.farmName.trim();
     const farmSlug = slugifyWorkspaceName(form.farmSlug || form.farmName);
     const modules = Array.isArray(form.modules) ? form.modules : [];
-    let accountCreated = false;
 
     setLoading(true);
 
-    try {
-      await signUser({ email, username, password });
-      accountCreated = true;
-      await loginApi({ identifier: email, password });
+      try {
+        const result = await signUser({ email, username, password, phoneNumber });
+        const payload = result?.data ?? result ?? {};
 
-      const createdTenant = await createTenant({
-        name: farmName,
-        slug: farmSlug,
+      writePendingContactVerification({
+        email,
+        username,
+        phoneNumber,
+        password,
+        farmName,
+        farmSlug,
         modules,
+        maskedEmail: payload.maskedEmail || email,
+        maskedPhoneNumber: payload.maskedPhoneNumber || phoneNumber,
+        emailVerified: Boolean(payload.emailVerified),
+        phoneVerified: Boolean(payload.phoneVerified),
+        preview: payload.preview || null,
       });
 
-      await refreshMe();
-      const tenantList = await refreshTenants({ force: true });
-      const createdTenantId =
-        Number(createdTenant?.tenantId) ||
-        Number(
-          tenantList.find((tenant) => String(tenant?.slug) === farmSlug)?.tenantId,
-        );
-
-      if (createdTenantId) {
-        setActiveTenant(createdTenantId);
-      } else {
-        ensureActiveTenant(tenantList);
-      }
-
-      setToast({
-        message: "Your farm is ready. Taking you inside now.",
-        type: "success",
+      navigate("/auth/verify-contact", {
+        replace: true,
+        state: payload,
       });
-      navigate("/dashboard", { replace: true });
     } catch (error) {
-      const createFarmFallback =
-        "Your account was created, but we could not finish the farm setup.";
-      const loginFallback =
-        "Your account is ready, but we could not sign you in automatically.";
-
-      const looksLikeFarmSetupFailure =
-        error?.config?.url?.includes?.("/tenants") ||
-        error?.response?.config?.url?.includes?.("/tenants");
-
-      if (accountCreated) {
-        if (looksLikeFarmSetupFailure) {
-          await refreshMe().catch(() => {});
-        }
-
-        redirectToLoginAfterRecovery(
-          extractErrorMessage(
-            error,
-            looksLikeFarmSetupFailure ? createFarmFallback : loginFallback,
-          ),
-          email,
-        );
-        return;
-      }
-
-      setInlineError(extractErrorMessage(error, loginFallback));
+      setInlineError(
+        extractErrorMessage(error, "We could not start the signup flow right now."),
+      );
     } finally {
       setLoading(false);
     }
@@ -541,6 +494,18 @@ export default function SignupPage() {
                           required
                         />
                         <FloatingInput
+                          label="Phone number"
+                          value={form.phoneNumber}
+                          onChange={(event) => updateField("phoneNumber", event.target.value)}
+                          autoComplete="tel"
+                          type="tel"
+                          required
+                        />
+                        <div className="sm:col-span-2 rounded-2xl border border-slate-200/70 bg-white/80 px-3.5 py-2.5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                          We will verify this email and phone number before the workspace opens so
+                          alerts and account recovery go to the right contact.
+                        </div>
+                        <FloatingInput
                           label="Password"
                           value={form.password}
                           onChange={(event) => updateField("password", event.target.value)}
@@ -559,8 +524,9 @@ export default function SignupPage() {
                           required
                         />
                       </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3.5 py-2.5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                        Use a password with at least 8 characters so your farm account starts secure.
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3.5 py-2.5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:col-span-2">
+                        Use a valid email, a reachable phone number, and a password with at least 6
+                        characters including letters and numbers.
                       </div>
                     </div>
                   ) : null}
@@ -611,6 +577,9 @@ export default function SignupPage() {
                                 <div className="font-semibold">{form.username || "Your username"}</div>
                                 <div className="text-slate-500 dark:text-slate-400">
                                   {form.email || "Add your email in step one"}
+                                </div>
+                                <div className="text-slate-500 dark:text-slate-400">
+                                  {form.phoneNumber || "Add your phone number in step one"}
                                 </div>
                               </div>
                             </div>

@@ -63,12 +63,12 @@ const formatCount = (value) => {
   return numeric.toLocaleString();
 };
 
-const formatCurrency = (value) => {
+const formatCurrency = (value, currency = "NGN") => {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric === 0) return "—";
-  return new Intl.NumberFormat("en-NG", {
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: "NGN",
+    currency: String(currency || "NGN").toUpperCase(),
     maximumFractionDigits: 0,
   }).format(numeric);
 };
@@ -147,6 +147,7 @@ function FeedSectionEmptyState({
 
 export default function FeedsPage() {
   const { activeTenant } = useTenant();
+  const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
   const [loading, setLoading] = useState(true);
   const [feedData, setFeedData] = useState(null);
   const [listLoading, setListLoading] = useState(true);
@@ -170,7 +171,7 @@ export default function FeedsPage() {
   const [toast, setToast] = useState({ message: "", type: "info" });
   const [trashOpen, setTrashOpen] = useState(false);
 
-  const fetchFeedSummary = async () => {
+  const fetchFeedSummary = React.useCallback(async () => {
     try {
       const res = await getFeedSummary();
       const summary =
@@ -185,17 +186,17 @@ export default function FeedsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchFeedSummary();
-  }, []);
+    void fetchFeedSummary();
+  }, [fetchFeedSummary]);
 
   const tenantRole = normalizeRole(activeTenant?.myRole);
   const canCreateOrEdit = EDITOR_ROLES.has(tenantRole);
   const canDeleteOrRestore = ADMIN_ROLES.has(tenantRole);
 
-  const fetchFeeds = async (page = 0) => {
+  const fetchFeeds = React.useCallback(async (page = 0) => {
     setListLoading(true);
     try {
       const res = await getAllFeeds({
@@ -222,12 +223,11 @@ export default function FeedsPage() {
     } finally {
       setListLoading(false);
     }
-  };
+  }, [filters.batchType, filters.date]);
 
   useEffect(() => {
-    fetchFeeds(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.batchType, filters.date]);
+    void fetchFeeds(0);
+  }, [fetchFeeds]);
 
   const handleRefresh = async () => {
     if (refreshing) return;
@@ -343,7 +343,7 @@ export default function FeedsPage() {
     },
     {
       title: "Monthly Spend",
-      value: formatCurrency(data?.monthlySpend),
+      value: formatCurrency(data?.monthlySpend, workspaceCurrency),
       subtitle: "Feed expenses",
       icon: <Wallet />,
       hasData: Number(data?.monthlySpend) > 0,
@@ -394,11 +394,11 @@ export default function FeedsPage() {
           },
           {
             label: "Unit Cost",
-            value: unitCost ? formatCurrency(unitCost) : "—",
+            value: unitCost ? formatCurrency(unitCost, workspaceCurrency) : "—",
           },
           {
             label: "Total",
-            value: unitCost ? formatCurrency(total) : "—",
+            value: unitCost ? formatCurrency(total, workspaceCurrency) : "—",
           },
           { label: "Note", value: detailItem.note || "—", span: 2 },
         ];
@@ -994,7 +994,7 @@ export default function FeedsPage() {
                           {formatCount(getFeedQuantity(tx))} {data?.unit || ""}
                         </td>
                         <td className="py-2 text-slate-500 dark:text-slate-400">
-                          {tx.unitCost == null ? "—" : formatCurrency(tx.unitCost)}
+                          {tx.unitCost == null ? "—" : formatCurrency(tx.unitCost, workspaceCurrency)}
                         </td>
                       </tr>
                     ))}
@@ -1137,10 +1137,10 @@ export default function FeedsPage() {
                           {formatCount(quantity)} {data?.unit || ""}
                         </td>
                         <td className="text-right whitespace-nowrap">
-                          {unitCost ? formatCurrency(unitCost) : "—"}
+                          {unitCost ? formatCurrency(unitCost, workspaceCurrency) : "—"}
                         </td>
                         <td className="text-right whitespace-nowrap">
-                          {total ? formatCurrency(total) : "—"}
+                          {total ? formatCurrency(total, workspaceCurrency) : "—"}
                         </td>
                         <td className="text-center">
                           {canCreateOrEdit || canDeleteOrRestore ? (
@@ -1375,7 +1375,7 @@ export default function FeedsPage() {
           if (key === "quantity")
             return `${formatCount(getFeedQuantity(item))} ${data?.unit || ""}`;
           if (key === "unitCost")
-            return item.unitCost ? formatCurrency(item.unitCost) : "—";
+            return item.unitCost ? formatCurrency(item.unitCost, workspaceCurrency) : "—";
           return item[key] ?? "—";
         }}
       />

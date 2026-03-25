@@ -1,3 +1,5 @@
+import { FARM_MODULES } from "../tenant/tenantModules";
+
 const COLORS = {
   starter: "#7C3AED",
   grower: "#0F766E",
@@ -15,13 +17,40 @@ const COLORS = {
   others: "#9CA3AF",
 };
 
-export function resolveFeedColor(label = "") {
-  const normalized = String(label).toLowerCase();
+export function detectFeedModule(label = "") {
+  const normalized = String(label || "").trim().toLowerCase();
+  if (!normalized) return null;
+
   if (
     /\b\d+(\.\d+)?mm\b/.test(normalized) ||
     normalized.includes("floating") ||
-    normalized.includes("sinking")
+    normalized.includes("sinking") ||
+    normalized.includes("fish")
   ) {
+    return FARM_MODULES.FISH_FARMING;
+  }
+
+  if (
+    normalized.includes("starter") ||
+    normalized.includes("grower") ||
+    normalized.includes("finisher") ||
+    normalized.includes("layer") ||
+    normalized.includes("poul") ||
+    normalized.includes("broiler") ||
+    normalized.includes("noiler") ||
+    normalized.includes("turkey") ||
+    normalized.includes("fowl") ||
+    normalized.includes("duck")
+  ) {
+    return FARM_MODULES.POULTRY;
+  }
+
+  return null;
+}
+
+export function resolveFeedColor(label = "") {
+  const normalized = String(label).toLowerCase();
+  if (detectFeedModule(label) === FARM_MODULES.FISH_FARMING) {
     return COLORS.fish;
   }
   if (normalized.includes("starter")) return COLORS.starter;

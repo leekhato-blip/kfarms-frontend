@@ -1,4 +1,5 @@
 import React from "react";
+import { replaceCurrencyCodeWithSymbol } from "../utils/formatters";
 
 export default function SummaryCard({
   icon,
@@ -12,6 +13,9 @@ export default function SummaryCard({
 }) {
   const deltaText = typeof delta === "string" ? delta.trim() : delta;
   const isNegative = typeof deltaText === "string" && deltaText.startsWith("-");
+  const displayValue = replaceCurrencyCodeWithSymbol(value);
+  const displaySubtitle = replaceCurrencyCodeWithSymbol(subtitle);
+  const displayDelta = replaceCurrencyCodeWithSymbol(deltaText);
 
   return (
     <article
@@ -41,7 +45,7 @@ export default function SummaryCard({
 
             {subtitle && (
               <div className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-gray-300/80 truncate">
-                {subtitle}
+                {displaySubtitle}
               </div>
             )}
           </div>
@@ -51,10 +55,10 @@ export default function SummaryCard({
             <div
               className={`text-sm sm:text-2xl lg:text-3xl xl:text-3xl font-extrabold font-header text-gray-900 dark:text-white truncate ${valueClass}`}
             >
-              {value}
+              {displayValue}
             </div>
 
-            {deltaText && (
+            {displayDelta && (
               <div
                 className={`mt-1 inline-flex items-center gap-1.5 text-xs sm:text-sm px-2 py-0.5 rounded-full font-medium ${
                   isNegative
@@ -82,7 +86,7 @@ export default function SummaryCard({
                   )}
                 </svg>
 
-                <span className="whitespace-nowrap">{deltaText}</span>
+                <span className="whitespace-nowrap">{displayDelta}</span>
               </div>
             )}
           </div>

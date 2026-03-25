@@ -21,6 +21,7 @@ export const PLAN_TIER_CONFIG = [
       "Sales records, supplies, feed inventory, fish ponds, and poultry tracking",
       "Dashboard summary cards and quick add actions",
       "Workspace setup with owner-only access control",
+      "Offline-ready capture with sync recovery for day-to-day work",
     ],
   },
   {
@@ -41,7 +42,8 @@ export const PLAN_TIER_CONFIG = [
     highlights: [
       "Team management, role control, and invitations",
       "Hatch workflows, revenue analytics, watchlists, and health alerts",
-      "Task planning, CSV/XLSX export, and trash restore workflow",
+      "Task planning, CSV/XLSX export, trash restore, and priority support messaging",
+      "Operational continuity through offline-safe record flows",
     ],
   },
   {
@@ -51,7 +53,7 @@ export const PLAN_TIER_CONFIG = [
     priceLabel: "Custom pricing",
     cycleLabel: "typically NGN 80,000-150,000 per month",
     ctaLabel: "Talk to Sales",
-    ctaPath: "/company-profile#contact",
+    ctaPath: "/product-profile#contact",
     limits: [
       { label: "Organizations", value: "Unlimited" },
       { label: "Users", value: "Unlimited" },
@@ -59,9 +61,9 @@ export const PLAN_TIER_CONFIG = [
       { label: "Poultry Flocks", value: "Unlimited" },
     ],
     highlights: [
-      "Multi-farm and multi-branch management with roll-up dashboards across every farm",
-      "Forecasting for feed usage, harvests, eggs, mortality warnings, and branch planning",
-      "White-label branding, custom integrations, dedicated support, and enterprise access control",
+      "Multi-workspace operations with unlimited users and portfolio visibility",
+      "Enterprise permission profiles, brand controls, and workspace policy settings",
+      "Dedicated platform messaging lane for enterprise subscribers",
     ],
   },
 ];
@@ -77,6 +79,11 @@ export const PLAN_FEATURE_MATRIX = [
   {
     id: "core-records",
     feature: "Sales records, supplies, feeds, fish ponds, and poultry tracking",
+    minPlan: "FREE",
+  },
+  {
+    id: "offline-ready",
+    feature: "Offline-ready record capture with sync recovery when the network returns",
     minPlan: "FREE",
   },
   {
@@ -130,68 +137,33 @@ export const PLAN_FEATURE_MATRIX = [
     minPlan: "PRO",
   },
   {
-    id: "multi-org-ops",
-    feature: "Multi-farm / multi-branch management",
-    minPlan: "ENTERPRISE",
+    id: "priority-platform-messaging",
+    feature: "Support messaging with a Pro priority lane",
+    minPlan: "PRO",
   },
   {
-    id: "rollup-dashboards",
-    feature: "Roll-up dashboards across farms with per-site reporting",
+    id: "multi-org-ops",
+    feature: "Multi-workspace operations and enterprise site portfolio",
     minPlan: "ENTERPRISE",
   },
   {
     id: "advanced-role-permissions",
-    feature: "Custom roles beyond owner/admin/manager/staff with page-level and action-level permissions",
+    feature: "Advanced permission profiles and custom role labels",
     minPlan: "ENTERPRISE",
   },
   {
-    id: "forecasting-planning",
-    feature: "Forecasting and planning for feed demand, egg output, fish harvest, and branch planning",
+    id: "workspace-brand-controls",
+    feature: "Workspace brand controls for logo, colors, and report footer",
     minPlan: "ENTERPRISE",
   },
   {
-    id: "white-labeling",
-    feature: "White-labeling with custom logo, company colors, branded login, branded PDF reports, and custom domain",
+    id: "workspace-policies",
+    feature: "Workspace policy controls like strong passwords and session timeout",
     minPlan: "ENTERPRISE",
   },
   {
-    id: "custom-integrations",
-    feature: "Custom integrations for enterprise workflows and external systems",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "dedicated-support",
-    feature: "Dedicated support and priority onboarding",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "feed-usage-prediction",
-    feature: "Feed usage prediction",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "mortality-warnings",
-    feature: "Mortality warnings",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "profit-per-batch",
-    feature: "Profit per batch",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "egg-production-tracking",
-    feature: "Egg production tracking",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "fish-growth-estimation",
-    feature: "Fish growth estimation",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "branch-performance-views",
-    feature: "Performance views by farm, pond, poultry house, and batch",
+    id: "dedicated-platform-messaging",
+    feature: "Dedicated platform messaging lane for enterprise subscribers",
     minPlan: "ENTERPRISE",
   },
 ];

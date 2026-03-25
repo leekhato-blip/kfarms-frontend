@@ -21,17 +21,17 @@ function formatMonth(value) {
   });
 }
 
-function formatCurrency(value) {
+function formatCurrency(value, currency = "NGN") {
   if (value == null || isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-NG", {
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: "NGN",
+    currency: String(currency || "NGN").toUpperCase(),
     maximumFractionDigits: 0,
   }).format(value);
 }
 
 /* ------------------ Tooltip ------------------ */
-function CustomTooltip({ active, payload, label }) {
+function CustomTooltip({ active, payload, label, currency = "NGN" }) {
   if (!active || !payload || !payload.length) return null;
 
   const isDark =
@@ -61,7 +61,7 @@ function CustomTooltip({ active, payload, label }) {
             />
             {p.name || p.dataKey}
           </div>
-          <span className="font-semibold">{formatCurrency(p.value)}</span>
+          <span className="font-semibold">{formatCurrency(p.value, currency)}</span>
         </div>
       ))}
     </div>
@@ -71,6 +71,7 @@ function CustomTooltip({ active, payload, label }) {
 /* ------------------ Component ------------------ */
 export default function RevenueExpenseChart({
   data = [],
+  currency = "NGN",
   onRefresh,
   refreshing = false,
 }) {
@@ -186,7 +187,7 @@ export default function RevenueExpenseChart({
             Revenue Generated
           </p>
           <h2 className="text-2xl font-bold font-header text-green-400">
-            {formatCurrency(totalRevenue)}
+            {formatCurrency(totalRevenue, currency)}
           </h2>
           <p className="mt-2 text-xs text-lightText/70 dark:text-darkText/70">
             Monthly revenue, expense, and profit trends.
@@ -215,7 +216,7 @@ export default function RevenueExpenseChart({
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <h3 className="text-xl font-semibold font-header text-lightText dark:text-darkText">
-              {formatCurrency(currentProfit)}
+              {formatCurrency(currentProfit, currency)}
             </h3>
             <div className={`flex items-center gap-1.5 text-xs font-medium ${trendTone}`}>
               {profitTrend === "up" ? <ArrowUpRight className="h-3.5 w-3.5" /> : null}
@@ -253,7 +254,7 @@ export default function RevenueExpenseChart({
                   tickMargin={10}
                 />
                 <ReTooltip
-                  content={<CustomTooltip />}
+                  content={<CustomTooltip currency={currency} />}
                   wrapperStyle={{ zIndex: 30 }}
                 />
                 <Legend />

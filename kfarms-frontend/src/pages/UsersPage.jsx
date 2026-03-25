@@ -23,8 +23,11 @@ import { useTenant } from "../tenant/TenantContext";
 import { normalizePlanId } from "../constants/plans";
 import { formatDateTime, formatNumber } from "../utils/formatters";
 import {
-  MUTABLE_WORKSPACE_ROLE_OPTIONS,
+  canAssignWorkspaceRole,
+  canManageWorkspaceMember,
+  getManageableWorkspaceRoleOptions,
   getWorkspaceRoleLabel,
+  getWorkspaceRoleRank,
   normalizeWorkspaceRole,
 } from "../utils/workspaceRoles";
 import {
@@ -46,7 +49,7 @@ import {
   updateMemberRole,
 } from "../services/teamService";
 
-const TABLE_PAGE_SIZE = 10;
+const TABLE_PAGE_SIZE = 5;
 const AUDIT_PAGE_SIZE = 10;
 const inputClassName =
   "h-10 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50";
@@ -66,13 +69,17 @@ const tableBodyClass =
   "divide-y-0 text-slate-700 dark:text-slate-200";
 const tableRowClass = "group";
 const premiumDesktopTableClass =
-  "border-separate [border-spacing:0_10px] [&_thead_th]:border-y [&_thead_th]:border-slate-700/70 [&_thead_th]:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.9))] [&_thead_th]:px-5 [&_thead_th]:py-3 [&_thead_th]:font-header [&_thead_th]:text-[10px] [&_thead_th]:font-semibold [&_thead_th]:uppercase [&_thead_th]:tracking-[0.2em] [&_thead_th]:text-slate-300 [&_thead_th]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&_thead_th]:first:rounded-l-[18px] [&_thead_th]:last:rounded-r-[18px] [&_tbody_td]:border-y [&_tbody_td]:border-slate-200/75 dark:[&_tbody_td]:border-slate-800/80 [&_tbody_td]:bg-white/82 dark:[&_tbody_td]:bg-slate-950/55 [&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] dark:[&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] [&_tbody_td]:backdrop-blur-xl [&_tbody_tr>td:first-child]:border-l [&_tbody_tr>td:last-child]:border-r [&_tbody_tr>td:first-child]:rounded-l-[22px] [&_tbody_tr>td:last-child]:rounded-r-[22px] [&_tbody_tr:hover>td]:border-sky-300/50 dark:[&_tbody_tr:hover>td]:border-sky-500/30 [&_tbody_tr:hover>td]:bg-sky-50/85 dark:[&_tbody_tr:hover>td]:bg-slate-900/80";
+  "border-separate [border-spacing:0_6px] [&_thead_th]:border-y [&_thead_th]:border-slate-700/70 [&_thead_th]:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.9))] [&_thead_th]:px-5 [&_thead_th]:py-3 [&_thead_th]:font-header [&_thead_th]:text-[10px] [&_thead_th]:font-semibold [&_thead_th]:uppercase [&_thead_th]:tracking-[0.2em] [&_thead_th]:text-slate-300 [&_thead_th]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&_thead_th]:first:rounded-l-[18px] [&_thead_th]:last:rounded-r-[18px] [&_tbody_td]:border-y [&_tbody_td]:border-slate-200/75 dark:[&_tbody_td]:border-slate-800/80 [&_tbody_td]:bg-white/82 dark:[&_tbody_td]:bg-slate-950/55 [&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] dark:[&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] [&_tbody_td]:backdrop-blur-xl [&_tbody_tr>td:first-child]:border-l [&_tbody_tr>td:last-child]:border-r [&_tbody_tr>td:first-child]:rounded-l-[22px] [&_tbody_tr>td:last-child]:rounded-r-[22px] [&_tbody_tr:hover>td]:border-sky-300/50 dark:[&_tbody_tr:hover>td]:border-sky-500/30 [&_tbody_tr:hover>td]:bg-sky-50/85 dark:[&_tbody_tr:hover>td]:bg-slate-900/80";
 const premiumTableScrollClass = "px-3 pt-1.5 pb-3";
-const premiumCellClass = "align-top px-5 py-4";
+const premiumCellClass = "align-top px-5 py-2.5";
 const premiumMetaTextClass = "text-sm text-slate-600 dark:text-slate-300";
 const premiumHelperTextClass = "text-xs text-slate-500 dark:text-slate-400";
-const premiumInsetCardClass =
-  "rounded-2xl border border-slate-200/80 bg-white/72 px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:border-slate-800/80 dark:bg-slate-950/48 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
+const premiumPermissionSummaryClass =
+  "flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-300";
+const premiumPermissionChipClass =
+  "inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-2 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-200";
+const accessActionButtonClass =
+  "h-8 rounded-full border-slate-300/80 bg-white/90 px-3 text-[11px] text-slate-700 shadow-sm hover:bg-white dark:border-sky-400/30 dark:bg-slate-900/90 dark:text-sky-100 dark:hover:bg-slate-900";
 const premiumAvatarClass =
   "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-200/70 bg-sky-50 text-sm font-semibold text-sky-700 shadow-sm dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-100";
 const secondaryButtonClass =
@@ -82,21 +89,44 @@ const mobileCardClass =
 const roleGuide = [
   {
     value: "OWNER",
+    eyebrow: "Protected",
+    accentClass:
+      "border-amber-300/35 bg-amber-500/10 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/12 dark:text-amber-100",
     description: "Full farm control. Protected here and cannot be edited from this page.",
+    capabilities: ["Full farm control", "Protected from edits here"],
   },
   {
     value: "ADMIN",
+    eyebrow: "Control",
+    accentClass:
+      "border-violet-300/35 bg-violet-500/10 text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-100",
     description: "Can invite teammates, update roles, disable access, and remove members.",
+    capabilities: ["Invite teammates", "Manage team access"],
   },
   {
     value: "MANAGER",
+    eyebrow: "Review",
+    accentClass:
+      "border-emerald-300/35 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/12 dark:text-emerald-100",
     description: "Can review users and invitations without changing access.",
+    capabilities: ["Review members", "Review invitations"],
   },
   {
     value: "STAFF",
+    eyebrow: "Execute",
+    accentClass:
+      "border-sky-300/35 bg-sky-500/10 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/12 dark:text-sky-100",
     description: "Handles daily farm records and operations without admin controls.",
+    capabilities: ["Daily farm records", "No admin controls"],
   },
 ];
+
+const roleGuideByValue = Object.freeze(
+  roleGuide.reduce((accumulator, role) => {
+    accumulator[role.value] = role;
+    return accumulator;
+  }, {}),
+);
 
 const AUDIT_ACTION_OPTIONS = [
   { value: "", label: "All activity" },
@@ -194,6 +224,50 @@ function toSentenceCase(value) {
     .join(" ");
 }
 
+function normalizeRoleLabelText(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/[_\s-]+/g, " ")
+    .toLowerCase();
+}
+
+function formatRoleLabel(value) {
+  const label = String(value ?? "").trim();
+  if (!label) return "";
+  return label === label.toUpperCase() ? toSentenceCase(label) : label;
+}
+
+function getRoleDisplayMeta(role, customRoleName, roleLabel) {
+  const standardLabel = getWorkspaceRoleLabel(role);
+  const customLabel = String(customRoleName ?? "").trim();
+  if (customLabel) {
+    return {
+      label: customLabel,
+      isCustom: true,
+    };
+  }
+
+  const backendLabel = String(roleLabel ?? "").trim();
+  if (!backendLabel) {
+    return {
+      label: standardLabel,
+      isCustom: false,
+    };
+  }
+
+  if (normalizeRoleLabelText(backendLabel) === normalizeRoleLabelText(standardLabel)) {
+    return {
+      label: standardLabel,
+      isCustom: false,
+    };
+  }
+
+  return {
+    label: formatRoleLabel(backendLabel),
+    isCustom: true,
+  };
+}
+
 function getAuditActionMeta(action) {
   const normalized = String(action ?? "").trim().toUpperCase();
   return (
@@ -243,6 +317,41 @@ function getAuditChangeSummary(entry) {
 
 function getSearchText(value) {
   return String(value ?? "").trim().toLowerCase();
+}
+
+function compareTextValue(left, right) {
+  return String(left ?? "").localeCompare(String(right ?? ""), undefined, {
+    sensitivity: "base",
+    numeric: true,
+  });
+}
+
+function compareWorkspaceRolePriority(leftRole, rightRole) {
+  return getWorkspaceRoleRank(rightRole) - getWorkspaceRoleRank(leftRole);
+}
+
+function compareWorkspaceMembersByAuthority(left, right) {
+  const roleComparison = compareWorkspaceRolePriority(left?.role, right?.role);
+  if (roleComparison !== 0) return roleComparison;
+
+  const activeComparison = Number(Boolean(right?.active)) - Number(Boolean(left?.active));
+  if (activeComparison !== 0) return activeComparison;
+
+  const nameComparison = compareTextValue(getMemberName(left), getMemberName(right));
+  if (nameComparison !== 0) return nameComparison;
+
+  return compareTextValue(left?.email, right?.email);
+}
+
+function compareWorkspaceInvitationsByAuthority(left, right) {
+  const roleComparison = compareWorkspaceRolePriority(left?.role, right?.role);
+  if (roleComparison !== 0) return roleComparison;
+
+  const createdEpochDifference =
+    new Date(right?.createdAt || 0).getTime() - new Date(left?.createdAt || 0).getTime();
+  if (createdEpochDifference !== 0) return createdEpochDifference;
+
+  return compareTextValue(left?.email, right?.email);
 }
 
 function memberMatchesSearch(member, search) {
@@ -358,9 +467,14 @@ function getInvitationState(invitation) {
   };
 }
 
+function getRoleGuideMeta(role) {
+  return roleGuideByValue[normalizeWorkspaceRole(role)] || roleGuideByValue.STAFF;
+}
+
 function MetricCard({ icon, label, value, detail, iconTone }) {
   return (
-    <article className={`${glassPanelClass} p-4`}>
+    <article className={`${glassPanelClass} relative overflow-hidden p-4`}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/60 to-transparent dark:via-sky-400/35" />
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
@@ -380,6 +494,107 @@ function MetricCard({ icon, label, value, detail, iconTone }) {
         </span>
       </div>
     </article>
+  );
+}
+
+function SidebarStat({ label, value, helper }) {
+  return (
+    <div className={`${insetPanelClass} px-3 py-3`}>
+      <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{value}</p>
+      {helper ? (
+        <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{helper}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function RoleGuideCard({ role, active = false, compact = false }) {
+  const meta = getRoleGuideMeta(role);
+
+  return (
+    <div
+      className={`${insetPanelClass} rounded-2xl transition ${
+        compact ? "px-3 py-2.5" : "px-3 py-3"
+      } ${
+        active ? "border-sky-300/60 bg-sky-50/60 dark:border-sky-500/30 dark:bg-sky-500/10" : ""
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <WorkspaceRolePill role={role} compact />
+        <span
+          className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${meta.accentClass}`}
+        >
+          {meta.eyebrow}
+        </span>
+      </div>
+      <p
+        className={`text-slate-600 dark:text-slate-300 ${
+          compact ? "mt-2 text-[13px] leading-5" : "mt-3 text-sm leading-relaxed"
+        }`}
+      >
+        {meta.description}
+      </p>
+      {compact ? null : (
+        <div className={`flex flex-wrap gap-1.5 ${compact ? "mt-2" : "mt-3"}`}>
+          {meta.capabilities.map((capability) => (
+            <span
+              key={`${role}-${capability}`}
+              className="inline-flex rounded-full border border-slate-200/80 bg-white/70 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300"
+            >
+              {capability}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const WORKSPACE_ROLE_PILL_STYLES = Object.freeze({
+  OWNER: {
+    className:
+      "border-amber-300/75 bg-amber-50/95 text-amber-950 shadow-[0_8px_18px_rgba(245,158,11,0.12)] dark:border-amber-300/30 dark:bg-slate-950/95 dark:text-amber-100",
+    dotClass: "bg-amber-400 dark:bg-amber-300",
+  },
+  ADMIN: {
+    className:
+      "border-fuchsia-300/75 bg-fuchsia-50/95 text-fuchsia-950 shadow-[0_8px_18px_rgba(217,70,239,0.12)] dark:border-fuchsia-300/30 dark:bg-slate-950/95 dark:text-fuchsia-100",
+    dotClass: "bg-fuchsia-400 dark:bg-fuchsia-300",
+  },
+  MANAGER: {
+    className:
+      "border-emerald-300/75 bg-emerald-50/95 text-emerald-950 shadow-[0_8px_18px_rgba(16,185,129,0.12)] dark:border-emerald-300/30 dark:bg-slate-950/95 dark:text-emerald-100",
+    dotClass: "bg-emerald-400 dark:bg-emerald-300",
+  },
+  STAFF: {
+    className:
+      "border-sky-300/75 bg-sky-50/95 text-sky-950 shadow-[0_8px_18px_rgba(14,165,233,0.12)] dark:border-sky-300/30 dark:bg-slate-950/95 dark:text-sky-100",
+    dotClass: "bg-sky-400 dark:bg-sky-300",
+  },
+});
+
+function WorkspaceRolePill({ role, className = "", compact = false }) {
+  const normalizedRole = normalizeWorkspaceRole(role);
+  const label = getWorkspaceRoleLabel(normalizedRole);
+  const tone =
+    WORKSPACE_ROLE_PILL_STYLES[normalizedRole] || WORKSPACE_ROLE_PILL_STYLES.STAFF;
+
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-2 rounded-full border font-semibold leading-none tracking-[0.06em] whitespace-nowrap ${
+        compact
+          ? "min-h-[2rem] min-w-[5.5rem] px-3 py-1 text-[11px]"
+          : "min-h-[2.15rem] min-w-[6rem] px-3.5 py-1.5 text-[12px]"
+      } ${tone.className} ${className}`}
+    >
+      <span
+        className={`h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_0_3px_rgba(255,255,255,0.12)] ${tone.dotClass}`}
+      />
+      {label}
+    </span>
   );
 }
 
@@ -479,6 +694,7 @@ function MobileEmptyState({ title, message }) {
 export default function UsersPage() {
   const { user } = useAuth();
   const { activeTenant, activeTenantId } = useTenant();
+  const invitePanelRef = React.useRef(null);
 
   const tenantRole = normalizeWorkspaceRole(activeTenant?.myRole);
   const isEnterprisePlan = normalizePlanId(activeTenant?.plan, "FREE") === "ENTERPRISE";
@@ -492,6 +708,10 @@ export default function UsersPage() {
   const canManageTeam = hasAnyWorkspacePermission(activeTenant, [
     WORKSPACE_PERMISSIONS.USERS_MANAGE,
   ]);
+  const manageableRoleOptions = React.useMemo(
+    () => getManageableWorkspaceRoleOptions(tenantRole),
+    [tenantRole],
+  );
   const canAccessPage = canViewUsers || canViewAudit;
   const currentUserId = Number(user?.id) || null;
   const currentUserEmail = String(user?.email ?? "").trim().toLowerCase();
@@ -537,6 +757,16 @@ export default function UsersPage() {
     payload: null,
   });
   const [toast, setToast] = React.useState({ message: "", type: "info" });
+
+  React.useEffect(() => {
+    if (manageableRoleOptions.length === 0) return;
+    if (manageableRoleOptions.some((option) => option.value === inviteForm.role)) return;
+
+    setInviteForm((current) => ({
+      ...current,
+      role: manageableRoleOptions[0].value,
+    }));
+  }, [inviteForm.role, manageableRoleOptions]);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -745,6 +975,34 @@ export default function UsersPage() {
     return member?.role === "OWNER" || isCurrentUser(member);
   }
 
+  function canManageMemberAccess(member) {
+    return (
+      canManageTeam &&
+      !isProtectedMember(member) &&
+      canManageWorkspaceMember(tenantRole, member?.role)
+    );
+  }
+
+  function canManageInvitationAccess(invitation) {
+    return canManageTeam && canAssignWorkspaceRole(tenantRole, invitation?.role);
+  }
+
+  function getHierarchyHelper(member) {
+    if (member?.role === "OWNER") {
+      return "Owners are protected from role changes here.";
+    }
+
+    if (isCurrentUser(member)) {
+      return "Use another admin account to edit your own access.";
+    }
+
+    if (!canManageWorkspaceMember(tenantRole, member?.role)) {
+      return `${getWorkspaceRoleLabel(tenantRole)} can only manage teammates below that level in the hierarchy.`;
+    }
+
+    return "";
+  }
+
   function getPermissionDraft(member) {
     return (
       permissionDrafts[member.memberId] || {
@@ -867,6 +1125,14 @@ export default function UsersPage() {
     event.preventDefault();
     if (!canManageTeam || submittingInvite) return;
 
+    if (manageableRoleOptions.length === 0) {
+      setToast({
+        message: "Your current role cannot send invitations from this workspace.",
+        type: "error",
+      });
+      return;
+    }
+
     const email = inviteForm.email.trim();
     if (!email) {
       setToast({ message: "Enter an email address to send an invitation.", type: "error" });
@@ -924,20 +1190,30 @@ export default function UsersPage() {
     }
   }
 
-  const filteredMembers = members.filter(
-    (member) =>
-      memberMatchesSearch(member, search) &&
-      (!memberRoleFilter || normalizeWorkspaceRole(member.role) === memberRoleFilter) &&
-      (!memberStatusFilter ||
-        (memberStatusFilter === "enabled" ? Boolean(member.active) : !member.active)),
-  );
-  const filteredInvitations = invitations.filter(
-    (invitation) =>
-      invitationMatchesSearch(invitation, search) &&
-      (!invitationRoleFilter ||
-        normalizeWorkspaceRole(invitation.role) === invitationRoleFilter) &&
-      invitationMatchesStateFilter(invitation, invitationStateFilter),
-  );
+  function scrollToInvitePanel() {
+    invitePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const manageableMemberCount = members.filter((member) => canManageMemberAccess(member)).length;
+
+  const filteredMembers = members
+    .filter(
+      (member) =>
+        memberMatchesSearch(member, search) &&
+        (!memberRoleFilter || normalizeWorkspaceRole(member.role) === memberRoleFilter) &&
+        (!memberStatusFilter ||
+          (memberStatusFilter === "enabled" ? Boolean(member.active) : !member.active)),
+    )
+    .sort(compareWorkspaceMembersByAuthority);
+  const filteredInvitations = invitations
+    .filter(
+      (invitation) =>
+        invitationMatchesSearch(invitation, search) &&
+        (!invitationRoleFilter ||
+          normalizeWorkspaceRole(invitation.role) === invitationRoleFilter) &&
+        invitationMatchesStateFilter(invitation, invitationStateFilter),
+    )
+    .sort(compareWorkspaceInvitationsByAuthority);
   const totalMemberPages = Math.max(1, Math.ceil(filteredMembers.length / TABLE_PAGE_SIZE));
   const totalInvitationPages = Math.max(
     1,
@@ -969,13 +1245,29 @@ export default function UsersPage() {
 
   const activeMemberCount = members.filter((member) => member.active).length;
   const disabledMemberCount = members.filter((member) => !member.active).length;
-  const adminCount = members.filter((member) => member.role === "OWNER" || member.role === "ADMIN")
-    .length;
-  const managerCount = members.filter((member) => member.role === "MANAGER").length;
+  const adminCount = members.filter((member) => {
+    const role = normalizeWorkspaceRole(member.role);
+    return role === "OWNER" || role === "ADMIN";
+  }).length;
+  const accessLeadCount = members.filter((member) => {
+    const role = normalizeWorkspaceRole(member.role);
+    return role === "OWNER" || role === "ADMIN" || role === "MANAGER";
+  }).length;
   const expiringSoonInviteCount = invitations.filter((invitation) => {
     const state = getInvitationState(invitation);
     return state.key === "today" || state.key === "soon";
   }).length;
+  const highestManageableRole = manageableRoleOptions[0]?.label || "None";
+  const workspaceAccessSummary = canManageTeam
+    ? "Invite teammates, adjust access, and keep team permissions clean from one place."
+    : canViewUsers
+      ? "Review members, invitations, and role coverage without changing access."
+      : "Review the recorded audit trail for access activity in this workspace.";
+  const workspaceModeLabel = canManageTeam
+    ? "Admin controls"
+    : canViewUsers
+      ? "Review mode"
+      : "Audit mode";
   const hasSearch = Boolean(search);
   const hasMemberFilters =
     hasSearch || Boolean(memberRoleFilter) || Boolean(memberStatusFilter);
@@ -1056,29 +1348,29 @@ export default function UsersPage() {
   ];
 
   const memberColumns = [
-    { key: "member", label: "Member", width: "260px" },
-    { key: "role", label: "Role", width: "300px" },
-    { key: "status", label: "Status", width: "170px" },
-    { key: "joined", label: "Joined", width: "190px" },
+    { key: "member", label: "Member", width: "240px" },
+    { key: "role", label: "Role", width: "290px" },
+    { key: "status", label: "Status", width: "140px" },
+    { key: "joined", label: "Joined", width: "165px" },
     {
       key: "actions",
       label: "Actions",
-      width: "190px",
+      width: "170px",
       align: "right",
       className: "text-right",
     },
   ];
 
   const invitationColumns = [
-    { key: "invitee", label: "Invitee", width: "250px" },
-    { key: "role", label: "Role", width: "150px" },
-    { key: "created", label: "Created", width: "220px" },
-    { key: "expires", label: "Expires", width: "250px" },
-    { key: "share", label: canManageTeam ? "Share" : "Status", width: "180px" },
+    { key: "invitee", label: "Invitee", width: "230px" },
+    { key: "role", label: "Role", width: "140px" },
+    { key: "created", label: "Created", width: "180px" },
+    { key: "expires", label: "Expires", width: "220px" },
+    { key: "share", label: canManageTeam ? "Share" : "Status", width: "150px" },
     {
       key: "actions",
       label: "Actions",
-      width: "170px",
+      width: "150px",
       align: "right",
       className: "text-right",
     },
@@ -1101,7 +1393,7 @@ export default function UsersPage() {
       (accessEditorMember.role === "OWNER" || isProtectedMember(accessEditorMember)),
   );
   const accessEditorCanCustomize =
-    Boolean(accessEditorMember) && canManageTeam && !accessEditorProtected;
+    Boolean(accessEditorMember) && !accessEditorProtected && canManageMemberAccess(accessEditorMember);
   const accessEditorPermissions = accessEditorMember
     ? getEnterprisePermissionLabels(accessEditorDraft?.permissions)
     : [];
@@ -1109,7 +1401,8 @@ export default function UsersPage() {
     const currentRole = member.role;
     const draftRole = roleDrafts[member.memberId] || currentRole;
     const hasRoleDraft = draftRole !== currentRole;
-    const protectedMember = isProtectedMember(member);
+    const canManageMember = canManageMemberAccess(member);
+    const hierarchyHelper = getHierarchyHelper(member);
     const memberKey = `member-${member.memberId}`;
     const memberBusy = mutatingId === memberKey;
     const permissionSummary = getEnterprisePermissionLabels(
@@ -1122,8 +1415,11 @@ export default function UsersPage() {
       permissionSummary.length - previewPermissions.length,
       0,
     );
-    const currentRoleLabel =
-      member.customRoleName || member.roleLabel || getWorkspaceRoleLabel(currentRole);
+    const roleDisplay = getRoleDisplayMeta(
+      currentRole,
+      member.customRoleName,
+      member.roleLabel,
+    );
 
     return (
       <article key={member.memberId || member.email} className={mobileCardClass}>
@@ -1140,23 +1436,24 @@ export default function UsersPage() {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <Badge kind="role" value={currentRole} />
+          <WorkspaceRolePill role={currentRole} />
           {isCurrentUser(member) ? (
             <div className="inline-flex rounded-full border border-sky-300/40 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-600 dark:text-sky-100">
               You
             </div>
           ) : null}
-          {currentRoleLabel !== getWorkspaceRoleLabel(currentRole) ? (
+          {roleDisplay.isCustom ? (
             <div className="inline-flex rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-              {currentRoleLabel}
-            </div>
-          ) : null}
-          {member.createdBy ? (
-            <div className="inline-flex max-w-full rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-              <span className="truncate">Added by {member.createdBy}</span>
+              {roleDisplay.label}
             </div>
           ) : null}
         </div>
+
+        {member.createdBy ? (
+          <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Added by {member.createdBy}
+          </div>
+        ) : null}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <MobileField label="Status">
@@ -1174,7 +1471,7 @@ export default function UsersPage() {
           </MobileField>
         </div>
 
-        {canManageTeam && currentRole !== "OWNER" && !protectedMember ? (
+        {canManageMember ? (
           <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/55">
             <MobileField label="Change role">
               <div className="space-y-2">
@@ -1189,7 +1486,7 @@ export default function UsersPage() {
                   }
                   className={`${compactSelectClassName} w-full`}
                 >
-                  {MUTABLE_WORKSPACE_ROLE_OPTIONS.map((option) => (
+                  {manageableRoleOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -1226,8 +1523,8 @@ export default function UsersPage() {
 
         {isEnterprisePlan ? (
           <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/55">
-            <div className="flex items-center justify-between gap-3">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                   Enterprise access
                 </div>
@@ -1238,23 +1535,24 @@ export default function UsersPage() {
               </div>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
+                className={accessActionButtonClass}
                 onClick={() => setExpandedPermissionMemberId(member.memberId)}
               >
-                {canManageTeam && currentRole !== "OWNER" && !protectedMember ? "Edit" : "View"}
+                {canManageMember ? "Edit access" : "View access"}
               </Button>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {previewPermissions.map((permission) => (
                 <span
                   key={`${member.memberId}-${permission.value}`}
-                  className="rounded-full border border-slate-200/80 bg-white/75 px-2 py-0.5 text-[11px] text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300"
+                  className={premiumPermissionChipClass}
                 >
                   {permission.label}
                 </span>
               ))}
               {remainingPermissionCount > 0 ? (
-                <span className="rounded-full border border-slate-200/80 bg-slate-100/80 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-slate-400">
+                <span className={premiumPermissionChipClass}>
                   +{remainingPermissionCount} more
                 </span>
               ) : null}
@@ -1262,14 +1560,9 @@ export default function UsersPage() {
           </div>
         ) : null}
 
-        {currentRole === "OWNER" ? (
+        {hierarchyHelper ? (
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Owners are protected from role changes here.
-          </div>
-        ) : null}
-        {protectedMember && currentRole !== "OWNER" ? (
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Use another admin account to edit your own access.
+            {hierarchyHelper}
           </div>
         ) : null}
 
@@ -1280,7 +1573,7 @@ export default function UsersPage() {
                 size="sm"
                 variant="outline"
                 className="w-full"
-                disabled={protectedMember || currentRole === "OWNER" || memberBusy}
+                disabled={!canManageMember || memberBusy}
                 onClick={() =>
                   setConfirmState({
                     open: true,
@@ -1302,7 +1595,7 @@ export default function UsersPage() {
                 size="sm"
                 variant="danger"
                 className="w-full"
-                disabled={protectedMember || currentRole === "OWNER" || memberBusy}
+                disabled={!canManageMember || memberBusy}
                 onClick={() =>
                   setConfirmState({
                     open: true,
@@ -1327,6 +1620,7 @@ export default function UsersPage() {
     const inviteKey = `invite-${invitation.invitationId}`;
     const inviteBusy = mutatingId === inviteKey;
     const invitationState = getInvitationState(invitation);
+    const canManageInvitation = canManageInvitationAccess(invitation);
 
     return (
       <article key={invitation.invitationId || invitation.email} className={mobileCardClass}>
@@ -1341,7 +1635,7 @@ export default function UsersPage() {
                 : "Pending teammate invite"}
             </div>
           </div>
-          <Badge kind="role" value={invitation.role} />
+          <WorkspaceRolePill role={invitation.role} compact />
         </div>
 
         <div className="mt-3">
@@ -1364,34 +1658,41 @@ export default function UsersPage() {
 
         <div className="mt-4">
           {canManageTeam ? (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => handleCopyInvite(invitation)}
-              >
-                <Copy className="h-4 w-4" />
-                Copy link
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                className="w-full"
-                disabled={inviteBusy}
-                onClick={() =>
-                  setConfirmState({
-                    open: true,
-                    title: "Revoke invitation",
-                    message: `Revoke the invitation sent to ${invitation.email}? They will need a new invite to join later.`,
-                    type: "revoke_invitation",
-                    payload: invitation,
-                  })
-                }
-              >
-                Revoke
-              </Button>
-            </div>
+            <>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => handleCopyInvite(invitation)}
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy link
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  className="w-full"
+                  disabled={!canManageInvitation || inviteBusy}
+                  onClick={() =>
+                    setConfirmState({
+                      open: true,
+                      title: "Revoke invitation",
+                      message: `Revoke the invitation sent to ${invitation.email}? They will need a new invite to join later.`,
+                      type: "revoke_invitation",
+                      payload: invitation,
+                    })
+                  }
+                >
+                  Revoke
+                </Button>
+              </div>
+              {!canManageInvitation ? (
+                <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  You can only revoke invitations for roles below your own hierarchy level.
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className="text-sm text-slate-500 dark:text-slate-400">View only</div>
           )}
@@ -1484,22 +1785,37 @@ export default function UsersPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold text-accent-primary dark:text-blue-200">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Workspace access
+                {workspaceModeLabel}
               </div>
               <h1 className="mt-3 text-2xl font-header font-semibold text-slate-900 dark:text-slate-100 md:text-[1.9rem]">
-                User Management & Audit
+                Team access that stays easy to manage
               </h1>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700/90 dark:text-slate-300/85">
-                Manage who can access{" "}
+                Keep access clear for{" "}
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {activeTenant?.name || "this farm"}
                 </span>
-                , which role they hold, which invites are still waiting to be accepted, and
-                which access changes have been recorded over time.
+                . {workspaceAccessSummary}
               </p>
             </div>
 
-            <div className="flex w-full items-center gap-2 md:w-auto md:flex-wrap md:justify-start">
+            <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-start">
+              {canManageTeam ? (
+                <Button size="sm" onClick={scrollToInvitePanel}>
+                  <MailPlus className="h-4 w-4" />
+                  Invite teammate
+                </Button>
+              ) : null}
+              {canViewAudit && canViewUsers ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setActiveTab((current) => (current === "audit" ? "members" : "audit"))}
+                >
+                  <History className="h-4 w-4" />
+                  {activeTab === "audit" ? "Team roster" : "Audit log"}
+                </Button>
+              ) : null}
               <button
                 type="button"
                 onClick={async () => {
@@ -1542,10 +1858,13 @@ export default function UsersPage() {
               <>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
                   <p className="text-[11px] uppercase tracking-[0.14em] text-slate-600/80 dark:text-slate-300/70">
-                    Active members
+                    Active access
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatNumber(activeMemberCount)} of {formatNumber(members.length)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600/80 dark:text-slate-300/80">
+                    Teammates who can sign in right now
                   </p>
                 </div>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
@@ -1645,23 +1964,31 @@ export default function UsersPage() {
                 />
                 <MetricCard
                   icon={ShieldCheck}
-                  label="Admins"
-                  value={formatNumber(adminCount)}
-                  detail="Full access to billing and team controls"
+                  label="Active access"
+                  value={formatNumber(activeMemberCount)}
+                  detail="Teammates who can sign in right now"
                   iconTone="bg-violet-500/15 text-violet-600 dark:bg-violet-500/20 dark:text-violet-200"
                 />
                 <MetricCard
-                  icon={UserRoundCog}
-                  label="Managers"
-                  value={formatNumber(managerCount)}
-                  detail="Can review team access and daily operations"
+                  icon={MailPlus}
+                  label="Pending invites"
+                  value={formatNumber(invitations.length)}
+                  detail={
+                    expiringSoonInviteCount > 0
+                      ? `${formatNumber(expiringSoonInviteCount)} expiring soon`
+                      : "Ready for new teammates to join"
+                  }
                   iconTone="bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200"
                 />
                 <MetricCard
-                  icon={MailPlus}
+                  icon={UserRoundCog}
                   label="Disabled access"
                   value={formatNumber(disabledMemberCount)}
-                  detail="Members blocked until an admin re-enables them"
+                  detail={
+                    canManageTeam
+                      ? `${formatNumber(manageableMemberCount)} members within your control lane`
+                      : "Review only from your current role"
+                  }
                   iconTone="bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200"
                 />
               </div>
@@ -1676,8 +2003,8 @@ export default function UsersPage() {
               />
             ) : null}
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-              <section className={`${glassPanelClass} p-5 xl:col-span-8`}>
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.58fr)_minmax(20rem,0.92fr)]">
+              <section className={`${glassPanelClass} self-start p-5`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     {activeTab === "audit" ? (
@@ -1805,14 +2132,15 @@ export default function UsersPage() {
                         Clear
                       </Button>
                     ) : null}
-                    <div className="rounded-md border border-slate-200/80 bg-white/60 px-3 py-2 text-sm text-slate-600 dark:border-slate-800/80 dark:bg-slate-900/70 dark:text-slate-300">
-                      {activeTab === "audit"
-                        ? "Audit history tracks invite activity, role changes, and member access updates."
-                        : canManageTeam
-                          ? "Admins can invite, change roles, disable access, and remove members."
-                          : "Managers can review access and pending invites here."}
-                    </div>
                   </div>
+                </div>
+
+                <div className="mt-3 rounded-xl border border-slate-200/80 bg-white/55 px-3 py-2.5 text-sm text-slate-600 dark:border-slate-800/80 dark:bg-slate-900/60 dark:text-slate-300">
+                  {activeTab === "audit"
+                    ? "Audit history tracks invite activity, role changes, and member access updates."
+                    : canManageTeam
+                      ? "You can invite teammates, update roles, disable access, and remove members beneath your own hierarchy level."
+                      : "You can review access coverage and pending invites here, but role changes stay with admins."}
                 </div>
 
                 {activeFilterBadges.length > 0 ? (
@@ -1870,7 +2198,6 @@ export default function UsersPage() {
                           const currentRole = member.role;
                           const draftRole = roleDrafts[member.memberId] || currentRole;
                           const hasRoleDraft = draftRole !== currentRole;
-                          const protectedMember = isProtectedMember(member);
                           const memberKey = `member-${member.memberId}`;
                           const memberBusy = mutatingId === memberKey;
                           const permissionSummary = getEnterprisePermissionLabels(
@@ -1883,10 +2210,11 @@ export default function UsersPage() {
                             permissionSummary.length - previewPermissions.length,
                             0,
                           );
-                          const currentRoleLabel =
-                            member.customRoleName ||
-                            member.roleLabel ||
-                            getWorkspaceRoleLabel(currentRole);
+                          const roleDisplay = getRoleDisplayMeta(
+                            currentRole,
+                            member.customRoleName,
+                            member.roleLabel,
+                          );
 
                           return (
                             <>
@@ -1902,15 +2230,10 @@ export default function UsersPage() {
                                     <div className={`mt-0.5 break-all ${premiumMetaTextClass}`}>
                                       {member.email || "No email"}
                                     </div>
-                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <div className="mt-1.5 flex flex-wrap gap-1.5">
                                       {isCurrentUser(member) ? (
                                         <div className="inline-flex rounded-full border border-sky-300/40 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-600 dark:text-sky-100">
                                           You
-                                        </div>
-                                      ) : null}
-                                      {member.createdBy ? (
-                                        <div className="inline-flex rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-                                          Added by {member.createdBy}
                                         </div>
                                       ) : null}
                                     </div>
@@ -1918,21 +2241,16 @@ export default function UsersPage() {
                                 </div>
                               </td>
                               <td className={premiumCellClass}>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-1.5">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <Badge kind="role" value={currentRole} />
-                                    {currentRoleLabel !== getWorkspaceRoleLabel(currentRole) ? (
-                                      <span className={premiumMetaTextClass}>
-                                        {currentRoleLabel}
+                                    <WorkspaceRolePill role={currentRole} compact />
+                                    {roleDisplay.isCustom ? (
+                                      <span className={premiumPermissionChipClass}>
+                                        {roleDisplay.label}
                                       </span>
                                     ) : null}
                                   </div>
-                                  {currentRoleLabel !== getWorkspaceRoleLabel(currentRole) ? (
-                                    <div className="text-[11px] uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                                      Custom role
-                                    </div>
-                                  ) : null}
-                                  {canManageTeam && currentRole !== "OWNER" && !protectedMember ? (
+                                  {canManageMemberAccess(member) ? (
                                     <div className="flex flex-wrap items-center gap-2">
                                       <select
                                         value={draftRole}
@@ -1945,7 +2263,7 @@ export default function UsersPage() {
                                         }
                                         className={compactSelectClassName}
                                       >
-                                        {MUTABLE_WORKSPACE_ROLE_OPTIONS.map((option) => (
+                                        {manageableRoleOptions.map((option) => (
                                           <option key={option.value} value={option.value}>
                                             {option.label}
                                           </option>
@@ -1977,81 +2295,44 @@ export default function UsersPage() {
                                     </div>
                                   ) : null}
                                   {isEnterprisePlan && (
-                                    <div className={premiumInsetCardClass}>
-                                      <div className="flex items-center justify-between gap-3">
-                                        <div className="min-w-0">
-                                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                                            Enterprise access
-                                          </div>
-                                          <div className={`mt-1 ${premiumHelperTextClass}`}>
-                                            {permissionSummary.length} active permission
-                                            {permissionSummary.length === 1 ? "" : "s"}
-                                          </div>
-                                        </div>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => setExpandedPermissionMemberId(member.memberId)}
-                                        >
-                                          {canManageTeam && currentRole !== "OWNER" && !protectedMember
-                                            ? "Edit"
-                                            : "View"}
-                                        </Button>
-                                      </div>
-
-                                      <div className="mt-2 flex flex-wrap gap-1.5">
-                                        {previewPermissions.map((permission) => (
-                                          <span
-                                            key={`${member.memberId}-${permission.value}`}
-                                            className="rounded-full border border-slate-200/80 bg-white/80 px-2 py-0.5 text-[11px] text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300"
-                                          >
-                                            {permission.label}
-                                          </span>
-                                        ))}
-                                        {remainingPermissionCount > 0 ? (
-                                          <span className="rounded-full border border-slate-200/80 bg-slate-100/80 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-slate-400">
-                                            +{remainingPermissionCount} more
-                                          </span>
-                                        ) : null}
-                                      </div>
+                                    <div className={premiumPermissionSummaryClass}>
+                                      <span className="font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                                        Access
+                                      </span>
+                                      <span className="text-slate-600 dark:text-slate-300">
+                                        {permissionSummary.length} permission
+                                        {permissionSummary.length === 1 ? "" : "s"}
+                                      </span>
+                                      {previewPermissions[0] ? (
+                                        <span className={premiumPermissionChipClass}>
+                                          {previewPermissions[0].label}
+                                        </span>
+                                      ) : null}
+                                      {remainingPermissionCount > 0 ? (
+                                        <span className={premiumPermissionChipClass}>
+                                          +{remainingPermissionCount} more
+                                        </span>
+                                      ) : null}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className={accessActionButtonClass}
+                                        onClick={() => setExpandedPermissionMemberId(member.memberId)}
+                                      >
+                                        {canManageMemberAccess(member) ? "Edit access" : "View access"}
+                                      </Button>
                                     </div>
                                   )}
-                                  {currentRole === "OWNER" ? (
-                                    <div className={premiumHelperTextClass}>
-                                      Owners are protected from role changes here.
-                                    </div>
-                                  ) : null}
-                                  {protectedMember && currentRole !== "OWNER" ? (
-                                    <div className={premiumHelperTextClass}>
-                                      Use another admin account to edit your own access.
-                                    </div>
-                                  ) : null}
                                 </div>
                               </td>
                               <td className={premiumCellClass}>
-                                <div className="flex flex-col gap-1.5">
-                                  <div>
-                                    <Badge
-                                      kind="active"
-                                      value={member.active ? "ENABLED" : "DISABLED"}
-                                    />
-                                  </div>
-                                  <div className={premiumHelperTextClass}>
-                                    {member.active
-                                      ? "Can access this workspace"
-                                      : "Blocked until an admin re-enables access"}
-                                  </div>
-                                </div>
+                                <Badge
+                                  kind="active"
+                                  value={member.active ? "ENABLED" : "DISABLED"}
+                                />
                               </td>
                               <td className={`${premiumCellClass} whitespace-nowrap`}>
-                                <div className={premiumMetaTextClass}>
-                                  {formatDateTime(member.createdAt)}
-                                </div>
-                                {member.updatedAt ? (
-                                  <div className={`mt-1 ${premiumHelperTextClass}`}>
-                                    Updated {formatDateTime(member.updatedAt)}
-                                  </div>
-                                ) : null}
+                                <div className={premiumMetaTextClass}>{formatDateTime(member.createdAt)}</div>
                               </td>
                               <td className={`${premiumCellClass} text-right`}>
                                 <div className="flex flex-wrap justify-end gap-2">
@@ -2060,9 +2341,7 @@ export default function UsersPage() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        disabled={
-                                          protectedMember || currentRole === "OWNER" || memberBusy
-                                        }
+                                        disabled={!canManageMemberAccess(member) || memberBusy}
                                         onClick={() =>
                                           setConfirmState({
                                             open: true,
@@ -2085,9 +2364,7 @@ export default function UsersPage() {
                                       <Button
                                         size="sm"
                                         variant="danger"
-                                        disabled={
-                                          protectedMember || currentRole === "OWNER" || memberBusy
-                                        }
+                                        disabled={!canManageMemberAccess(member) || memberBusy}
                                         onClick={() =>
                                           setConfirmState({
                                             open: true,
@@ -2176,6 +2453,7 @@ export default function UsersPage() {
                         renderRow={(invitation) => {
                           const inviteKey = `invite-${invitation.invitationId}`;
                           const inviteBusy = mutatingId === inviteKey;
+                          const canManageInvitation = canManageInvitationAccess(invitation);
                           const invitationState = getInvitationState(invitation);
 
                           return (
@@ -2198,7 +2476,7 @@ export default function UsersPage() {
                                 </div>
                               </td>
                               <td className={`${premiumCellClass} whitespace-nowrap`}>
-                                <Badge kind="role" value={invitation.role} />
+                                <WorkspaceRolePill role={invitation.role} compact />
                               </td>
                               <td className={`${premiumCellClass} whitespace-nowrap`}>
                                 <div className={premiumMetaTextClass}>
@@ -2243,7 +2521,7 @@ export default function UsersPage() {
                                     <Button
                                       size="sm"
                                       variant="danger"
-                                      disabled={inviteBusy}
+                                      disabled={!canManageInvitation || inviteBusy}
                                       onClick={() =>
                                         setConfirmState({
                                           open: true,
@@ -2262,6 +2540,11 @@ export default function UsersPage() {
                                     </span>
                                   )}
                                 </div>
+                                {canManageTeam && !canManageInvitation ? (
+                                  <div className={`mt-2 ${premiumHelperTextClass}`}>
+                                    Below your hierarchy only
+                                  </div>
+                                ) : null}
                               </td>
                             </>
                           );
@@ -2417,7 +2700,7 @@ export default function UsersPage() {
                 )}
               </section>
 
-              <section className="space-y-4 xl:col-span-4">
+              <section className="space-y-4 xl:sticky xl:top-6 xl:self-start">
                 {activeTab === "audit" ? (
                   <>
                     <div className={`${glassPanelClass} p-4`}>
@@ -2468,83 +2751,93 @@ export default function UsersPage() {
                       </p>
                     </div>
                   </>
-                ) : canManageTeam ? (
-                  <div className={`${glassPanelClass} p-4`}>
-                    <div className="flex items-center gap-2">
-                      <MailPlus className="h-4 w-4 text-accent-primary" />
-                      <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
-                        Invite teammate
-                      </h3>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
-                      Send access with the right role from the start. Admins can update it later if
-                      the teammate's responsibilities change.
-                    </p>
-
-                    <form onSubmit={handleInviteSubmit} className="mt-4 space-y-3">
-                      <div>
-                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={inviteForm.email}
-                          onChange={(event) =>
-                            setInviteForm((current) => ({
-                              ...current,
-                              email: event.target.value,
-                            }))
-                          }
-                          placeholder="teammate@farm.com"
-                          className={`mt-1 ${inputClassName}`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                          Role
-                        </label>
-                        <select
-                          value={inviteForm.role}
-                          onChange={(event) =>
-                            setInviteForm((current) => ({
-                              ...current,
-                              role: event.target.value,
-                            }))
-                          }
-                          className={`mt-1 ${selectClassName}`}
-                        >
-                          {MUTABLE_WORKSPACE_ROLE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <Button type="submit" disabled={submittingInvite} className="w-full">
-                        <MailPlus className="h-4 w-4" />
-                        {submittingInvite ? "Inviting..." : "Send invite"}
-                      </Button>
-                    </form>
-                  </div>
                 ) : (
-                  <div className={`${glassPanelClass} p-4`}>
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-accent-primary" />
-                      <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
-                        View permissions
-                      </h3>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                      Managers can review members and invitations, but only admins
-                      can change access.
-                    </p>
-                  </div>
-                )}
-
-                {activeTab !== "audit" ? (
                   <>
+                    {canManageTeam ? (
+                      <div ref={invitePanelRef} className={`${glassPanelClass} p-4`}>
+                        <div className="flex items-center gap-2">
+                          <MailPlus className="h-4 w-4 text-accent-primary" />
+                          <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
+                            Invite teammate
+                          </h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                          Invite from the right lane from the start. You can currently assign up to{" "}
+                          <span className="font-semibold text-slate-900 dark:text-slate-100">
+                            {highestManageableRole}
+                          </span>
+                          .
+                        </p>
+
+                        <form onSubmit={handleInviteSubmit} className="mt-4 space-y-3">
+                          <div>
+                            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              value={inviteForm.email}
+                              onChange={(event) =>
+                                setInviteForm((current) => ({
+                                  ...current,
+                                  email: event.target.value,
+                                }))
+                              }
+                              placeholder="teammate@farm.com"
+                              className={`mt-1 ${inputClassName}`}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                              Role
+                            </label>
+                            <select
+                              value={inviteForm.role}
+                              onChange={(event) =>
+                                setInviteForm((current) => ({
+                                  ...current,
+                                  role: event.target.value,
+                                }))
+                              }
+                              className={`mt-1 ${selectClassName}`}
+                            >
+                              {manageableRoleOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <Button type="submit" disabled={submittingInvite} className="w-full">
+                            <MailPlus className="h-4 w-4" />
+                            {submittingInvite ? "Inviting..." : "Send invite"}
+                          </Button>
+                        </form>
+
+                        <div className="mt-4">
+                          <RoleGuideCard role={inviteForm.role} active compact />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`${glassPanelClass} p-4`}>
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4 text-accent-primary" />
+                          <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
+                            View permissions
+                          </h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                          Team actions follow hierarchy first, then permissions. You can review
+                          access clearly here, but role changes stay with admins.
+                        </p>
+                        <div className="mt-4">
+                          <RoleGuideCard role={tenantRole} active compact />
+                        </div>
+                      </div>
+                    )}
+
                     <div className={`${glassPanelClass} p-4`}>
                       <div className="flex items-center gap-2">
                         <UserRoundCog className="h-4 w-4 text-accent-primary" />
@@ -2552,16 +2845,21 @@ export default function UsersPage() {
                           Workspace roles
                         </h3>
                       </div>
-                      <div className="mt-3 space-y-3">
+                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                        Quick role guide for this workspace.
+                      </p>
+                      <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                         {roleGuide.map((role) => (
-                          <div key={role.value} className={`${insetPanelClass} px-3 py-3`}>
-                            <div className="flex items-center gap-2">
-                              <Badge kind="role" value={role.value} />
-                            </div>
-                            <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                              {role.description}
-                            </p>
-                          </div>
+                          <RoleGuideCard
+                            key={role.value}
+                            role={role.value}
+                            compact
+                            active={
+                              canManageTeam
+                                ? inviteForm.role === role.value
+                                : normalizeWorkspaceRole(tenantRole) === role.value
+                            }
+                          />
                         ))}
                       </div>
                     </div>
@@ -2570,28 +2868,42 @@ export default function UsersPage() {
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-accent-primary" />
                         <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
-                          Invite health
+                          Access lane
                         </h3>
                       </div>
-                      <div className={`${insetPanelClass} mt-3 px-3 py-3`}>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Pending invites
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {formatNumber(invitations.length)}
-                        </p>
-                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
-                          {expiringSoonInviteCount > 0
-                            ? `${formatNumber(expiringSoonInviteCount)} invite(s) will expire soon.`
-                            : "No invite expiry risk right now."}
-                        </p>
-                      </div>
-                      <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        Keep invitations current so every teammate joins with the right access.
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <SidebarStat
+                          label="Your role"
+                          value={getWorkspaceRoleLabel(tenantRole)}
+                          helper={
+                            canManageTeam
+                              ? `You can manage ${formatNumber(manageableMemberCount)} teammate${manageableMemberCount === 1 ? "" : "s"} beneath your hierarchy level.`
+                              : "This page is currently read-only for your role."
+                          }
+                        />
+                        <SidebarStat
+                          label="Access leads"
+                          value={formatNumber(accessLeadCount)}
+                          helper="Owners, admins, and managers coordinating access across this workspace."
+                        />
+                        <SidebarStat
+                          label="Invite health"
+                          value={formatNumber(invitations.length)}
+                          helper={
+                            expiringSoonInviteCount > 0
+                              ? `${formatNumber(expiringSoonInviteCount)} invite(s) will expire soon.`
+                              : "No invite expiry risk right now."
+                          }
+                        />
+                        <SidebarStat
+                          label="Admin coverage"
+                          value={formatNumber(adminCount)}
+                          helper="Owners and admins who can change roles, disable access, and remove members."
+                        />
                       </div>
                     </div>
                   </>
-                ) : null}
+                )}
               </section>
             </div>
           </>
@@ -2645,7 +2957,7 @@ export default function UsersPage() {
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-800/80 dark:bg-slate-900/70">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge kind="role" value={accessEditorMember.role} />
+                      <WorkspaceRolePill role={accessEditorMember.role} compact />
                       {accessEditorMember.active ? (
                         <Badge kind="active" value="ENABLED" />
                       ) : (

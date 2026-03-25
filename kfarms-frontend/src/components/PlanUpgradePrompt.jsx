@@ -16,7 +16,7 @@ export default function PlanUpgradePrompt({
   const highlights = Array.isArray(plan?.highlights) ? plan.highlights.slice(0, 3) : [];
   const upgradePath =
     normalizedPlan === "ENTERPRISE"
-      ? plan.ctaPath || "/company-profile#contact"
+      ? plan.ctaPath || "/product-profile#contact"
       : `/billing?plan=${normalizedPlan}`;
   const upgradeLabel =
     normalizedPlan === "ENTERPRISE"

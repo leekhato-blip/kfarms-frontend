@@ -6,6 +6,8 @@ const APP_SHELL_URLS = [
   "/manifest.webmanifest",
   "/kfarms-favicon.png",
   "/kfarms-logo.png",
+  "/kfarms-icon-192.png",
+  "/kfarms-icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {

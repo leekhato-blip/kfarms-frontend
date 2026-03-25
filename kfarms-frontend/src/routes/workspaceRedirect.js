@@ -1,4 +1,5 @@
 import { normalizeLandingPage } from "../constants/settings";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import { resolveTenantLandingPage } from "../tenant/tenantModules";
 
 export function resolveWorkspaceRedirect({
@@ -18,7 +19,9 @@ export function resolveWorkspaceRedirect({
   }
 
   if (activeTenantId) {
-    return resolveTenantLandingPage(normalizeLandingPage(landingPage), activeTenant);
+    return toKfarmsAppPath(
+      resolveTenantLandingPage(normalizeLandingPage(landingPage), activeTenant),
+    );
   }
 
   return "/onboarding/create-tenant";

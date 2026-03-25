@@ -16,7 +16,7 @@ export default function Card({
   return (
     <Component
       className={cn(
-        "atlas-glass-card rounded-xl p-4 text-[var(--atlas-text)]",
+        "atlas-glass-card rounded-[1.4rem] p-4 text-[var(--atlas-text)]",
         glowRail && "atlas-glow-rail",
         interactive && "atlas-lift",
         className,

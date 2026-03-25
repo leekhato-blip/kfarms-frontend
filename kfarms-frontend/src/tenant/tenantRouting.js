@@ -1,14 +1,14 @@
-export const TENANT_SCOPED_PATHS = [
-  "/dashboard",
-  "/sales",
-  "/supplies",
-  "/fish-ponds",
-  "/poultry",
-  "/livestock",
-  "/feeds",
-  "/productions",
-  "/settings",
-];
+import {
+  KFARMS_BASE_PATH,
+  KFARMS_LEGACY_ALIASES,
+  KFARMS_ROUTE_LIST,
+} from "../apps/kfarms/paths";
+
+export const TENANT_SCOPED_PATHS = Object.freeze([
+  KFARMS_BASE_PATH,
+  ...KFARMS_ROUTE_LIST.flatMap((route) => [route.legacyPath, route.appPath]),
+  ...Object.keys(KFARMS_LEGACY_ALIASES),
+]);
 
 export function isTenantOnboardingPath(pathname) {
   return pathname === "/onboarding/create-tenant" || pathname === "/onboarding/accept-invite";

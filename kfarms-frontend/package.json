@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "repo:doctor": "node scripts/repo-doctor.mjs"
+    "repo:doctor": "node scripts/repo-doctor.mjs",
+    "deploy:validate": "node scripts/validate-deploy-env.mjs",
+    "deploy:validate:staging": "node scripts/validate-staging-env.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

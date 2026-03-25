@@ -20,10 +20,72 @@ export function resolvePlatformUserRole(user) {
   return user?.platformAdmin ? "PLATFORM_ADMIN" : "USER";
 }
 
+export function hasPlatformAccess(user) {
+  if (typeof user?.platformAccess === "boolean") {
+    return user.platformAccess;
+  }
+  return resolvePlatformUserRole(user) === "PLATFORM_ADMIN";
+}
+
+export function isPlatformOwner(user) {
+  if (typeof user?.platformOwner === "boolean") {
+    return user.platformOwner;
+  }
+  return String(user?.email || "").trim().toLowerCase() === "leekhato@gmail.com";
+}
+
+import { getUserDisplayName } from "../../services/userProfileService";
+
+export function resolvePlatformAccessTier(user) {
+  if (isPlatformOwner(user)) return "PLATFORM_OWNER";
+  if (resolvePlatformUserRole(user) === "PLATFORM_ADMIN") return "PLATFORM_ADMIN";
+  if (hasPlatformAccess(user)) return "PLATFORM_STAFF";
+  return "USER";
+}
+
+export function getPlatformAccessRank(user) {
+  const accessTier = resolvePlatformAccessTier(user);
+
+  if (accessTier === "PLATFORM_OWNER") return 400;
+  if (accessTier === "PLATFORM_ADMIN") return 300;
+  if (accessTier === "PLATFORM_STAFF") return 200;
+  return 100;
+}
+
 export function resolvePlatformUserEnabled(user) {
   if (typeof user?.enabled === "boolean") return user.enabled;
   if (typeof user?.active === "boolean") return user.active;
   return true;
+}
+
+export function isPlatformUser(user) {
+  return hasPlatformAccess(user);
+}
+
+export function filterPlatformUsers(users = []) {
+  if (!Array.isArray(users)) return [];
+  return users.filter(isPlatformUser);
+}
+
+export function comparePlatformUsersByAuthority(left, right) {
+  const rankDifference = getPlatformAccessRank(right) - getPlatformAccessRank(left);
+  if (rankDifference !== 0) return rankDifference;
+
+  const enabledDifference =
+    Number(resolvePlatformUserEnabled(right)) - Number(resolvePlatformUserEnabled(left));
+  if (enabledDifference !== 0) return enabledDifference;
+
+  const tenantDifference =
+    Number(right?.tenantCount ?? right?.tenantsCount ?? 0) -
+    Number(left?.tenantCount ?? left?.tenantsCount ?? 0);
+  if (tenantDifference !== 0) return tenantDifference;
+
+  const leftLabel = left?.username || left?.email || "";
+  const rightLabel = right?.username || right?.email || "";
+  return leftLabel.localeCompare(rightLabel, undefined, {
+    sensitivity: "base",
+    numeric: true,
+  });
 }
 
 export function getTenantMemberLimit(planId) {
@@ -157,9 +219,9 @@ export function buildPlatformTimeline(tenants = [], users = []) {
         id: `tenant-capacity-${tenantId}`,
         category: "Plan guardrail",
         tone: seatUsage.overLimit ? "rose" : "amber",
-        title: seatUsage.overLimit ? "Seat limit exceeded" : "Seat limit nearing cap",
+        title: seatUsage.overLimit ? "Team limit exceeded" : "Team limit nearing cap",
         subject: name,
-        detail: `Using ${seatUsage.label} team seats`,
+        detail: `Using ${seatUsage.label} team members`,
         when: tenant?.lastActivityAt || tenant?.createdAt,
       });
     }
@@ -169,7 +231,7 @@ export function buildPlatformTimeline(tenants = [], users = []) {
     const userId = getUserId(user) ?? index;
     const role = resolvePlatformUserRole(user);
     const enabled = resolvePlatformUserEnabled(user);
-    const label = user?.username || user?.email || "User";
+    const label = getUserDisplayName(user, "User");
     const email = user?.email || "No email";
 
     if (user?.createdAt) {
@@ -177,7 +239,7 @@ export function buildPlatformTimeline(tenants = [], users = []) {
         id: `user-created-${userId}`,
         category: "Access",
         tone: role === "PLATFORM_ADMIN" ? "violet" : "blue",
-        title: role === "PLATFORM_ADMIN" ? "Platform admin onboarded" : "Operator onboarded",
+        title: role === "PLATFORM_ADMIN" ? "ROOTS admin onboarded" : "Operator onboarded",
         subject: label,
         detail: `${role} · ${email}`,
         when: user.createdAt,

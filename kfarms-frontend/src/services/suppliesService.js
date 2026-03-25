@@ -79,16 +79,10 @@ export async function restoreSupply(id) {
  * Backend: GET /api/supplies/deleted
  */
 export async function getDeletedSupplies(params = {}) {
-  console.log("getDeletedSupplies params =", {
-    page: params.page ?? 0,
-    size: params.size ?? 10,
-  });
-
   const res = await api.get("/supplies", {
     params: { page: params.page ?? 0, size: params.size ?? 10, deleted: true },
   });
 
-  console.log("getDeletedSupplies totalItems =", res.data?.data?.totalItems);
   return res.data.data;
 }
 

@@ -65,19 +65,17 @@ const EMPTY_SUMMARY = {
   lastUpdated: null,
 };
 
-const currencyFormatter = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  maximumFractionDigits: 0,
-});
-
 function normalizeRole(value) {
   return String(value || "").trim().toUpperCase();
 }
 
-function formatCurrency(value) {
+function formatCurrency(value, currency = "NGN") {
   const numeric = Number(value || 0);
-  return currencyFormatter.format(Number.isFinite(numeric) ? numeric : 0);
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: String(currency || "NGN").toUpperCase(),
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(numeric) ? numeric : 0);
 }
 
 function formatCount(value) {
@@ -318,6 +316,7 @@ function buildSystemSignals(summary) {
 
 export default function InventoryPage() {
   const { activeTenant, activeTenantId, tenantBootstrapDone } = useTenant();
+  const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [listLoading, setListLoading] = useState(true);
@@ -363,7 +362,7 @@ export default function InventoryPage() {
     ? "Add your first inventory item to start tracking stock levels, reorder pressure, and total store value from one view."
     : "Inventory tips will appear here once a farm manager records the first stock item.";
 
-  async function loadSummary({ silent = false } = {}) {
+  const loadSummary = React.useCallback(async ({ silent = false } = {}) => {
     if (!tenantBootstrapDone) return null;
     if (!activeTenantId) {
       setSummary(EMPTY_SUMMARY);
@@ -395,9 +394,9 @@ export default function InventoryPage() {
     } finally {
       setSummaryLoading(false);
     }
-  }
+  }, [activeTenantId, tenantBootstrapDone]);
 
-  async function loadInventory(page = 0, { silent = false } = {}) {
+  const loadInventory = React.useCallback(async (page = 0, { silent = false } = {}) => {
     if (!tenantBootstrapDone) return null;
     if (!activeTenantId) {
       setItems([]);
@@ -451,19 +450,17 @@ export default function InventoryPage() {
     } finally {
       setListLoading(false);
     }
-  }
+  }, [activeTenantId, category, debouncedQuery, status, tenantBootstrapDone]);
 
   useEffect(() => {
     if (!tenantBootstrapDone) return;
     void loadSummary({ silent: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTenantId, tenantBootstrapDone]);
+  }, [loadSummary, tenantBootstrapDone]);
 
   useEffect(() => {
     if (!tenantBootstrapDone) return;
     void loadInventory(0, { silent: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTenantId, tenantBootstrapDone, debouncedQuery, category, status]);
+  }, [loadInventory, tenantBootstrapDone]);
 
   useEffect(() => {
     if (!detailItem?.id) return;
@@ -522,12 +519,12 @@ export default function InventoryPage() {
         {
           label: "Unit Cost",
           value: getItemUnitCost(detailItem)
-            ? formatCurrency(getItemUnitCost(detailItem))
+            ? formatCurrency(getItemUnitCost(detailItem), workspaceCurrency)
             : "—",
         },
         {
           label: "Stock Value",
-          value: formatCurrency(getItemTotalValue(detailItem)),
+          value: formatCurrency(getItemTotalValue(detailItem), workspaceCurrency),
         },
         { label: "Last Updated", value: formatDate(detailItem?.lastUpdated) },
         { label: "Note", value: detailItem?.note || "—", span: 2 },
@@ -1041,7 +1038,7 @@ export default function InventoryPage() {
                 icon={<Ban />}
                 title="Out of stock"
                 value={formatCount(summary.outOfStockCount)}
-                subtitle={`Store value ${formatCurrency(summary.inventoryValue)}`}
+                subtitle={`Store value ${formatCurrency(summary.inventoryValue, workspaceCurrency)}`}
               />
             </>
           ) : (
@@ -1200,11 +1197,11 @@ export default function InventoryPage() {
                             </td>
                             <td className="text-right">
                               {getItemUnitCost(item)
-                                ? formatCurrency(getItemUnitCost(item))
+                                ? formatCurrency(getItemUnitCost(item), workspaceCurrency)
                                 : "—"}
                             </td>
                             <td className="text-right font-semibold">
-                              {formatCurrency(getItemTotalValue(item))}
+                              {formatCurrency(getItemTotalValue(item), workspaceCurrency)}
                             </td>
                             <td className="text-center">
                               <span

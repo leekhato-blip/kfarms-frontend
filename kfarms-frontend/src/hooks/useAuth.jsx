@@ -3,9 +3,18 @@ import React from "react";
 import { login as loginApi, logout as logoutApi, me as meApi } from "../services/authService";
 import { isDemoAccountUser, setDemoAccountHint } from "../auth/demoMode";
 import { clearQueuedMutations } from "../offline/offlineStore";
+import {
+  applyTenantUserProfile,
+  saveTenantUserProfile,
+} from "../services/userProfileService";
 
 export const AuthContext = React.createContext(null);
 const AUTH_SESSION_HINT_KEY = "kf_auth_session_hint";
+
+function isPlatformPathActive() {
+  if (typeof window === "undefined") return false;
+  return String(window.location.pathname || "").startsWith("/platform");
+}
 
 function hasSessionHint() {
   if (typeof window === "undefined") return false;
@@ -31,10 +40,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = React.useState(hasSessionHint);
 
   const setSession = (userData) => {
-    setUser(userData);
-    setIsAuthenticated(Boolean(userData));
-    setSessionHint(Boolean(userData));
-    const demoAccount = isDemoAccountUser(userData);
+    const nextUser = applyTenantUserProfile(userData);
+    setUser(nextUser);
+    setIsAuthenticated(Boolean(nextUser));
+    setSessionHint(Boolean(nextUser));
+    const demoAccount = isDemoAccountUser(nextUser);
     setDemoAccountHint(demoAccount);
     if (demoAccount) {
       clearQueuedMutations();
@@ -77,7 +87,26 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateProfile = (profile) => {
+    if (!user) return null;
+    const savedProfile = saveTenantUserProfile({ user, profile });
+    const nextUser = applyTenantUserProfile({
+      ...user,
+      displayName: savedProfile.displayName || user?.displayName,
+      phoneNumber: savedProfile.phoneNumber || user?.phoneNumber,
+      jobTitle: savedProfile.jobTitle || user?.jobTitle,
+      bio: savedProfile.bio || user?.bio,
+    });
+    setUser(nextUser);
+    return nextUser;
+  };
+
   React.useEffect(() => {
+    if (isPlatformPathActive()) {
+      setLoading(false);
+      return undefined;
+    }
+
     if (!hasSessionHint()) {
       setLoading(false);
       return undefined;
@@ -118,6 +147,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         refreshMe,
+        updateProfile,
       }}
     >
       {children}

@@ -112,16 +112,9 @@ export async function getSalesSummary() {
  * Backend: GET /api/sales?deleted=true
  */
 export async function getDeletedSales(params = {}) {
-  console.log("getDeletedSales params =", {
-    page: params.page ?? 0,
-    size: params.size ?? 10,
-    deleted: true,
-  });
-
   const res = await api.get("/sales", {
     params: { page: params.page ?? 0, size: params.size ?? 10, deleted: true },
   });
 
-  console.log("getDeletedSales totalItems =", res.data?.data?.totalItems);
   return res.data.data;
 }

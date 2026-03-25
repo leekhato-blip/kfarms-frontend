@@ -8,6 +8,7 @@ export const DEFAULT_ORGANIZATION_SETTINGS = Object.freeze({
   currency: "NGN",
   contactEmail: "",
   contactPhone: "",
+  criticalSmsAlertsEnabled: false,
   address: "",
   watermarkEnabled: true,
   logoUrl: "",
@@ -38,8 +39,6 @@ export const TIMEZONE_OPTIONS = Object.freeze([
 export const CURRENCY_OPTIONS = Object.freeze([
   { value: "NGN", label: "Nigerian Naira (NGN)" },
   { value: "USD", label: "US Dollar (USD)" },
-  { value: "EUR", label: "Euro (EUR)" },
-  { value: "GBP", label: "British Pound (GBP)" },
 ]);
 
 export const LANDING_PAGE_OPTIONS = Object.freeze([
@@ -109,6 +108,9 @@ export function normalizeOrganizationSettings(settings = {}) {
     contactPhone: String(
       settings.contactPhone ?? DEFAULT_ORGANIZATION_SETTINGS.contactPhone,
     ).trim(),
+    criticalSmsAlertsEnabled:
+      settings.criticalSmsAlertsEnabled ??
+      DEFAULT_ORGANIZATION_SETTINGS.criticalSmsAlertsEnabled,
     address: String(settings.address ?? DEFAULT_ORGANIZATION_SETTINGS.address).trim(),
     watermarkEnabled:
       settings.watermarkEnabled ?? DEFAULT_ORGANIZATION_SETTINGS.watermarkEnabled,

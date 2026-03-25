@@ -10,8 +10,13 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+import {
+  normalizeKfarmsLegacyPath,
+  toKfarmsAppPath,
+} from "../apps/kfarms/paths";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
+import { getUserDisplayName } from "../services/userProfileService";
 import {
   askSupportAssistant,
   getSupportAssistantConversation,
@@ -24,6 +29,19 @@ const DEFAULT_PROMPTS = [
   "How can I ask for help?",
 ];
 
+const PATH_SUPPORT_CATEGORY = Object.freeze([
+  { match: "/billing", category: "Billing & plan" },
+  { match: "/inventory", category: "Stock & supplies" },
+  { match: "/supplies", category: "Stock & supplies" },
+  { match: "/feeds", category: "Feeds & feeding" },
+  { match: "/fish-ponds", category: "Fish Ponds" },
+  { match: "/poultry", category: "Poultry" },
+  { match: "/livestock", category: "Poultry" },
+  { match: "/sales", category: "Sales & money" },
+  { match: "/users", category: "Farm access" },
+  { match: "/settings", category: "Farm access" },
+]);
+
 function formatTime(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -32,6 +50,70 @@ function formatTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function truncateText(value, maxLength) {
+  const text = String(value || "").trim();
+  if (!text || text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(maxLength - 1, 0)).trimEnd()}…`;
+}
+
+function inferSupportCategory(pathname = "") {
+  const normalizedPath = normalizeKfarmsLegacyPath(pathname);
+  const matched = PATH_SUPPORT_CATEGORY.find((entry) => normalizedPath.startsWith(entry.match));
+  return matched?.category || "General";
+}
+
+function inferSupportPriority(text = "") {
+  const normalized = String(text || "").toLowerCase();
+  if (/\b(critical|urgent|down|failed payment|cannot log in|can't log in|outage)\b/.test(normalized)) {
+    return "CRITICAL";
+  }
+  if (/\b(error|not working|broken|stuck|failed|issue|problem|bug)\b/.test(normalized)) {
+    return "HIGH";
+  }
+  if (/\b(question|clarify|guide|help me understand)\b/.test(normalized)) {
+    return "LOW";
+  }
+  return "MEDIUM";
+}
+
+function buildSupportEscalationSearch({ pathname = "", tenantName = "", input = "", messages = [] } = {}) {
+  const normalizedPath = normalizeKfarmsLegacyPath(pathname);
+  const cleanInput = String(input || "").trim();
+  const userMessages = (Array.isArray(messages) ? messages : []).filter(
+    (message) => String(message?.role || "").toLowerCase() === "user" && String(message?.content || "").trim(),
+  );
+  const summary =
+    cleanInput ||
+    userMessages.at(-1)?.content ||
+    "I need help with something I was discussing with the assistant.";
+  const transcript = (Array.isArray(messages) ? messages : [])
+    .slice(-6)
+    .map((message) => {
+      const role = String(message?.role || "").toLowerCase() === "assistant" ? "Assistant" : "Farmer";
+      const content = String(message?.content || "").trim();
+      return content ? `${role}: ${content}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  const descriptionParts = [
+    "Please help me continue this issue from the assistant chat.",
+    tenantName ? `Workspace: ${tenantName}` : "",
+    normalizedPath ? `Page: ${normalizedPath}` : "",
+    "",
+    `Issue summary: ${summary}`,
+    transcript ? `\nRecent assistant chat:\n${transcript}` : "",
+  ].filter(Boolean);
+
+  const params = new URLSearchParams();
+  params.set("tab", "tickets");
+  params.set("subject", truncateText(`Assistant escalation: ${summary}`, 140));
+  params.set("category", inferSupportCategory(normalizedPath));
+  params.set("priority", inferSupportPriority(`${summary}\n${transcript}`));
+  params.set("description", truncateText(descriptionParts.join("\n"), 2400));
+  return params.toString();
 }
 
 export default function SupportAssistantWidget() {
@@ -54,7 +136,7 @@ export default function SupportAssistantWidget() {
   const bottomRef = React.useRef(null);
 
   const tenantName = activeTenant?.name || "your farm";
-  const userName = user?.username || user?.email || "Farmer";
+  const userName = getUserDisplayName(user, "Farmer");
   const assistantContext = React.useMemo(
     () => ({
       currentPath: location.pathname,
@@ -70,6 +152,16 @@ export default function SupportAssistantWidget() {
       : source === "hybrid"
         ? "Smart assistant mode"
         : "Live assistant mode";
+  const supportEscalationSearch = React.useMemo(
+    () =>
+      buildSupportEscalationSearch({
+        pathname: location.pathname,
+        tenantName,
+        input,
+        messages,
+      }),
+    [input, location.pathname, messages, tenantName],
+  );
 
   const applyAssistantPayload = React.useCallback((result = {}) => {
     setMessages(Array.isArray(result.messages) ? result.messages : []);
@@ -203,6 +295,11 @@ export default function SupportAssistantWidget() {
     }
 
     navigate(target);
+  }
+
+  function handleEscalateToSupport() {
+    setOpen(false);
+    navigate(`${toKfarmsAppPath("/support")}?${supportEscalationSearch}`);
   }
 
   return (
@@ -356,7 +453,16 @@ export default function SupportAssistantWidget() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => navigate("/support")}
+                    onClick={handleEscalateToSupport}
+                    disabled={!activeTenantId}
+                    className="inline-flex items-center gap-1 rounded-md border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-500/15 disabled:opacity-60 dark:text-emerald-200"
+                  >
+                    <LifeBuoy className="h-3.5 w-3.5" />
+                    Send to support
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(toKfarmsAppPath("/support"))}
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/20 dark:text-slate-200"
                   >
                     <LifeBuoy className="h-3.5 w-3.5" />
@@ -365,7 +471,7 @@ export default function SupportAssistantWidget() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate("/billing")}
+                    onClick={() => navigate(toKfarmsAppPath("/billing"))}
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/20 dark:text-slate-200"
                   >
                     Billing

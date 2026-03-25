@@ -98,17 +98,17 @@ export default function GlassModal({ isOpen, onClose, onSave, sale }) {
             className="px-3 py-2 rounded-md bg-lightCard dark:bg-darkCard text-lightText dark:text-darkText border border-gray-300 dark:border-gray-600"
             required
           />
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              className="w-full rounded-md border border-gray-300 px-4 py-2 transition hover:bg-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 sm:w-auto sm:min-w-[8rem]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-md bg-accent-primary text-white hover:bg-accent-dark transition"
+              className="w-full rounded-md bg-accent-primary px-4 py-2 text-white transition hover:bg-accent-dark sm:w-auto sm:min-w-[8rem]"
             >
               Save
             </button>

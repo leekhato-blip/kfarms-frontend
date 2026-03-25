@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LogIn, Moon, ShieldCheck, Sun } from "lucide-react";
+import { Eye, EyeOff, LogIn, Moon, ShieldCheck, Sun } from "lucide-react";
 import {
   AUTH_LOGIN_FALLBACK_URL,
   AUTH_LOGIN_IDENTIFIER_KEY,
@@ -13,6 +13,12 @@ import {
   platformAxios,
   unwrapApiResponse,
 } from "../../api/platformClient";
+import {
+  canUsePlatformDevSession,
+  createPlatformDevToken,
+  findPlatformDemoUser,
+  writePlatformDevSession,
+} from "../../auth/platformDevSession";
 import { usePlatformAuth } from "../../auth/AuthProvider";
 import { ToastProvider, useToast } from "../../components/ToastProvider";
 import Card from "../../components/Card";
@@ -80,30 +86,116 @@ function shouldTryFallbackEndpoint(error) {
   return false;
 }
 
+function resolveFriendlyLoginError(error) {
+  const status = Number(error?.response?.status || 0);
+  const rawMessage = getApiErrorMessage(error, "").trim();
+  const normalized = rawMessage.toLowerCase();
+
+  if (status === 401 || status === 403 || normalized.includes("bad credentials")) {
+    return "That sign-in did not work. Check your email or username and password, then try again.";
+  }
+
+  if (normalized.includes("disabled")) {
+    return "This ROOTS account is currently disabled. Please contact a ROOTS admin.";
+  }
+
+  if (status === 429) {
+    return "Too many sign-in attempts. Please wait a moment, then try again.";
+  }
+
+  if (status === 404 || status === 405) {
+    return "ROOTS sign-in is temporarily unavailable. Refresh the page and try again.";
+  }
+
+  if (status >= 500) {
+    return "We could not sign you in right now. Please try again in a moment.";
+  }
+
+  if (rawMessage && !/^request failed with status code/i.test(rawMessage)) {
+    return rawMessage;
+  }
+
+  return "We could not sign you in right now. Please try again.";
+}
+
+function shouldUseDevPlatformLoginFallback(error) {
+  if (!canUsePlatformDevSession()) return false;
+
+  const status = Number(error?.response?.status || 0);
+  const code = String(error?.code || "").toUpperCase();
+  const message = getApiErrorMessage(error, "").toLowerCase();
+
+  return (
+    status >= 500 ||
+    code === "ERR_NETWORK" ||
+    code === "ECONNREFUSED" ||
+    message.includes("network error") ||
+    message.includes("connection refused") ||
+    message.includes("internal server error")
+  );
+}
+
 function PlatformLoginContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { notify } = useToast();
-  const { isAuthenticated, login } = usePlatformAuth();
+  const { isAuthenticated, canAccessPlatform, login, logout, profileLoading } = usePlatformAuth();
   const { isDark, toggleTheme } = useTheme();
 
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [inlineError, setInlineError] = React.useState("");
+  const deniedSessionRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !profileLoading && canAccessPlatform) {
+      deniedSessionRef.current = false;
       navigate("/platform", { replace: true });
       return;
     }
 
+    if (isAuthenticated && !profileLoading && !canAccessPlatform) {
+      if (!deniedSessionRef.current) {
+        const message =
+          "This account can sign in, but it does not have ROOTS platform access here yet.";
+        deniedSessionRef.current = true;
+        setInlineError(message);
+        notify(message, "error", 3000);
+      }
+      logout();
+      return;
+    }
+
+    deniedSessionRef.current = false;
+  }, [
+    canAccessPlatform,
+    isAuthenticated,
+    location.state?.from,
+    logout,
+    navigate,
+    notify,
+    profileLoading,
+  ]);
+
+  React.useEffect(() => {
     const flashMessage = window.localStorage.getItem(PLATFORM_FLASH_KEY);
     if (flashMessage) {
       notify(flashMessage, "info");
       window.localStorage.removeItem(PLATFORM_FLASH_KEY);
     }
-  }, [isAuthenticated, navigate, notify]);
+  }, [notify]);
+
+  React.useEffect(() => {
+    if (!inlineError) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setInlineError("");
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [inlineError]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -142,9 +234,22 @@ function PlatformLoginContent() {
       const from = location.state?.from;
       navigate(from || "/platform", { replace: true });
     } catch (error) {
-      const message = getApiErrorMessage(error, "Unable to sign in.");
+      if (shouldUseDevPlatformLoginFallback(error)) {
+        const demoUser = findPlatformDemoUser(identifier);
+
+        if (demoUser && password.trim()) {
+          writePlatformDevSession(demoUser);
+          login(createPlatformDevToken(demoUser));
+          notify(`Signed in as ${demoUser.username || demoUser.email}`, "success");
+          navigate(location.state?.from || "/platform", { replace: true });
+          setLoading(false);
+          return;
+        }
+      }
+
+      const message = resolveFriendlyLoginError(error);
       setInlineError(message);
-      notify(message, "error");
+      notify(message, "error", 3000);
     } finally {
       setLoading(false);
     }
@@ -152,65 +257,113 @@ function PlatformLoginContent() {
 
   return (
     <div className="atlas-theme atlas-root-network min-h-screen px-4 py-10">
-      <div className="mx-auto flex max-w-md flex-col">
-        <div className="mb-3 flex justify-end">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-        </div>
-
-        <Card className="rounded-2xl border-[color:var(--atlas-border-strong)] p-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-            <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-300" />
-            <img src={rootsLogo} alt="ROOTS" className="h-3.5 w-3.5 object-contain" />
-            Platform
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl items-center justify-center">
+        <div className="w-full max-w-[30rem]">
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/88 p-2 text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
 
-          <h1 className="mt-4 text-2xl font-bold text-[var(--atlas-text-strong)]">Platform Control Plane</h1>
-          <p className="mt-1 text-sm text-[var(--atlas-muted)]">Sign in with platform admin credentials.</p>
+          <Card className="atlas-stage-card rounded-[2rem] border-[color:var(--atlas-border-strong)] px-6 py-7 md:px-8 md:py-9">
+            <div className="relative z-10">
+              <div className="text-center">
+                <div className="mx-auto inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--atlas-muted)]">
+                  <ShieldCheck size={14} className="mr-2 text-violet-600 dark:text-violet-300" />
+                  ROOTS Platform
+                </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="mb-1 block text-sm text-[var(--atlas-text)]">Email or Username</label>
-              <input
-                type="text"
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                className="h-11 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none transition placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50"
-                autoComplete="username"
-                required
-              />
-            </div>
+                <div className="mx-auto mt-6 flex h-28 w-28 items-center justify-center rounded-[2rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/85 shadow-[0_18px_48px_rgba(15,23,42,0.18)]">
+                  <img src={rootsLogo} alt="ROOTS" className="h-20 w-20 object-contain" />
+                </div>
 
-            <div>
-              <label className="mb-1 block text-sm text-[var(--atlas-text)]">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="h-11 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none transition placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50"
-                autoComplete="current-password"
-                required
-              />
-            </div>
-
-            {inlineError && (
-              <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
-                {inlineError}
+                <div className="mt-6">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--atlas-muted)]">
+                    ROOTS
+                  </div>
+                  <h1 className="mt-3 font-header text-4xl font-semibold tracking-tight text-[var(--atlas-text-strong)] md:text-[3rem]">
+                    Platform Login
+                  </h1>
+                  <p className="mt-3 text-sm leading-6 text-[var(--atlas-muted)]">
+                    Sign in to ROOTS with your platform account.
+                  </p>
+                </div>
               </div>
-            )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              <LogIn size={15} />
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-        </Card>
+              <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--atlas-text)]">
+                    Email or Username
+                  </label>
+                  <input
+                    type="text"
+                    value={identifier}
+                    onChange={(event) => setIdentifier(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-4 text-sm text-[var(--atlas-text-strong)] outline-none transition placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
+                    autoComplete="username"
+                    placeholder="Enter your work email or username"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--atlas-text)]">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      className="h-12 w-full rounded-2xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-4 pr-20 text-sm text-[var(--atlas-text-strong)] outline-none transition placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      className="absolute inset-y-0 right-3 inline-flex items-center gap-1.5 justify-center text-xs font-semibold text-[var(--atlas-muted)] transition hover:text-[var(--atlas-text-strong)]"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <>
+                          <EyeOff size={16} />
+                          <span>Hide</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={16} />
+                          <span>Show</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {inlineError && (
+                  <div className="rounded-2xl border border-violet-300/60 bg-violet-50 px-3 py-2.5 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
+                    {inlineError}
+                  </div>
+                )}
+
+                <Button type="submit" className="mt-2 w-full !rounded-2xl" disabled={loading}>
+                  <LogIn size={15} />
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+
+              <div className="mt-5 text-center text-xs uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                ROOTS platform access
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

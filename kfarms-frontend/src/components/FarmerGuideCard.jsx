@@ -40,6 +40,10 @@ export default function FarmerGuideCard({
   const safeSteps = Array.isArray(steps) ? steps.filter(Boolean).slice(0, 3) : [];
   const [isHidden, setIsHidden] = React.useState(() => readHiddenState(storageKey));
   const prefersReducedMotion = useReducedMotion();
+  const MotionDiv = motion.div;
+  const MotionButton = motion.button;
+  const MotionSection = motion.section;
+  const GuideIcon = Icon;
   const transition = prefersReducedMotion
     ? { duration: 0 }
     : { duration: 0.26, ease: [0.22, 1, 0.36, 1] };
@@ -59,10 +63,10 @@ export default function FarmerGuideCard({
   }
 
   return (
-    <motion.div layout transition={transition} className={className}>
+    <MotionDiv layout transition={transition} className={className}>
       <AnimatePresence initial={false} mode="wait">
         {isHidden ? (
-          <motion.div
+          <MotionDiv
             key="guide-collapsed"
             layout
             initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.92, y: -8 }}
@@ -71,7 +75,7 @@ export default function FarmerGuideCard({
             transition={transition}
             className="flex justify-end"
           >
-            <motion.button
+            <MotionButton
               layout
               type="button"
               onClick={showCard}
@@ -81,10 +85,10 @@ export default function FarmerGuideCard({
               whileTap={prefersReducedMotion ? undefined : { scale: 0.96 }}
             >
               <CircleHelp className="h-4.5 w-4.5" aria-hidden="true" />
-            </motion.button>
-          </motion.div>
+            </MotionButton>
+          </MotionDiv>
         ) : (
-          <motion.section
+          <MotionSection
             key="guide-expanded"
             layout
             initial={prefersReducedMotion ? false : { opacity: 0, y: -10, scale: 0.98 }}
@@ -100,7 +104,7 @@ export default function FarmerGuideCard({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                 <div className="flex min-w-0 flex-1 items-start gap-3">
                   <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-200/70 bg-sky-50 text-sky-700 shadow-soft dark:border-sky-400/25 dark:bg-sky-500/10 dark:text-sky-200">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    <GuideIcon className="h-5 w-5" aria-hidden="true" />
                   </span>
 
                   <div className="min-w-0 flex-1">
@@ -118,7 +122,7 @@ export default function FarmerGuideCard({
                   </div>
                 </div>
 
-                <motion.button
+                <MotionButton
                   layout
                   type="button"
                   onClick={hideCard}
@@ -129,11 +133,11 @@ export default function FarmerGuideCard({
                 >
                   <X className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Hide</span>
-                </motion.button>
+                </MotionButton>
               </div>
 
               {safeSteps.length ? (
-                <motion.div layout className="mt-4 grid gap-3 md:grid-cols-3">
+                <MotionDiv layout className="mt-4 grid gap-3 md:grid-cols-3">
                   {safeSteps.map((step, index) => (
                     <div
                       key={`${title}-${index}`}
@@ -149,22 +153,22 @@ export default function FarmerGuideCard({
                       </div>
                     </div>
                   ))}
-                </motion.div>
+                </MotionDiv>
               ) : null}
 
               {tip ? (
-                <motion.div
+                <MotionDiv
                   layout
                   className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-3 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100"
                 >
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <p>{tip}</p>
-                </motion.div>
+                </MotionDiv>
               ) : null}
             </div>
-          </motion.section>
+          </MotionSection>
         )}
       </AnimatePresence>
-    </motion.div>
+    </MotionDiv>
   );
 }

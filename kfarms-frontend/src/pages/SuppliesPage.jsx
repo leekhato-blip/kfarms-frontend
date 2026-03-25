@@ -283,11 +283,8 @@ export default function SuppliesPage() {
 
   async function confirmDelete(target) {
     if (!target?.id) {
-      console.log("No target passed to confirmDelete:", target);
       return;
     }
-
-    console.log("Deleting supply:", target);
 
     try {
       setDeleting(true);

@@ -5,6 +5,7 @@ import PageWrapper from "../components/PageWrapper";
 import apiClient from "../api/apiClient";
 import { useTenant } from "../tenant/TenantContext";
 import { useAuth } from "../hooks/useAuth";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 
 function readErrorMessage(error) {
   const data = error?.response?.data;
@@ -36,7 +37,7 @@ export default function AcceptInvite() {
       return;
     }
     if (activeTenantId) {
-      navigate("/dashboard", { replace: true });
+      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
       return;
     }
     navigate("/", { replace: true });
@@ -81,7 +82,7 @@ export default function AcceptInvite() {
       }
 
       clearTenantSwitchMessage();
-      navigate("/dashboard", { replace: true });
+      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
     } catch (err) {
       setError(readErrorMessage(err));
     } finally {

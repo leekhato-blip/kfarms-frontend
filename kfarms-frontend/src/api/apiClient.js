@@ -12,17 +12,24 @@ import {
   getCachedApiResponse,
   shouldServeOfflineImmediately,
 } from "../offline/offlineStore";
+import { resolveApiBaseUrl } from "./apiBaseUrl";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const PING_PATH = "/auth/me";
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
 const AUTH_PUBLIC_401_PATHS = new Set([
   "/api/auth/login",
   "/api/auth/signup",
+  "/api/auth/verify-contact",
+  "/api/auth/resend-contact-verification",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
 ]);
+
+export function isPlatformPathname(pathname = "") {
+  return String(pathname || "").startsWith("/platform");
+}
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -236,6 +243,7 @@ function startPing() {
 
 function redirectToLogin() {
   if (typeof window === "undefined") return;
+  if (isPlatformPathname(window.location.pathname)) return;
   if (window.location.pathname === "/auth/login") return;
   window.location.assign("/auth/login");
 }
@@ -351,8 +359,10 @@ apiClient.interceptors.response.use(
       if (shouldProbeSession) {
         const sessionActive = await hasActiveSession();
         if (!sessionActive) {
-          dispatchWindowEvent(new Event("kf-auth-invalid"));
-          redirectToLogin();
+          if (!isPlatformPathname(typeof window !== "undefined" ? window.location.pathname : "")) {
+            dispatchWindowEvent(new Event("kf-auth-invalid"));
+            redirectToLogin();
+          }
         }
       }
     }

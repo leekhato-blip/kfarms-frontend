@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { KFARMS_ROUTE_REGISTRY } from "../apps/kfarms/paths";
 import { resolveWorkspaceRedirect } from "./workspaceRedirect";
 import { FARM_MODULES } from "../tenant/tenantModules";
 
@@ -25,7 +26,7 @@ describe("resolveWorkspaceRedirect", () => {
     expect(target).toBe("/auth/login");
   });
 
-  it("returns dashboard for authenticated users with an active tenant", () => {
+  it("returns the KFarms dashboard path for authenticated users with an active tenant", () => {
     const target = resolveWorkspaceRedirect({
       isAuthenticated: true,
       loading: false,
@@ -33,7 +34,7 @@ describe("resolveWorkspaceRedirect", () => {
       activeTenantId: 17,
     });
 
-    expect(target).toBe("/dashboard");
+    expect(target).toBe(KFARMS_ROUTE_REGISTRY.dashboard.appPath);
   });
 
   it("returns the saved landing page for authenticated users with an active tenant", () => {
@@ -48,7 +49,7 @@ describe("resolveWorkspaceRedirect", () => {
       landingPage: "/inventory",
     });
 
-    expect(target).toBe("/inventory");
+    expect(target).toBe(KFARMS_ROUTE_REGISTRY.inventory.appPath);
   });
 
   it("falls back to dashboard when the saved landing page is not enabled for the tenant", () => {
@@ -63,7 +64,7 @@ describe("resolveWorkspaceRedirect", () => {
       landingPage: "/poultry",
     });
 
-    expect(target).toBe("/dashboard");
+    expect(target).toBe(KFARMS_ROUTE_REGISTRY.dashboard.appPath);
   });
 
   it("returns create-tenant for authenticated users without a tenant", () => {

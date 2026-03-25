@@ -1,4 +1,8 @@
 import apiClient from "../api/apiClient";
+import {
+  normalizeKfarmsLegacyPath,
+  toKfarmsAppPath,
+} from "../apps/kfarms/paths";
 
 const ASSISTANT_STORAGE_KEY = "kf-placeholder-support-assistant";
 
@@ -85,8 +89,12 @@ const PLANNING_PATTERN =
   /\b(avoid|prevent|plan|reorder|budget|control|improve|best practice|priority)\b/i;
 const DETAIL_PATTERN =
   /\b(what details|what fields|what should include|what do i track|what to track|mandatory)\b/i;
+const ACTION_PATTERN =
+  /\b(add|create|record|log|enter|save|update|change|invite|onboard|set up|setup)\b/i;
 const LIVE_DATA_PATTERN =
   /\b(how much|how many|how are|today|this week|last 7 days|current|latest|profit|revenue|stock|count|total)\b/i;
+const SNAPSHOT_REPLY_PATTERN =
+  /\b(workspace snapshot|inventory:|tasks:|priority attention|unread alerts|ask me about inventory)\b/i;
 
 const TOPIC_CONFIG = Object.freeze({
   dashboard: {
@@ -158,7 +166,11 @@ const TOPIC_CONFIG = Object.freeze({
     label: "sales",
     route: "/sales",
     keywords: [
+      "sale",
       "sales",
+      "sell",
+      "new sale",
+      "record sale",
       "cash",
       "invoice",
       "revenue",
@@ -247,7 +259,7 @@ function normalizeAction(entry = {}) {
     id: String(entry.id || `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
     label,
     type: type === "prompt" ? "prompt" : "navigate",
-    target,
+    target: type === "prompt" || !target ? target : toKfarmsAppPath(target),
     message,
   };
 }
@@ -365,7 +377,7 @@ function formatTitleCase(value) {
 }
 
 function inferTopicFromRoute(pathname) {
-  const normalizedPath = String(pathname ?? "").trim().toLowerCase();
+  const normalizedPath = normalizeKfarmsLegacyPath(pathname).toLowerCase();
   if (!normalizedPath) return "";
 
   return (
@@ -441,6 +453,7 @@ function inferIntent(message, topic) {
   const text = normalizeText(message);
 
   if (NAVIGATION_PATTERN.test(text)) return "navigate";
+  if (ACTION_PATTERN.test(text)) return "action";
   if (CHECKLIST_PATTERN.test(text)) return "checklist";
   if (TROUBLESHOOT_PATTERN.test(text)) return "troubleshoot";
   if (SUMMARY_PATTERN.test(text)) return "summary";
@@ -456,6 +469,38 @@ function asksForLiveData(message, topic, intent) {
     intent === "summary";
 }
 
+function looksLikeWorkspaceSnapshotReply(reply = "") {
+  const normalized = normalizeText(reply);
+  if (!normalized) return false;
+  if (normalized.includes("workspace snapshot")) return true;
+  const matchedSignals = [
+    normalized.includes("inventory:"),
+    normalized.includes("tasks:"),
+    normalized.includes("priority attention"),
+    normalized.includes("unread alerts"),
+    normalized.includes("ask me about inventory"),
+    SNAPSHOT_REPLY_PATTERN.test(normalized),
+  ].filter(Boolean).length;
+  return matchedSignals >= 2;
+}
+
+function isDashboardSnapshotRequest(message = "", topic = "", intent = "") {
+  const normalized = normalizeText(message);
+  if (topic !== "dashboard") return false;
+  if (intent === "summary") return true;
+  return /\b(snapshot|overview|status|attention|dashboard|current workspace)\b/.test(normalized);
+}
+
+function shouldPreferLocalTopicReply({
+  assistantText = "",
+  message = "",
+  topic = "",
+  intent = "",
+} = {}) {
+  if (!looksLikeWorkspaceSnapshotReply(assistantText)) return false;
+  return !isDashboardSnapshotRequest(message, topic, intent);
+}
+
 function buildSupportTicketTarget({
   category = "General",
   priority = "MEDIUM",
@@ -469,7 +514,7 @@ function buildSupportTicketTarget({
     subject,
     description,
   });
-  return `/support?${params.toString()}`;
+  return `${toKfarmsAppPath("/support")}?${params.toString()}`;
 }
 
 function buildStarterSuggestions(context = {}) {
@@ -742,6 +787,17 @@ function buildFeedsReply({ message, intent, isFollowUp }) {
 function buildInventoryReply({ message, intent, isFollowUp }) {
   const liveNote = buildLiveDataNote(message, "inventory", intent);
 
+  if (intent === "action") {
+    return [
+      "To update inventory cleanly:",
+      "- Open Inventory.",
+      "- Add the item or select an existing one.",
+      "- Enter the quantity, unit, and the reason for the change.",
+      "- Save the update, then confirm the new balance matches the physical stock.",
+      "- Review low-stock and reorder items before you leave the page.",
+    ].join("\n");
+  }
+
   if (intent === "planning" || /reorder|priority|critical/.test(normalizeText(message))) {
     return [
       "Prioritize inventory in this order:",
@@ -814,6 +870,17 @@ function buildPoultryReply({ intent, isFollowUp }) {
 function buildSalesReply({ message, intent, isFollowUp }) {
   const liveNote = buildLiveDataNote(message, "sales", intent);
 
+  if (intent === "action") {
+    return [
+      "To add a new sale:",
+      "- Open Sales.",
+      "- Select Add Sale or New Sale.",
+      "- Enter the buyer, item, quantity, unit price, and payment status.",
+      "- Review the total, then save the record.",
+      "- Reopen the sale later if you need to update payment or notes.",
+    ].join("\n");
+  }
+
   if (intent === "details") {
     return [
       "Record every sale with these core details:",
@@ -847,6 +914,17 @@ function buildSalesReply({ message, intent, isFollowUp }) {
 function buildBillingReply({ message, intent, isFollowUp }) {
   const liveNote = buildLiveDataNote(message, "billing", intent);
 
+  if (intent === "action" && /\b(upgrade|downgrade|change plan|plan)\b/.test(normalizeText(message))) {
+    return [
+      "To change your plan:",
+      "- Open Billing.",
+      "- Review the current plan and available options.",
+      "- Choose the new plan, confirm the billing impact, and continue.",
+      "- Save the change and keep the payment reference if one is generated.",
+      "- If anything looks wrong, open a billing support request with the reference.",
+    ].join("\n");
+  }
+
   if (intent === "troubleshoot") {
     return [
       "For billing trouble, check these first:",
@@ -878,6 +956,17 @@ function buildBillingReply({ message, intent, isFollowUp }) {
 }
 
 function buildTeamReply({ intent, isFollowUp }) {
+  if (intent === "action") {
+    return [
+      "To add a new teammate:",
+      "- Open Users.",
+      "- Choose Invite user or Add teammate.",
+      "- Enter the name or email and pick the lowest role that fits the job.",
+      "- Send the invite, then confirm the person appears in the workspace list.",
+      "- Review access again after the person signs in.",
+    ].join("\n");
+  }
+
   if (intent === "checklist" || isFollowUp) {
     return [
       "Use this workspace access routine:",
@@ -896,10 +985,10 @@ function buildTeamReply({ intent, isFollowUp }) {
   ].join("\n");
 }
 
-function buildSupportReply({ topic, isFollowUp }) {
-  if (isFollowUp || topic === "support") {
+function buildSupportReply({ topic, intent, isFollowUp }) {
+  if (intent === "action" || isFollowUp || topic === "support") {
     return [
-      "For faster help, send one complete support request:",
+      "To get help faster, send one complete support request:",
       "- what page you were on",
       "- what you expected to happen",
       "- what actually happened",
@@ -966,7 +1055,7 @@ function buildReplyForTopic({ message, context, topic, intent }) {
     case "team":
       return buildTeamReply({ intent, isFollowUp });
     case "support":
-      return buildSupportReply({ topic, isFollowUp: true });
+      return buildSupportReply({ topic, intent, isFollowUp: true });
     default:
       return buildClarifyingReply(context);
   }
@@ -1356,6 +1445,30 @@ export async function askSupportAssistant({
     const assistantText = String(payload.reply || payload.message || "").trim();
     if (!assistantText) {
       throw new Error("Assistant reply was empty.");
+    }
+
+    if (
+      shouldPreferLocalTopicReply({
+        assistantText,
+        message: content,
+        topic: localHints.topic,
+        intent: localHints.intent,
+      })
+    ) {
+      const assistantEntry = normalizeMessage({
+        role: "assistant",
+        content: localHints.reply,
+        createdAt: nowIso(),
+      });
+      const next = [...optimistic, assistantEntry];
+      setConversationForTenant(tenantId, next);
+      return {
+        messages: next,
+        reply: assistantEntry.content,
+        suggestions: localHints.suggestions,
+        actions: normalizeActions(localHints.actions),
+        source: "hybrid",
+      };
     }
 
     const apiMessages = normalizeHistory(payload.messages);

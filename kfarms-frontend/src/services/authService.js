@@ -1,4 +1,5 @@
 import api from "../api/apiClient";
+import { normalizeEmail, normalizePhoneNumber } from "../utils/accountValidation";
 import {
   clearOfflineAuthBootstrap,
   primeCachedApiResponse,
@@ -42,9 +43,31 @@ export async function me() {
   return res.data?.data ?? res.data;
 }
 
-export async function signUser({ email, username, password }) {
-  const body = { email, username, password };
+export async function signUser({ email, username, password, phoneNumber }) {
+  const body = {
+    email: normalizeEmail(email),
+    username,
+    password,
+    phoneNumber: normalizePhoneNumber(phoneNumber),
+  };
   const res = await api.post("/auth/signup", body);
+  return res.data;
+}
+
+export async function verifyContact({ email, emailCode, phoneCode }) {
+  const res = await api.post("/auth/verify-contact", {
+    email: normalizeEmail(email),
+    emailCode,
+    phoneCode,
+  });
+  return res.data;
+}
+
+export async function resendContactVerification({ email, channel }) {
+  const res = await api.post("/auth/resend-contact-verification", {
+    email: normalizeEmail(email),
+    channel,
+  });
   return res.data;
 }
 

@@ -114,6 +114,14 @@ function normalizeLimitLabel(label) {
   return raw;
 }
 
+const LIVE_BILLING_CHECKLIST = Object.freeze([
+  "Create and verify a Paystack business account for live billing.",
+  "Set backend env vars: KFARMS_PAYSTACK_ENABLED=true, KFARMS_PAYSTACK_SECRET_KEY, and KFARMS_PAYSTACK_PRO_MONTHLY_PLAN_CODE.",
+  "Point the Paystack webhook to /api/billing/paystack/webhook on your deployed backend.",
+  "Set KFARMS_FRONTEND_BASE_URL and your production CORS/cookie values so checkout returns to the app correctly.",
+  "Add a billing email in Workspace Settings before starting checkout.",
+]);
+
 export default function BillingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -382,7 +390,7 @@ export default function BillingPage() {
       return false;
     }
     if (normalizedPlan === "ENTERPRISE") {
-      navigate("/company-profile#contact");
+      navigate("/product-profile#contact");
       return false;
     }
 
@@ -523,7 +531,7 @@ export default function BillingPage() {
     }
 
     if (requestedPlan === "ENTERPRISE") {
-      navigate("/company-profile#contact");
+      navigate("/product-profile#contact");
       clearPlanIntentQuery();
       return;
     }
@@ -760,9 +768,59 @@ export default function BillingPage() {
         )}
 
         {dataSource === "placeholder" && (
-          <div className="rounded-xl border border-amber-300/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200">
-            Test payment mode is on. Billing will switch to live payments once payment keys and
-            webhooks are connected.
+          <div className="space-y-3">
+            <div className="rounded-xl border border-amber-300/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200">
+              Test payment mode is on. Live billing in this app uses Paystack, so checkout will switch
+              from placeholder mode as soon as the provider keys and webhook are connected.
+            </div>
+
+            <div className={`${glassPanelClass} p-4`}>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Live Billing Checklist
+                  </p>
+                  <h2 className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    What still needs to happen
+                  </h2>
+                  <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                    The tenant billing flow is already built. To charge real cards, you still need a
+                    Paystack account and a few backend deployment values.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to="/settings"
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white/20 dark:text-slate-100"
+                  >
+                    Add billing email
+                  </Link>
+                  <Link
+                    to="/support?tab=tickets&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace."
+                    className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary transition hover:bg-accent-primary/15 dark:text-blue-200"
+                  >
+                    Ask for setup help
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {LIVE_BILLING_CHECKLIST.map((item, index) => (
+                  <div
+                    key={item}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-700 dark:text-slate-200"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-semibold text-amber-700 dark:text-amber-200">
+                        {index + 1}
+                      </span>
+                      <span>{item}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -918,7 +976,7 @@ export default function BillingPage() {
                         <div className="mt-5">
                           {isEnterprise ? (
                             <Link
-                              to="/company-profile#contact"
+                              to="/product-profile#contact"
                               className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
                             >
                               Talk to Sales
