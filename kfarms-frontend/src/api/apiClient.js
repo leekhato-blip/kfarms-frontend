@@ -15,7 +15,7 @@ import {
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
 const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
-const PING_PATH = "/auth/me";
+const PING_PATH = "/actuator/health";
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
 const AUTH_PUBLIC_401_PATHS = new Set([
@@ -49,6 +49,7 @@ const pingClient = axios.create({
 let backendDown = false;
 let pingTimer = null;
 let sessionValidationPromise = null;
+let backendWaitPromise = null;
 let lastBackendConfirmedAt = 0;
 
 function dispatchWindowEvent(event) {
@@ -217,16 +218,57 @@ export async function probeBackendConnection({ silent = false } = {}) {
   }
 
   try {
-    await pingClient.get(PING_PATH, {
+    const response = await pingClient.get(PING_PATH, {
       validateStatus: () => true,
     });
-    confirmBackendUp();
-    return true;
+
+    if (response.status >= 200 && response.status < 300) {
+      confirmBackendUp();
+      return true;
+    }
+
+    if (!silent) {
+      markBackendDown({ _kfRequestStartedAt: Date.now() });
+    }
+    return false;
   } catch (error) {
     if (!silent && isNetworkError(error)) {
       markBackendDown({ _kfRequestStartedAt: Date.now() });
     }
     return false;
+  }
+}
+
+export async function waitForBackendConnection({
+  timeoutMs = 180000,
+  intervalMs = 5000,
+  silent = false,
+} = {}) {
+  if (backendWaitPromise) {
+    return backendWaitPromise;
+  }
+
+  backendWaitPromise = (async () => {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const reachable = await probeBackendConnection({ silent });
+      if (reachable) {
+        return true;
+      }
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, intervalMs);
+      });
+    }
+
+    return false;
+  })();
+
+  try {
+    return await backendWaitPromise;
+  } finally {
+    backendWaitPromise = null;
   }
 }
 

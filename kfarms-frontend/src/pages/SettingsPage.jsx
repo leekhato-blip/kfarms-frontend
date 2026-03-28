@@ -6,11 +6,13 @@ import {
   CheckCircle2,
   Crown,
   Globe,
+  Mail,
   MessageSquare,
   Palette,
   RefreshCw,
   Save,
   Shield,
+  Smartphone,
   UserCircle2,
 } from "lucide-react";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -37,11 +39,15 @@ import {
   hasWorkspacePermission,
 } from "../utils/workspacePermissions";
 import {
+  getAccountContactStatus,
   getOrganizationSettings,
+  sendAccountContactCodes,
   getUserPreferences,
   saveOrganizationSettings,
   saveUserPreferences,
+  updateAccountContact,
   updatePassword,
+  verifyAccountContact,
 } from "../services/settingsService";
 import {
   createTenantUserProfileDraft,
@@ -49,6 +55,7 @@ import {
 } from "../services/userProfileService";
 import {
   ACCOUNT_PASSWORD_MIN_LENGTH,
+  looksLikePhoneNumber,
   validateAccountPassword,
 } from "../utils/accountValidation";
 
@@ -60,7 +67,7 @@ const TENANT_SETTINGS_SECTIONS = Object.freeze([
   {
     id: "profile",
     label: "Profile",
-    description: "Name, phone, title, and bio",
+    description: "Profile completion, title, and bio",
     icon: UserCircle2,
   },
   {
@@ -118,9 +125,33 @@ function resolveTenantSettingsSection(sectionId) {
     : "profile";
 }
 
+function createAccountContactState(user, payload = {}) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const phoneNumber = String(source.phoneNumber || user?.phoneNumber || "").trim();
+  const email = String(source.email || user?.email || "").trim();
+  const emailVerified = source.emailVerified ?? Boolean(user?.emailVerified);
+  const phoneVerified =
+    source.phoneVerified ?? (Boolean(phoneNumber) && Boolean(user?.phoneVerified));
+
+  return {
+    email,
+    phoneNumber,
+    hasPhoneNumber: source.hasPhoneNumber ?? Boolean(phoneNumber),
+    maskedEmail: String(source.maskedEmail || email).trim(),
+    maskedPhoneNumber: String(source.maskedPhoneNumber || phoneNumber).trim(),
+    emailVerified: Boolean(emailVerified),
+    phoneVerified: Boolean(phoneVerified),
+    verificationRequired:
+      source.verificationRequired ??
+      !(Boolean(emailVerified) && Boolean(phoneNumber) && Boolean(phoneVerified)),
+    preview:
+      source.preview && typeof source.preview === "object" ? source.preview : null,
+  };
+}
+
 export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshMe } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
 
   const [loading, setLoading] = React.useState(true);
@@ -145,15 +176,28 @@ export default function SettingsPage() {
   const [userProfileSnapshot, setUserProfileSnapshot] = React.useState(() =>
     createTenantUserProfileDraft(user),
   );
+  const [accountContact, setAccountContact] = React.useState(() =>
+    createAccountContactState(user),
+  );
+  const [accountContactDraft, setAccountContactDraft] = React.useState(() =>
+    createAccountContactState(user).phoneNumber,
+  );
+  const [verificationForm, setVerificationForm] = React.useState({
+    emailCode: "",
+    phoneCode: "",
+  });
   const [securityForm, setSecurityForm] = React.useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [savingProfile, setSavingProfile] = React.useState(false);
+  const [savingAccountContact, setSavingAccountContact] = React.useState(false);
   const [savingOrganization, setSavingOrganization] = React.useState(false);
   const [savingPreferences, setSavingPreferences] = React.useState(false);
+  const [sendingAccountCodes, setSendingAccountCodes] = React.useState(false);
   const [updatingPassword, setUpdatingPassword] = React.useState(false);
+  const [verifyingAccountContactState, setVerifyingAccountContactState] = React.useState(false);
   const [toast, setToast] = React.useState({ message: "", type: "info" });
 
   const userId = user?.id || user?.username || user?.email || "me";
@@ -181,6 +225,48 @@ export default function SettingsPage() {
   const profileDirty = React.useMemo(
     () => !isSame(userProfile, userProfileSnapshot),
     [userProfile, userProfileSnapshot],
+  );
+  const accountContactDirty = React.useMemo(
+    () => accountContactDraft.trim() !== String(accountContact.phoneNumber || "").trim(),
+    [accountContact.phoneNumber, accountContactDraft],
+  );
+  const requiresEmailVerification = !accountContact.emailVerified;
+  const requiresPhoneVerification =
+    accountContact.hasPhoneNumber && !accountContact.phoneVerified;
+  const profileCompletion = React.useMemo(() => {
+    let completion = 70;
+    if (accountContact.emailVerified) completion += 10;
+    if (accountContact.hasPhoneNumber) completion += 10;
+    if (accountContact.phoneVerified) completion += 10;
+    return Math.min(completion, 100);
+  }, [
+    accountContact.emailVerified,
+    accountContact.hasPhoneNumber,
+    accountContact.phoneVerified,
+  ]);
+  const profileCompletionChecklist = React.useMemo(
+    () => [
+      {
+        id: "email",
+        label: "Email verified",
+        complete: accountContact.emailVerified,
+      },
+      {
+        id: "phone-added",
+        label: "Phone added",
+        complete: accountContact.hasPhoneNumber,
+      },
+      {
+        id: "phone-verified",
+        label: "Phone verified",
+        complete: accountContact.phoneVerified,
+      },
+    ],
+    [
+      accountContact.emailVerified,
+      accountContact.hasPhoneNumber,
+      accountContact.phoneVerified,
+    ],
   );
   const brandPreviewStyle = React.useMemo(
     () => ({
@@ -235,6 +321,15 @@ export default function SettingsPage() {
     const nextProfile = createTenantUserProfileDraft(user);
     setUserProfile(nextProfile);
     setUserProfileSnapshot(nextProfile);
+    setAccountContact((current) =>
+      createAccountContactState(user, {
+        ...current,
+        preview: current.preview,
+      }),
+    );
+    setAccountContactDraft((current) =>
+      current.trim() ? current : String(user?.phoneNumber || "").trim(),
+    );
   }, [user]);
 
   React.useEffect(() => {
@@ -248,7 +343,7 @@ export default function SettingsPage() {
 
       setLoading(true);
       try {
-        const [organization, preferences] = await Promise.all([
+        const [organization, preferences, contactStatus] = await Promise.all([
           getOrganizationSettings({
             tenantId: activeTenantId,
             tenantName: activeTenant?.name,
@@ -258,6 +353,7 @@ export default function SettingsPage() {
             tenantId: activeTenantId,
             userId,
           }),
+          getAccountContactStatus().catch(() => createAccountContactState(user)),
         ]);
 
         if (!active) return;
@@ -265,6 +361,10 @@ export default function SettingsPage() {
         setOrganizationSnapshot(organization);
         setUserPreferences(preferences);
         setPreferencesSnapshot(preferences);
+        setAccountContact(createAccountContactState(user, contactStatus));
+        setAccountContactDraft(
+          String(contactStatus?.phoneNumber || user?.phoneNumber || "").trim(),
+        );
       } catch (error) {
         if (!active) return;
         setToast({
@@ -383,6 +483,112 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleSaveAccountContact() {
+    if (savingAccountContact) return;
+
+    const nextPhoneNumber = accountContactDraft.trim();
+    if (nextPhoneNumber && !looksLikePhoneNumber(nextPhoneNumber)) {
+      setToast({
+        message: "Add a valid phone number so SMS alerts can reach you.",
+        type: "error",
+      });
+      return;
+    }
+
+    setSavingAccountContact(true);
+    try {
+      const updatedContact = await updateAccountContact({
+        phoneNumber: nextPhoneNumber,
+      });
+      setAccountContact(updatedContact);
+      setAccountContactDraft(updatedContact.phoneNumber || "");
+      setVerificationForm({ emailCode: "", phoneCode: "" });
+      await refreshMe().catch(() => null);
+      setToast({
+        message: updatedContact.hasPhoneNumber
+          ? "Phone number saved. Verify it to receive important alerts."
+          : "Phone number removed. You can add one later from this page.",
+        type: "success",
+      });
+    } catch (error) {
+      setToast({
+        message: error?.message || "Could not update your phone number.",
+        type: "error",
+      });
+    } finally {
+      setSavingAccountContact(false);
+    }
+  }
+
+  async function handleSendAccountCodes() {
+    if (sendingAccountCodes) return;
+
+    setSendingAccountCodes(true);
+    try {
+      const updatedContact = await sendAccountContactCodes();
+      setAccountContact(updatedContact);
+      setToast({
+        message:
+          updatedContact.hasPhoneNumber && !updatedContact.phoneVerified
+            ? "Verification codes sent to your email and phone."
+            : "A fresh email verification code has been sent.",
+        type: "success",
+      });
+    } catch (error) {
+      setToast({
+        message: error?.message || "Could not send verification codes right now.",
+        type: "error",
+      });
+    } finally {
+      setSendingAccountCodes(false);
+    }
+  }
+
+  async function handleVerifyAccountContact() {
+    if (verifyingAccountContactState) return;
+
+    if (requiresEmailVerification && !verificationForm.emailCode.trim()) {
+      setToast({
+        message: "Enter the email code before finishing verification.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (requiresPhoneVerification && !verificationForm.phoneCode.trim()) {
+      setToast({
+        message: "Enter the SMS code before finishing verification.",
+        type: "error",
+      });
+      return;
+    }
+
+    setVerifyingAccountContactState(true);
+    try {
+      const updatedContact = await verifyAccountContact({
+        emailCode: verificationForm.emailCode,
+        phoneCode: verificationForm.phoneCode,
+      });
+      setAccountContact(updatedContact);
+      setAccountContactDraft(updatedContact.phoneNumber || "");
+      setVerificationForm({ emailCode: "", phoneCode: "" });
+      await refreshMe().catch(() => null);
+      setToast({
+        message: updatedContact.verificationRequired
+          ? "Verification updated. Finish the remaining steps to complete your profile."
+          : "Profile complete. You will now receive important notifications and recovery info.",
+        type: "success",
+      });
+    } catch (error) {
+      setToast({
+        message: error?.message || "Could not verify those codes.",
+        type: "error",
+      });
+    } finally {
+      setVerifyingAccountContactState(false);
+    }
+  }
+
   async function handleUpdatePassword(event) {
     event.preventDefault();
     if (updatingPassword) return;
@@ -470,8 +676,8 @@ export default function SettingsPage() {
           }`}
         >
           {canManageWorkspaceSettings
-            ? "Workspace changes save directly to the backend for everyone in this organization. Personal profile details update this device instantly."
-            : "You can update your profile, preferences, and password here. Workspace details are view-only for your role."}
+            ? "Workspace changes save directly to the backend for everyone in this organization. Profile appearance stays local to this device, while contact verification updates your account everywhere."
+            : "You can update your profile, verification details, preferences, and password here. Workspace details are view-only for your role."}
         </div>
 
         {!loading ? (
@@ -554,8 +760,248 @@ export default function SettingsPage() {
                   <div>
                     <h2 className="font-header font-semibold">Profile</h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Edit how your tenant account appears across KFarms on this device.
+                      Finish your contact setup for important alerts, then edit how your profile
+                      appears on this device.
                     </p>
+                  </div>
+                </div>
+
+                <div className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+                  <div className="rounded-2xl border border-emerald-300/25 bg-gradient-to-br from-emerald-500/12 via-white/70 to-cyan-500/10 p-4 dark:border-emerald-400/20 dark:from-emerald-500/10 dark:via-white/5 dark:to-cyan-500/10">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+                          Profile completion
+                        </div>
+                        <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                          {profileCompletion}% complete
+                        </h3>
+                        <p className="mt-2 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">
+                          Verify your email and phone to complete your profile and receive
+                          important notifications, recovery details, and account updates.
+                        </p>
+                      </div>
+                      <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                        {accountContact.verificationRequired ? "Action needed" : "All set"}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-accent-primary transition-[width] duration-300"
+                        style={{ width: `${profileCompletion}%` }}
+                      />
+                    </div>
+
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                      {profileCompletionChecklist.map((item) => (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            "rounded-2xl border px-3 py-3 text-sm",
+                            item.complete
+                              ? "border-emerald-300/50 bg-emerald-500/10 text-emerald-900 dark:border-emerald-400/30 dark:text-emerald-100"
+                              : "border-slate-200/80 bg-white/70 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300",
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2
+                              className={cn(
+                                "h-4 w-4",
+                                item.complete ? "text-emerald-500" : "text-slate-400",
+                              )}
+                            />
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-accent-primary" />
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                        Contact verification
+                      </h3>
+                    </div>
+
+                    <div className="mt-4 space-y-3 text-sm">
+                      <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 dark:border-white/10 dark:bg-white/5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                              Email
+                            </div>
+                            <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                              {accountContact.email || user?.email || "Not available"}
+                            </div>
+                          </div>
+                          <span
+                            className={cn(
+                              "rounded-full px-2.5 py-1 text-xs font-medium",
+                              accountContact.emailVerified
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                                : "bg-amber-500/10 text-amber-700 dark:text-amber-200",
+                            )}
+                          >
+                            {accountContact.emailVerified ? "Verified" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                          Phone number for alerts
+                        </label>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <input
+                            type="text"
+                            value={accountContactDraft}
+                            onChange={(event) => setAccountContactDraft(event.target.value)}
+                            className={inputClassName}
+                            placeholder="+234..."
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveAccountContact}
+                            disabled={!accountContactDirty || savingAccountContact}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {savingAccountContact ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Smartphone className="h-4 w-4" />
+                            )}
+                            Save phone
+                          </button>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          Add the number that should receive urgent farm alerts and account recovery
+                          notices.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 dark:border-white/10 dark:bg-white/5">
+                          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            Email status
+                          </div>
+                          <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                            {accountContact.emailVerified
+                              ? "Ready for account notifications"
+                              : "Verify this email to complete profile setup"}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 dark:border-white/10 dark:bg-white/5">
+                          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            Phone status
+                          </div>
+                          <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                            {!accountContact.hasPhoneNumber
+                              ? "Add a phone number to unlock SMS alerts"
+                              : accountContact.phoneVerified
+                                ? "Ready for urgent SMS alerts"
+                                : "Verify this number to receive urgent SMS alerts"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={handleSendAccountCodes}
+                          disabled={
+                            sendingAccountCodes ||
+                            (!requiresEmailVerification && !requiresPhoneVerification)
+                          }
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
+                        >
+                          {sendingAccountCodes ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                          Send verification codes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleVerifyAccountContact}
+                          disabled={
+                            verifyingAccountContactState ||
+                            (!requiresEmailVerification && !requiresPhoneVerification)
+                          }
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {verifyingAccountContactState ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4" />
+                          )}
+                          Complete verification
+                        </button>
+                      </div>
+
+                      {(requiresEmailVerification || requiresPhoneVerification) && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {requiresEmailVerification ? (
+                            <div>
+                              <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                                Email code
+                              </label>
+                              <input
+                                type="text"
+                                value={verificationForm.emailCode}
+                                onChange={(event) =>
+                                  setVerificationForm((prev) => ({
+                                    ...prev,
+                                    emailCode: event.target.value,
+                                  }))
+                                }
+                                className={inputClassName}
+                                placeholder="Enter email code"
+                              />
+                            </div>
+                          ) : null}
+
+                          {requiresPhoneVerification ? (
+                            <div>
+                              <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                                SMS code
+                              </label>
+                              <input
+                                type="text"
+                                value={verificationForm.phoneCode}
+                                onChange={(event) =>
+                                  setVerificationForm((prev) => ({
+                                    ...prev,
+                                    phoneCode: event.target.value,
+                                  }))
+                                }
+                                className={inputClassName}
+                                placeholder="Enter SMS code"
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+
+                      {accountContact.preview ? (
+                        <div className="rounded-2xl border border-dashed border-emerald-300/40 bg-emerald-500/8 px-3.5 py-3 text-xs text-emerald-900 dark:border-emerald-400/30 dark:text-emerald-100">
+                          <div className="font-semibold uppercase tracking-[0.16em]">
+                            Preview codes
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {accountContact.preview.emailCode ? (
+                              <div>Email code: {accountContact.preview.emailCode}</div>
+                            ) : null}
+                            {accountContact.preview.phoneCode ? (
+                              <div>SMS code: {accountContact.preview.phoneCode}</div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
@@ -572,21 +1018,6 @@ export default function SettingsPage() {
                       }
                       className={inputClassName}
                       placeholder="How teammates should see your name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                      Phone number
-                    </label>
-                    <input
-                      type="text"
-                      value={userProfile.phoneNumber}
-                      onChange={(event) =>
-                        handleProfileChange("phoneNumber", event.target.value)
-                      }
-                      className={inputClassName}
-                      placeholder="+234..."
                     />
                   </div>
 
@@ -1339,7 +1770,7 @@ export default function SettingsPage() {
                         Phone
                       </p>
                       <p className="text-slate-700 dark:text-slate-200">
-                        {user?.phoneNumber || "Not added"}
+                        {accountContact.phoneNumber || "Not added"}
                       </p>
                     </div>
                     <div>
@@ -1355,8 +1786,16 @@ export default function SettingsPage() {
                         Verification
                       </p>
                       <p className="text-slate-700 dark:text-slate-200">
-                        Email {user?.emailVerified === false ? "pending" : "verified"} · Phone{" "}
-                        {user?.phoneVerified === false ? "pending" : "verified"}
+                        Email {accountContact.emailVerified ? "verified" : "pending"} · Phone{" "}
+                        {accountContact.phoneVerified ? "verified" : "pending"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Profile completion
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-200">
+                        {profileCompletion}% complete
                       </p>
                     </div>
                     <div>

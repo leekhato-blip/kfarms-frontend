@@ -48,8 +48,11 @@ export async function signUser({ email, username, password, phoneNumber }) {
     email: normalizeEmail(email),
     username,
     password,
-    phoneNumber: normalizePhoneNumber(phoneNumber),
   };
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+  if (normalizedPhoneNumber) {
+    body.phoneNumber = normalizedPhoneNumber;
+  }
   const res = await api.post("/auth/signup", body);
   return res.data;
 }

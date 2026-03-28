@@ -11,6 +11,7 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import AuthCard from "../components/AuthCard";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
 import AuthWatermark from "../components/AuthWatermark";
@@ -19,9 +20,12 @@ import FloatingInput from "../components/FloatingInput";
 import GlassToast from "../components/GlassToast";
 import PageLoader from "../components/PageLoader";
 import PageWrapper from "../components/PageWrapper";
+import { useAuth } from "../hooks/useAuth";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import { getAuthTrustText } from "../constants/authCopy";
 import { signUser } from "../services/authService";
+import { createTenant } from "../services/tenantService";
+import { useTenant } from "../tenant/TenantContext";
 import {
   FARM_MODULE_OPTIONS,
   FARM_MODULES,
@@ -29,20 +33,18 @@ import {
 import { slugifyWorkspaceName } from "../utils/slugify";
 import {
   ACCOUNT_PASSWORD_MIN_LENGTH,
+  getAccountPasswordChecks,
   looksLikeEmail,
-  looksLikePhoneNumber,
   normalizeEmail,
-  normalizePhoneNumber,
   validateAccountPassword,
 } from "../utils/accountValidation";
-import { writePendingContactVerification } from "../auth/contactVerificationStorage";
 
 const SIGNUP_STEPS = [
   {
     id: "account",
     eyebrow: "Step 1 of 3",
     title: "Create your account",
-    description: "Start with the person opening this workspace.",
+    description: "Start with your login details. Add phone and verification later.",
     icon: UserRound,
   },
   {
@@ -73,8 +75,21 @@ function extractErrorMessage(error, fallback) {
   return fallback;
 }
 
+function resolveCreatedTenantId(createdTenant, tenantList, farmSlug) {
+  const list = Array.isArray(tenantList) ? tenantList : [];
+  return (
+    Number(createdTenant?.tenantId) ||
+    Number(
+      list.find((tenant) => String(tenant?.slug || "").trim() === farmSlug)?.tenantId,
+    ) ||
+    null
+  );
+}
+
 export default function SignupPage() {
   const navigate = useNavigate();
+  const { login, refreshMe } = useAuth();
+  const { refreshTenants, ensureActiveTenant, setActiveTenant } = useTenant();
   const brandName = "KFarms";
   const brandLogo = kfarmsLogo;
   const brandPrimaryColor = "#2563EB";
@@ -82,7 +97,6 @@ export default function SignupPage() {
   const [form, setForm] = React.useState({
     email: "",
     username: "",
-    phoneNumber: "",
     password: "",
     confirmPassword: "",
     farmName: "",
@@ -94,11 +108,12 @@ export default function SignupPage() {
   const [inlineError, setInlineError] = React.useState("");
   const [toast, setToast] = React.useState({ message: "", type: "" });
   const [currentStep, setCurrentStep] = React.useState(0);
+  const signupCardRef = React.useRef(null);
+  const previousStepRef = React.useRef(0);
 
   const accountStepComplete = Boolean(
     looksLikeEmail(form.email) &&
       form.username.trim() &&
-      looksLikePhoneNumber(form.phoneNumber) &&
       !validateAccountPassword(form.password, ACCOUNT_PASSWORD_MIN_LENGTH) &&
       form.confirmPassword &&
       form.password === form.confirmPassword,
@@ -110,6 +125,35 @@ export default function SignupPage() {
   const selectedModuleOptions = React.useMemo(
     () => FARM_MODULE_OPTIONS.filter((option) => form.modules.includes(option.id)),
     [form.modules],
+  );
+  const passwordChecks = React.useMemo(
+    () => getAccountPasswordChecks(form.password, ACCOUNT_PASSWORD_MIN_LENGTH),
+    [form.password],
+  );
+  const passwordRequirements = React.useMemo(
+    () => [
+      {
+        id: "length",
+        label: `At least ${ACCOUNT_PASSWORD_MIN_LENGTH} characters`,
+        met: passwordChecks.hasMinimumLength,
+      },
+      {
+        id: "letter",
+        label: "Contains a letter",
+        met: passwordChecks.hasLetter,
+      },
+      {
+        id: "number",
+        label: "Contains a number",
+        met: passwordChecks.hasNumber,
+      },
+      {
+        id: "match",
+        label: "Passwords match",
+        met: Boolean(form.confirmPassword) && form.password === form.confirmPassword,
+      },
+    ],
+    [form.confirmPassword, form.password, passwordChecks],
   );
   const canSubmitSignup =
     accountStepComplete && farmStepComplete && modulesStepComplete && !loading;
@@ -130,6 +174,21 @@ export default function SignupPage() {
 
   React.useEffect(() => {
     setInlineError("");
+
+    if (previousStepRef.current === currentStep) {
+      return;
+    }
+
+    previousStepRef.current = currentStep;
+
+    const frameId = window.requestAnimationFrame(() => {
+      signupCardRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [currentStep]);
 
   function updateField(key, value) {
@@ -142,7 +201,6 @@ export default function SignupPage() {
   function validateStep(stepIndex) {
     const email = form.email.trim();
     const username = form.username.trim();
-    const phoneNumber = form.phoneNumber.trim();
     const password = form.password;
     const confirmPassword = form.confirmPassword;
     const farmName = form.farmName.trim();
@@ -150,18 +208,13 @@ export default function SignupPage() {
     const modules = Array.isArray(form.modules) ? form.modules : [];
 
     if (stepIndex === 0) {
-      if (!email || !username || !phoneNumber || !password || !confirmPassword) {
+      if (!email || !username || !password || !confirmPassword) {
         setInlineError("Please complete your account details.");
         return false;
       }
 
       if (!looksLikeEmail(email)) {
         setInlineError("Please enter a valid email address.");
-        return false;
-      }
-
-      if (!looksLikePhoneNumber(phoneNumber)) {
-        setInlineError("Please enter a valid phone number.");
         return false;
       }
 
@@ -208,41 +261,81 @@ export default function SignupPage() {
   async function completeSignup() {
     const email = normalizeEmail(form.email);
     const username = form.username.trim();
-    const phoneNumber = normalizePhoneNumber(form.phoneNumber);
     const password = form.password;
     const farmName = form.farmName.trim();
     const farmSlug = slugifyWorkspaceName(form.farmSlug || form.farmName);
     const modules = Array.isArray(form.modules) ? form.modules : [];
 
     setLoading(true);
+    try {
+      try {
+        await signUser({ email, username, password });
+      } catch (error) {
+        setInlineError(
+          extractErrorMessage(error, "We could not create your account right now."),
+        );
+        return;
+      }
 
       try {
-        const result = await signUser({ email, username, password, phoneNumber });
-        const payload = result?.data ?? result ?? {};
+        await login({ identifier: email, password });
+      } catch (error) {
+        navigate("/auth/login", {
+          replace: true,
+          state: {
+            prefillIdentifier: email,
+            signupRecoveryMessage:
+              extractErrorMessage(
+                error,
+                "Your account is ready. Please sign in to finish setting up your workspace.",
+              ) || "Your account is ready. Please sign in to continue.",
+          },
+        });
+        return;
+      }
 
-      writePendingContactVerification({
-        email,
-        username,
-        phoneNumber,
-        password,
-        farmName,
-        farmSlug,
-        modules,
-        maskedEmail: payload.maskedEmail || email,
-        maskedPhoneNumber: payload.maskedPhoneNumber || phoneNumber,
-        emailVerified: Boolean(payload.emailVerified),
-        phoneVerified: Boolean(payload.phoneVerified),
-        preview: payload.preview || null,
-      });
+      try {
+        const createdTenant = await createTenant({
+          name: farmName,
+          slug: farmSlug,
+          modules,
+        });
+        const tenantList = await refreshTenants({ force: true });
+        const createdTenantId = resolveCreatedTenantId(createdTenant, tenantList, farmSlug);
+        if (createdTenantId) {
+          setActiveTenant(createdTenantId);
+        } else {
+          ensureActiveTenant(tenantList, { redirectIfEmpty: false });
+        }
+        await refreshMe().catch(() => null);
+        navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+        return;
+      } catch (error) {
+        const tenantList = await refreshTenants({ force: true }).catch(() => []);
+        const createdTenantId = resolveCreatedTenantId(null, tenantList, farmSlug);
+        if (createdTenantId) {
+          setActiveTenant(createdTenantId);
+          await refreshMe().catch(() => null);
+          navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+          return;
+        }
 
-      navigate("/auth/verify-contact", {
-        replace: true,
-        state: payload,
-      });
-    } catch (error) {
-      setInlineError(
-        extractErrorMessage(error, "We could not start the signup flow right now."),
-      );
+        navigate("/onboarding/create-tenant", {
+          replace: true,
+          state: {
+            prefill: {
+              name: farmName,
+              slug: farmSlug,
+              modules,
+            },
+            onboardingError: `${extractErrorMessage(
+              error,
+              "Your account is ready, but we could not finish the workspace setup automatically.",
+            )} Finish the workspace setup below.`,
+          },
+        });
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -266,13 +359,13 @@ export default function SignupPage() {
 
   return (
     <PageWrapper>
-      {loading && <PageLoader label="Creating your account and farm..." />}
-      <div className="relative app-full overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
+      {loading && <PageLoader label="Creating your account and workspace..." />}
+      <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
         <AuthWatermark />
         <AuthThemeSwitcher />
         <Link
           to="/"
-          className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+          className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20 sm:left-4 sm:top-4"
           aria-label="Back to landing page"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -285,7 +378,7 @@ export default function SignupPage() {
           onClose={() => setToast({ message: "", type: "" })}
         />
 
-        <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 px-0 py-5 sm:px-2 sm:py-6 lg:gap-8 lg:px-4 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 px-0 pb-8 pt-16 sm:px-2 sm:pb-10 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-8 lg:px-4 lg:py-10">
           <div className="hidden lg:flex lg:flex-col lg:gap-6">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
               <Sparkles className="h-4 w-4" style={{ color: brandAccentColor }} />
@@ -311,7 +404,7 @@ export default function SignupPage() {
               </h1>
               <p className="max-w-xl text-base text-slate-600 dark:text-slate-300">
                 Create your account, name your farm, choose Poultry, Fish Farming, or both,
-                and walk straight into a ready-to-use workspace.
+                then verify contact details later from settings when the workspace is ready.
               </p>
             </div>
 
@@ -361,22 +454,22 @@ export default function SignupPage() {
               <div className="mt-4 grid gap-3 text-sm text-slate-600 dark:text-slate-300">
                 <div>1. We create your secure account.</div>
                 <div>2. We open your farm workspace immediately.</div>
-                <div>3. We show only the modules you picked so the app feels focused.</div>
+                <div>3. You can verify email and add a phone later from Settings.</div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div ref={signupCardRef} className="flex items-center justify-center">
             <AuthCard
               title="Create your farm account"
-              subtitle="Three simple steps. No long signup wall."
+              subtitle="Three simple steps. Phone and verification come after setup."
               trustText={getAuthTrustText("signup")}
               accentColor={brandPrimaryColor}
               className="w-full max-w-2xl"
             >
-              <form onSubmit={handleSignup} noValidate className="space-y-4 sm:space-y-5">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2.5 sm:hidden dark:border-white/10 dark:bg-white/5">
+              <form onSubmit={handleSignup} noValidate className="space-y-3.5 sm:space-y-4">
+                <div className="space-y-2.5 sm:space-y-3">
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/85 px-3 py-2 sm:hidden dark:border-white/10 dark:bg-white/5">
                     <div className="min-w-0">
                       <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                         Step {currentStep + 1} of {SIGNUP_STEPS.length}
@@ -477,7 +570,7 @@ export default function SignupPage() {
 
                   {currentStep === 0 ? (
                     <div className="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+                      <div className="grid gap-3 sm:gap-4">
                         <FloatingInput
                           label="Email"
                           value={form.email}
@@ -493,18 +586,6 @@ export default function SignupPage() {
                           autoComplete="username"
                           required
                         />
-                        <FloatingInput
-                          label="Phone number"
-                          value={form.phoneNumber}
-                          onChange={(event) => updateField("phoneNumber", event.target.value)}
-                          autoComplete="tel"
-                          type="tel"
-                          required
-                        />
-                        <div className="sm:col-span-2 rounded-2xl border border-slate-200/70 bg-white/80 px-3.5 py-2.5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                          We will verify this email and phone number before the workspace opens so
-                          alerts and account recovery go to the right contact.
-                        </div>
                         <FloatingInput
                           label="Password"
                           value={form.password}
@@ -524,15 +605,39 @@ export default function SignupPage() {
                           required
                         />
                       </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3.5 py-2.5 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:col-span-2">
-                        Use a valid email, a reachable phone number, and a password with at least 6
-                        characters including letters and numbers.
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                          Password checklist
+                        </div>
+                        <div className="mt-2 grid gap-2">
+                          {passwordRequirements.map((requirement) => (
+                            <div
+                              key={requirement.id}
+                              className={`inline-flex items-center gap-2 text-xs sm:text-sm ${
+                                requirement.met
+                                  ? "text-emerald-700 dark:text-emerald-200"
+                                  : "text-slate-500 dark:text-slate-400"
+                              }`}
+                            >
+                              <span
+                                className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] ${
+                                  requirement.met
+                                    ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                    : "border-slate-300 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500"
+                                }`}
+                              >
+                                {requirement.met ? "✓" : ""}
+                              </span>
+                              <span>{requirement.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ) : null}
 
                   {currentStep === 1 ? (
-                    <div className="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4">
+                    <div className="mt-3.5 space-y-3 sm:mt-4 sm:space-y-4">
                       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
                         <FloatingInput
                           label="Farm name"
@@ -558,7 +663,7 @@ export default function SignupPage() {
                   ) : null}
 
                   {currentStep === 2 ? (
-                    <div className="mt-4 space-y-4 sm:mt-5 sm:space-y-5">
+                    <div className="mt-3.5 space-y-3.5 sm:mt-4 sm:space-y-5">
                       <FarmModuleSelector
                         value={form.modules}
                         onChange={(modules) => updateField("modules", modules)}
@@ -579,7 +684,7 @@ export default function SignupPage() {
                                   {form.email || "Add your email in step one"}
                                 </div>
                                 <div className="text-slate-500 dark:text-slate-400">
-                                  {form.phoneNumber || "Add your phone number in step one"}
+                                  Add your phone number later from Settings
                                 </div>
                               </div>
                             </div>
@@ -626,7 +731,7 @@ export default function SignupPage() {
                   ) : null}
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-3 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between sm:pt-4">
+                <div className="flex flex-col gap-2.5 border-t border-slate-200/80 pt-3 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between sm:pt-4">
                   <Link
                     to="/auth/login"
                     className="text-sm text-slate-700 transition hover:text-accent-primary dark:text-darkText"
@@ -670,7 +775,7 @@ export default function SignupPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2 text-xs leading-relaxed text-slate-400 sm:items-center">
+                <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-400 sm:items-center sm:text-xs">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
                   Secure signup, farm-by-farm data separation, and module-based setup.
                 </div>

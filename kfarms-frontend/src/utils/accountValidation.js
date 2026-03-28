@@ -22,14 +22,28 @@ export function looksLikePhoneNumber(value) {
   return /^\+?\d{7,15}$/.test(normalizePhoneNumber(value));
 }
 
-export function validateAccountPassword(value, minimumLength = ACCOUNT_PASSWORD_MIN_LENGTH) {
+export function getAccountPasswordChecks(
+  value,
+  minimumLength = ACCOUNT_PASSWORD_MIN_LENGTH,
+) {
   const password = String(value || "");
 
-  if (password.length < minimumLength) {
+  return {
+    minimumLength,
+    hasMinimumLength: password.length >= minimumLength,
+    hasLetter: /[A-Za-z]/.test(password),
+    hasNumber: /\d/.test(password),
+  };
+}
+
+export function validateAccountPassword(value, minimumLength = ACCOUNT_PASSWORD_MIN_LENGTH) {
+  const checks = getAccountPasswordChecks(value, minimumLength);
+
+  if (!checks.hasMinimumLength) {
     return `Use at least ${minimumLength} characters for your password.`;
   }
 
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+  if (!checks.hasLetter || !checks.hasNumber) {
     return "Use at least one letter and one number in your password.";
   }
 

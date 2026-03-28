@@ -14,12 +14,12 @@ import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import {
   DEMO_ACCOUNT_EMAIL,
   DEMO_ACCOUNT_PASSWORD,
-  DEMO_ACCOUNT_USERNAME,
   isDemoAccountUser,
 } from "../auth/demoMode";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
 import { writePendingContactVerification } from "../auth/contactVerificationStorage";
+import { waitForBackendConnection } from "../api/apiClient";
 
 /**
  * Login page:
@@ -44,6 +44,7 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [loginLoaderVisible, setLoginLoaderVisible] = React.useState(false);
+  const [loaderLabel, setLoaderLabel] = React.useState("Signing you in...");
   const loaderStartRef = React.useRef(0);
   const loginSuccessRef = React.useRef(false);
 
@@ -82,6 +83,10 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, [inlineError]);
 
+  React.useEffect(() => {
+    void waitForBackendConnection({ silent: false });
+  }, []);
+
   const getLoginErrorMessage = (err) => {
     const status = err?.response?.status;
     const isNetwork =
@@ -90,7 +95,7 @@ export default function LoginPage() {
       !err?.response;
 
     if (isNetwork) {
-      return "We couldn't reach the server. Check your connection and try again.";
+      return "The server is still waking up on free hosting. Please wait a moment and try again.";
     }
 
     if (status === 401 || status === 400) {
@@ -105,8 +110,16 @@ export default function LoginPage() {
     loaderStartRef.current = Date.now();
     loginSuccessRef.current = false;
     setLoginLoaderVisible(true);
+    setLoaderLabel("Starting secure connection...");
     setInlineError("");
     try {
+      const backendReady = await waitForBackendConnection({ silent: false });
+      if (!backendReady) {
+        setInlineError("The server is still starting. Please wait about 2-3 minutes, then try again.");
+        return;
+      }
+
+      setLoaderLabel("Signing you in...");
       const loggedInUser = await login({ identifier: nextIdentifier, password: nextPassword });
       loginSuccessRef.current = true;
 
@@ -169,12 +182,6 @@ export default function LoginPage() {
     void submitLogin(identifier, password);
   }
 
-  function handleUseDemoAccount() {
-    setIdentifier(DEMO_ACCOUNT_EMAIL);
-    setPassword(DEMO_ACCOUNT_PASSWORD);
-    setInlineError("");
-  }
-
   function handleDemoLogin() {
     setIdentifier(DEMO_ACCOUNT_EMAIL);
     setPassword(DEMO_ACCOUNT_PASSWORD);
@@ -185,14 +192,14 @@ export default function LoginPage() {
   return (
     <PageWrapper>
       {(loginLoaderVisible || authLoading) && (
-        <PageLoader label="Signing you in…" />
+        <PageLoader label={loaderLabel} />
       )}
-      <div className="relative app-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
+      <div className="relative app-full overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
         <AuthWatermark />
         <AuthThemeSwitcher />
         <Link
           to="/"
-          className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
+          className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20 sm:left-4 sm:top-4"
           aria-label="Back to landing page"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -205,7 +212,7 @@ export default function LoginPage() {
           onClose={() => setToast({ message: "", type: "info" })}
         />
 
-        <div className="relative z-10 w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-4">
+        <div className="relative z-10 mx-auto grid h-full w-full max-w-4xl grid-cols-1 items-center gap-4 px-0 pb-4 pt-16 sm:px-4 sm:pb-6 sm:pt-20 md:grid-cols-2 md:gap-8">
           {/* Brand - Left side */}
           <div className="hidden md:flex flex-col items-start gap-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
@@ -241,7 +248,7 @@ export default function LoginPage() {
               trustText={getAuthTrustText("login")}
               accentColor={brandPrimaryColor}
             >
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-3.5 sm:space-y-4">
                 {/* Inline error that auto-hides */}
                 {inlineError && (
                   <div className="text-sm text-status-danger">{inlineError}</div>
@@ -265,14 +272,14 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <div className="flex md:flex-row gap-2 items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="submit"
                     style={{
                       backgroundColor: brandPrimaryColor,
                       borderColor: `${brandPrimaryColor}66`,
                     }}
-                    className={`rounded-md border px-3 py-2 text-sm font-header text-white transition-all duration-300 ${
+                    className={`inline-flex min-h-11 w-full items-center justify-center rounded-md border px-3 py-2 text-sm font-header text-white transition-all duration-300 sm:w-auto ${
                       loading ? "pointer-events-none opacity-70" : "hover:bg-blue-600"
                     }`}
                   >
@@ -302,47 +309,20 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <div className="rounded-2xl border border-dashed border-emerald-200/80 bg-emerald-50/80 p-4 text-left dark:border-emerald-400/20 dark:bg-emerald-500/10">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">
-                        Demo Account
-                      </div>
-                      <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                        View the full product with sample data. All write actions are blocked because this is a showroom workspace.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleDemoLogin}
-                      className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                    >
-                      Enter demo mode
-                    </button>
-                  </div>
-
-                  <div className="mt-3 grid gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    <div>
-                      Username: <span className="font-mono text-slate-900 dark:text-slate-100">{DEMO_ACCOUNT_USERNAME}</span>
-                    </div>
-                    <div>
-                      Email: <span className="font-mono text-slate-900 dark:text-slate-100">{DEMO_ACCOUNT_EMAIL}</span>
-                    </div>
-                    <div>
-                      Password: <span className="font-mono text-slate-900 dark:text-slate-100">{DEMO_ACCOUNT_PASSWORD}</span>
-                    </div>
-                  </div>
-
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-2.5 text-left dark:border-emerald-400/20 dark:bg-emerald-500/10">
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-200">
+                    Need a quick walkthrough?
+                  </p>
                   <button
                     type="button"
-                    onClick={handleUseDemoAccount}
-                    className="mt-3 text-xs font-semibold text-emerald-700 transition hover:text-emerald-600 dark:text-emerald-200"
+                    onClick={handleDemoLogin}
+                    className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
                   >
-                    Fill these demo credentials
+                    Open demo
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-slate-400 pt-2">
+                <div className="flex items-center gap-2 pt-1 text-xs text-slate-400">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Verified access • Only you can view your account.
                 </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ACCOUNT_PASSWORD_MIN_LENGTH,
+  getAccountPasswordChecks,
   looksLikeEmail,
   looksLikePhoneNumber,
   normalizePhoneNumber,
@@ -29,5 +30,21 @@ describe("accountValidation", () => {
       "letter and one number",
     );
     expect(validateAccountPassword("farm123", ACCOUNT_PASSWORD_MIN_LENGTH)).toBe("");
+  });
+
+  it("returns live password requirement flags", () => {
+    expect(getAccountPasswordChecks("farm1", ACCOUNT_PASSWORD_MIN_LENGTH)).toEqual({
+      minimumLength: ACCOUNT_PASSWORD_MIN_LENGTH,
+      hasMinimumLength: false,
+      hasLetter: true,
+      hasNumber: true,
+    });
+
+    expect(getAccountPasswordChecks("farm123", ACCOUNT_PASSWORD_MIN_LENGTH)).toEqual({
+      minimumLength: ACCOUNT_PASSWORD_MIN_LENGTH,
+      hasMinimumLength: true,
+      hasLetter: true,
+      hasNumber: true,
+    });
   });
 });

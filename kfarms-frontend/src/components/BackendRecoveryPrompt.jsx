@@ -103,6 +103,8 @@ export default function BackendRecoveryPrompt() {
   const pausedSync = syncSnapshot.status === "paused";
   const hasConnectionIssue = browserOffline || backendDown || pausedSync;
   const shouldShowQueuePrompt = !hasConnectionIssue && queuedChanges > 0;
+  const onLoginPage =
+    typeof window !== "undefined" && window.location.pathname === "/auth/login";
 
   if ((!hasConnectionIssue && !showRecovered && !shouldShowQueuePrompt) || dismissed) return null;
 
@@ -125,7 +127,9 @@ export default function BackendRecoveryPrompt() {
     : backendDown || pausedSync
       ? queuedChanges > 0
         ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} waiting while we reconnect to the server.`
-        : "We cannot reach the server right now. We will try again automatically."
+        : onLoginPage
+          ? "We cannot reach the server right now. Free hosting may take about 2-3 minutes to wake up, and we will keep checking automatically."
+          : "We cannot reach the server right now. We will try again automatically."
     : syncingChanges
       ? `Syncing ${Math.max(Number(syncSnapshot.total || 0) - Number(syncSnapshot.remaining || 0), 0)} of ${Number(syncSnapshot.total || 0)} saved change${Number(syncSnapshot.total || 0) === 1 ? "" : "s"}.`
       : failedChanges > 0

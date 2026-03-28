@@ -292,7 +292,7 @@ export default function VerifyContactPage() {
           Back to login
         </Link>
 
-        <div className="relative z-10 mx-auto grid w-full max-w-5xl grid-cols-1 gap-8 px-4 md:grid-cols-[0.95fr_1.05fr] md:items-center">
+        <div className="relative z-10 mx-auto grid w-full max-w-5xl grid-cols-1 gap-8 px-4 pb-6 pt-20 sm:pb-8 sm:pt-24 md:grid-cols-[0.95fr_1.05fr] md:items-center">
           <div className="hidden md:flex md:flex-col md:gap-6">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
               <ShieldCheck className="h-4 w-4" style={{ color: brandAccentColor }} />

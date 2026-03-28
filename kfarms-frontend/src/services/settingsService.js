@@ -6,6 +6,7 @@ import {
   normalizeOrganizationSettings,
   normalizeUserPreferences,
 } from "../constants/settings";
+import { normalizePhoneNumber } from "../utils/accountValidation";
 
 const USER_PREFERENCES_CACHE_KEY = "kf-settings-user-preferences-cache";
 const ORGANIZATION_SETTINGS_CACHE_KEY = "kf-settings-organization-cache";
@@ -14,7 +15,27 @@ const SETTINGS_ENDPOINTS = {
   organization: "/settings/organization",
   preferences: "/settings/preferences",
   password: "/settings/password",
+  accountContact: "/settings/account-contact",
+  accountContactSendCodes: "/settings/account-contact/send-codes",
+  accountContactVerify: "/settings/account-contact/verify",
 };
+
+function normalizeAccountContactStatus(payload) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const phoneNumber = String(source.phoneNumber || "").trim();
+  return {
+    email: String(source.email || "").trim(),
+    phoneNumber,
+    hasPhoneNumber: Boolean(source.hasPhoneNumber) || Boolean(phoneNumber),
+    maskedEmail: String(source.maskedEmail || "").trim(),
+    maskedPhoneNumber: String(source.maskedPhoneNumber || "").trim(),
+    emailVerified: Boolean(source.emailVerified),
+    phoneVerified: Boolean(source.phoneVerified),
+    verificationRequired: Boolean(source.verificationRequired),
+    preview:
+      source.preview && typeof source.preview === "object" ? source.preview : null,
+  };
+}
 
 function extractErrorMessage(error, fallback) {
   const payload = error?.response?.data;
@@ -210,5 +231,54 @@ export async function updatePassword({
     };
   } catch (error) {
     throw new Error(extractErrorMessage(error, "Could not update password."));
+  }
+}
+
+export async function getAccountContactStatus() {
+  try {
+    const response = await apiClient.get(SETTINGS_ENDPOINTS.accountContact);
+    return normalizeAccountContactStatus(response.data?.data ?? response.data);
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(error, "Could not load account verification details."),
+    );
+  }
+}
+
+export async function updateAccountContact({ phoneNumber } = {}) {
+  try {
+    const response = await apiClient.put(SETTINGS_ENDPOINTS.accountContact, {
+      phoneNumber: normalizePhoneNumber(phoneNumber),
+    });
+    return normalizeAccountContactStatus(response.data?.data ?? response.data);
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(error, "Could not update your phone number."),
+    );
+  }
+}
+
+export async function sendAccountContactCodes() {
+  try {
+    const response = await apiClient.post(SETTINGS_ENDPOINTS.accountContactSendCodes);
+    return normalizeAccountContactStatus(response.data?.data ?? response.data);
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(error, "Could not send verification codes right now."),
+    );
+  }
+}
+
+export async function verifyAccountContact({ emailCode, phoneCode } = {}) {
+  try {
+    const response = await apiClient.post(SETTINGS_ENDPOINTS.accountContactVerify, {
+      emailCode: String(emailCode || "").trim(),
+      phoneCode: String(phoneCode || "").trim(),
+    });
+    return normalizeAccountContactStatus(response.data?.data ?? response.data);
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(error, "Could not verify those contact codes."),
+    );
   }
 }
