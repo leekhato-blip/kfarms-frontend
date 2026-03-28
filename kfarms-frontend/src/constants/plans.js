@@ -6,6 +6,8 @@ export const PLAN_TIER_CONFIG = [
   {
     id: "FREE",
     name: "Free",
+    assistantLabel: "KAI Free",
+    assistantSummary: "Practical guidance, checklists, and navigation help for one farm workspace.",
     tagline: "For starter farmers, hobby farmers, and small teams testing digital farm records.",
     priceLabel: "Free",
     cycleLabel: "forever",
@@ -22,11 +24,14 @@ export const PLAN_TIER_CONFIG = [
       "Dashboard summary cards and quick add actions",
       "Workspace setup with owner-only access control",
       "Offline-ready capture with sync recovery for day-to-day work",
+      "KAI Free for clear daily guidance",
     ],
   },
   {
     id: "PRO",
     name: "Pro",
+    assistantLabel: "KAI Pro",
+    assistantSummary: "Sharper operational coaching, prioritization, and team support for active farms.",
     tagline: "For serious farmers running daily operations with workers, analytics, and alerts.",
     priceLabel: "NGN 10,000",
     cycleLabel: "per month or NGN 100,000 yearly",
@@ -44,11 +49,14 @@ export const PLAN_TIER_CONFIG = [
       "Hatch workflows, revenue analytics, watchlists, and health alerts",
       "Task planning, CSV/XLSX export, trash restore, and priority support messaging",
       "Operational continuity through offline-safe record flows",
+      "KAI Pro for sharper decisions",
     ],
   },
   {
     id: "ENTERPRISE",
     name: "Enterprise",
+    assistantLabel: "KAI Enterprise",
+    assistantSummary: "Leadership-grade reviews, escalation support, and multi-site operational guidance.",
     tagline: "For agribusiness groups running branded, multi-branch operations with portfolio visibility and custom workspace setup.",
     priceLabel: "Custom pricing",
     cycleLabel: "typically NGN 80,000-150,000 per month",
@@ -64,6 +72,7 @@ export const PLAN_TIER_CONFIG = [
       "Multi-workspace operations with unlimited users and portfolio visibility",
       "Enterprise permission profiles, brand controls, and workspace policy settings",
       "Dedicated platform messaging lane for enterprise subscribers",
+      "KAI Enterprise for leadership reviews and escalation",
     ],
   },
 ];
@@ -99,6 +108,11 @@ export const PLAN_FEATURE_MATRIX = [
   {
     id: "team-workspaces",
     feature: "Organization workspace setup and owner access control",
+    minPlan: "FREE",
+  },
+  {
+    id: "kai-free",
+    feature: "KAI Free for checklists, guidance, and navigation",
     minPlan: "FREE",
   },
   {
@@ -142,6 +156,11 @@ export const PLAN_FEATURE_MATRIX = [
     minPlan: "PRO",
   },
   {
+    id: "kai-pro",
+    feature: "KAI Pro for smarter planning and coaching",
+    minPlan: "PRO",
+  },
+  {
     id: "multi-org-ops",
     feature: "Multi-workspace operations and enterprise site portfolio",
     minPlan: "ENTERPRISE",
@@ -164,6 +183,11 @@ export const PLAN_FEATURE_MATRIX = [
   {
     id: "dedicated-platform-messaging",
     feature: "Dedicated platform messaging lane for enterprise subscribers",
+    minPlan: "ENTERPRISE",
+  },
+  {
+    id: "kai-enterprise",
+    feature: "KAI Enterprise for leadership reviews and escalation",
     minPlan: "ENTERPRISE",
   },
 ];

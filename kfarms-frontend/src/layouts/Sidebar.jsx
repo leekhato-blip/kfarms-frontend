@@ -145,10 +145,10 @@ function SidebarBody({
     pulseSource === "live" ? "Live" : pulseSource === "fallback" ? "Snapshot" : "Demo";
   const pulseStatusTone =
     pulseSource === "live"
-      ? "bg-emerald-400/12 text-emerald-200 ring-1 ring-emerald-300/25"
+      ? "border border-emerald-300/50 bg-emerald-50/92 text-emerald-700 shadow-[0_10px_22px_rgba(16,185,129,0.08)] dark:border-emerald-300/25 dark:bg-emerald-400/12 dark:text-emerald-200 dark:ring-1 dark:ring-emerald-300/25"
       : pulseSource === "fallback"
-        ? "bg-amber-400/12 text-amber-100 ring-1 ring-amber-300/20"
-        : "bg-blue-400/12 text-blue-100 ring-1 ring-blue-300/20";
+        ? "border border-amber-300/50 bg-amber-50/94 text-amber-700 shadow-[0_10px_22px_rgba(245,158,11,0.08)] dark:border-amber-300/20 dark:bg-amber-400/12 dark:text-amber-100 dark:ring-1 dark:ring-amber-300/20"
+        : "border border-blue-300/50 bg-blue-50/92 text-blue-700 shadow-[0_10px_22px_rgba(59,130,246,0.08)] dark:border-blue-300/20 dark:bg-blue-400/12 dark:text-blue-100 dark:ring-1 dark:ring-blue-300/20";
 
   return (
     <div className="flex h-full min-h-0 flex-col">

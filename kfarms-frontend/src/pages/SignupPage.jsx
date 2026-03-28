@@ -89,7 +89,7 @@ function resolveCreatedTenantId(createdTenant, tenantList, farmSlug) {
 export default function SignupPage() {
   const navigate = useNavigate();
   const { login, refreshMe } = useAuth();
-  const { refreshTenants, ensureActiveTenant, setActiveTenant } = useTenant();
+  const { refreshTenants, ensureActiveTenant, setActiveTenant, resetTenantState } = useTenant();
   const brandName = "KFarms";
   const brandLogo = kfarmsLogo;
   const brandPrimaryColor = "#2563EB";
@@ -279,6 +279,7 @@ export default function SignupPage() {
 
       try {
         await login({ identifier: email, password });
+        resetTenantState();
       } catch (error) {
         navigate("/auth/login", {
           replace: true,
@@ -378,8 +379,8 @@ export default function SignupPage() {
           onClose={() => setToast({ message: "", type: "" })}
         />
 
-        <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 px-0 pb-8 pt-16 sm:px-2 sm:pb-10 sm:pt-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-8 lg:px-4 lg:py-10">
-          <div className="hidden lg:flex lg:flex-col lg:gap-6">
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 px-0 pb-8 pt-16 sm:px-2 sm:pb-10 sm:pt-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,44rem)] lg:items-start lg:gap-6 lg:px-4 lg:py-10">
+          <div className="hidden lg:flex lg:flex-col lg:gap-5">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
               <Sparkles className="h-4 w-4" style={{ color: brandAccentColor }} />
               One friendly setup
@@ -408,54 +409,46 @@ export default function SignupPage() {
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3">
               {SIGNUP_STEPS.map((step, index) => {
                 const active = index === currentStep;
                 const complete = index < currentStep;
                 return (
-                <div
-                  key={step.id}
-                  className={`rounded-2xl border p-4 text-sm shadow-soft transition dark:shadow-dark ${
-                    active
-                      ? "border-emerald-300/80 bg-emerald-50/90 text-slate-800 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-slate-100"
-                      : "border-slate-200/70 bg-white/75 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
-                  }`}
-                >
-                  <div className="inline-flex items-center gap-2">
-                    <div
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${
-                        complete || active
-                          ? "bg-emerald-500/15 text-emerald-500"
-                          : "bg-slate-200/80 text-slate-500 dark:bg-white/10 dark:text-slate-300"
-                      }`}
-                    >
-                      {complete ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : (
-                        React.createElement(step.icon, { className: "h-4 w-4" })
-                      )}
-                    </div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Step {index + 1}
+                  <div
+                    key={step.id}
+                    className={`rounded-2xl border px-4 py-4 shadow-soft transition dark:shadow-dark ${
+                      active
+                        ? "border-emerald-300/80 bg-emerald-50/90 text-slate-800 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-slate-100"
+                        : "border-slate-200/70 bg-white/75 text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                          complete || active
+                            ? "bg-emerald-500/15 text-emerald-500"
+                            : "bg-slate-200/80 text-slate-500 dark:bg-white/10 dark:text-slate-300"
+                        }`}
+                      >
+                        {complete ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          React.createElement(step.icon, { className: "h-4 w-4" })
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                          Step {index + 1}
+                        </div>
+                        <p className="mt-1 text-lg font-semibold leading-tight">{step.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                          {step.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <p className="mt-3 font-semibold">{step.title}</p>
-                  <p className="mt-1 leading-relaxed">{step.description}</p>
-                </div>
                 );
               })}
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/80 bg-white/75 p-5 shadow-soft dark:border-white/10 dark:bg-white/5">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
-                <ShieldCheck className="h-4 w-4" />
-                What happens next
-              </div>
-              <div className="mt-4 grid gap-3 text-sm text-slate-600 dark:text-slate-300">
-                <div>1. We create your secure account.</div>
-                <div>2. We open your farm workspace immediately.</div>
-                <div>3. You can verify email and add a phone later from Settings.</div>
-              </div>
             </div>
           </div>
 
@@ -465,7 +458,7 @@ export default function SignupPage() {
               subtitle="Three simple steps. Phone and verification come after setup."
               trustText={getAuthTrustText("signup")}
               accentColor={brandPrimaryColor}
-              className="w-full max-w-2xl"
+              className="w-full max-w-2xl lg:max-w-[44rem] lg:p-6"
             >
               <form onSubmit={handleSignup} noValidate className="space-y-3.5 sm:space-y-4">
                 <div className="space-y-2.5 sm:space-y-3">
@@ -555,7 +548,7 @@ export default function SignupPage() {
                   </div>
                 )}
 
-                <div className="rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5">
+                <div className="rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5 lg:p-4">
                   <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm dark:bg-white/10 dark:text-slate-300">
                     {SIGNUP_STEPS[currentStep].eyebrow}
                   </div>
@@ -569,8 +562,8 @@ export default function SignupPage() {
                   </div>
 
                   {currentStep === 0 ? (
-                    <div className="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4">
-                      <div className="grid gap-3 sm:gap-4">
+                    <div className="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4 lg:mt-4 lg:space-y-3">
+                      <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
                         <FloatingInput
                           label="Email"
                           value={form.email}
@@ -609,7 +602,7 @@ export default function SignupPage() {
                         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                           Password checklist
                         </div>
-                        <div className="mt-2 grid gap-2">
+                        <div className="mt-2 grid gap-2 lg:grid-cols-2">
                           {passwordRequirements.map((requirement) => (
                             <div
                               key={requirement.id}

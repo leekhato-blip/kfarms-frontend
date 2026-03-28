@@ -37,7 +37,7 @@ export function useTenant() {
 export function TenantProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
 
   const [tenants, setTenants] = React.useState([]);
   const tenantsRef = React.useRef([]);
@@ -54,6 +54,7 @@ export function TenantProvider({ children }) {
     () => readTenantPlanOverrides(),
   );
   const pathnameRef = React.useRef(location.pathname);
+  const lastAuthIdentityRef = React.useRef("");
 
   React.useEffect(() => {
     pathnameRef.current = location.pathname;
@@ -93,6 +94,37 @@ export function TenantProvider({ children }) {
       );
     }
   }, []);
+
+  const resetTenantState = React.useCallback(() => {
+    setTenants([]);
+    tenantsRef.current = [];
+    setLoadingTenants(false);
+    setTenantBootstrapDone(false);
+    setTenantSwitchMessage("");
+    refreshPromiseRef.current = null;
+    networkRetryAfterRef.current = 0;
+    setTenantPlanOverrides(readTenantPlanOverrides());
+    setActiveTenant(null);
+  }, [setActiveTenant]);
+
+  const authIdentityKey = React.useMemo(() => {
+    if (!isAuthenticated) return "";
+    const rawIdentity =
+      user?.id ??
+      user?.userId ??
+      user?.email ??
+      user?.username ??
+      user?.displayName ??
+      "";
+    return String(rawIdentity || "").trim();
+  }, [
+    isAuthenticated,
+    user?.displayName,
+    user?.email,
+    user?.id,
+    user?.userId,
+    user?.username,
+  ]);
 
   const refreshTenants = React.useCallback(async (options = {}) => {
     const force = Boolean(options?.force);
@@ -200,13 +232,8 @@ export function TenantProvider({ children }) {
     if (authLoading) return;
 
     if (!isAuthenticated) {
-      setTenants([]);
-      setLoadingTenants(false);
-      setTenantBootstrapDone(false);
-      setTenantSwitchMessage("");
-      setTenantPlanOverrides(readTenantPlanOverrides());
-      refreshPromiseRef.current = null;
-      networkRetryAfterRef.current = 0;
+      lastAuthIdentityRef.current = "";
+      resetTenantState();
       return;
     }
 
@@ -250,8 +277,24 @@ export function TenantProvider({ children }) {
     navigate,
     refreshTenants,
     setActiveTenant,
+    resetTenantState,
     tenantSwitchMessage,
   ]);
+
+  React.useEffect(() => {
+    if (authLoading || !isAuthenticated || !authIdentityKey) return;
+
+    if (!lastAuthIdentityRef.current) {
+      lastAuthIdentityRef.current = authIdentityKey;
+      return;
+    }
+
+    if (lastAuthIdentityRef.current !== authIdentityKey) {
+      resetTenantState();
+    }
+
+    lastAuthIdentityRef.current = authIdentityKey;
+  }, [authIdentityKey, authLoading, isAuthenticated, resetTenantState]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -347,6 +390,7 @@ export function TenantProvider({ children }) {
       setActiveTenant,
       ensureActiveTenant,
       clearTenantSwitchMessage,
+      resetTenantState,
     }),
     [
       tenants,
@@ -360,6 +404,7 @@ export function TenantProvider({ children }) {
       setActiveTenant,
       ensureActiveTenant,
       clearTenantSwitchMessage,
+      resetTenantState,
     ],
   );
 

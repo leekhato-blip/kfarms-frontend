@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
 
 function cn(...values) {
@@ -54,11 +55,12 @@ export default function GuidedFormModal({
   children,
 }) {
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   const safeCurrentStep = Math.min(Math.max(currentStep, 0), Math.max(steps.length - 1, 0));
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] overflow-y-auto px-4 py-6 sm:py-8">
       <div
         className="absolute inset-0 bg-black/55 backdrop-blur-md"
         onClick={saving ? undefined : onClose}
@@ -66,7 +68,10 @@ export default function GuidedFormModal({
 
       <form
         onSubmit={onSubmit}
-        className={cn("relative w-full rounded-2xl p-1 animate-fadeIn", maxWidth)}
+        className={cn(
+          "relative mx-auto flex min-h-full w-full items-center justify-center rounded-2xl p-1 animate-fadeIn",
+          maxWidth,
+        )}
         aria-modal="true"
         role="dialog"
       >
@@ -87,7 +92,7 @@ export default function GuidedFormModal({
                         {editing ? "Editing" : "New"}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    <p className="mt-1 hidden text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:block">
                       {description}
                     </p>
                   </div>
@@ -137,7 +142,7 @@ export default function GuidedFormModal({
                             <div className="min-w-0">
                               <p className="text-sm font-semibold">{step.title}</p>
                               {step.description ? (
-                                <p className="mt-0.5 text-xs leading-relaxed opacity-80">
+                                <p className="mt-0.5 hidden text-xs leading-relaxed opacity-80 sm:block">
                                   {step.description}
                                 </p>
                               ) : null}
@@ -163,6 +168,7 @@ export default function GuidedFormModal({
           </div>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

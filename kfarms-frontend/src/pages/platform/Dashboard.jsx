@@ -191,8 +191,8 @@ function signalLaneColors(tone) {
     return {
       stroke: "#34d399",
       glow: "rgba(52, 211, 153, 0.28)",
-      tint: "bg-emerald-400/12 text-emerald-100 ring-1 ring-emerald-300/20",
-      pill: "border-emerald-300/22 bg-emerald-400/10 text-emerald-100",
+      tint: "border-emerald-300/55 bg-emerald-50/92 text-emerald-800 shadow-[0_12px_24px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-emerald-400/12 dark:text-emerald-100 dark:ring-1 dark:ring-emerald-300/20",
+      pill: "border-emerald-300/50 bg-emerald-50/92 text-emerald-700 dark:border-emerald-300/22 dark:bg-emerald-400/10 dark:text-emerald-100",
     };
   }
 
@@ -200,16 +200,16 @@ function signalLaneColors(tone) {
     return {
       stroke: "#60a5fa",
       glow: "rgba(96, 165, 250, 0.28)",
-      tint: "bg-sky-400/12 text-sky-100 ring-1 ring-sky-300/20",
-      pill: "border-sky-300/22 bg-sky-400/10 text-sky-100",
+      tint: "border-sky-300/55 bg-sky-50/92 text-sky-800 shadow-[0_12px_24px_rgba(14,165,233,0.12)] dark:border-sky-300/20 dark:bg-sky-400/12 dark:text-sky-100 dark:ring-1 dark:ring-sky-300/20",
+      pill: "border-sky-300/50 bg-sky-50/92 text-sky-700 dark:border-sky-300/22 dark:bg-sky-400/10 dark:text-sky-100",
     };
   }
 
   return {
     stroke: "#8b5cf6",
     glow: "rgba(139, 92, 246, 0.28)",
-    tint: "bg-violet-400/12 text-violet-100 ring-1 ring-violet-300/20",
-    pill: "border-violet-300/22 bg-violet-400/10 text-violet-100",
+    tint: "border-violet-300/55 bg-violet-50/92 text-violet-800 shadow-[0_12px_24px_rgba(139,92,246,0.12)] dark:border-violet-300/20 dark:bg-violet-400/12 dark:text-violet-100 dark:ring-1 dark:ring-violet-300/20",
+    pill: "border-violet-300/50 bg-violet-50/92 text-violet-700 dark:border-violet-300/22 dark:bg-violet-400/10 dark:text-violet-100",
   };
 }
 
@@ -579,7 +579,7 @@ export default function PlatformDashboardPage() {
       return {
         label: "Demo",
         detail: "Demo signal feed",
-        classes: "border-blue-300/18 bg-blue-400/10 text-blue-100",
+        classes: "border-blue-300/55 bg-blue-50/92 text-blue-700 shadow-[0_10px_22px_rgba(59,130,246,0.08)] dark:border-blue-300/18 dark:bg-blue-400/10 dark:text-blue-100",
       };
     }
 
@@ -587,14 +587,14 @@ export default function PlatformDashboardPage() {
       return {
         label: "Snapshot",
         detail: "Fallback signal surface",
-        classes: "border-amber-300/18 bg-amber-400/10 text-amber-100",
+        classes: "border-amber-300/55 bg-amber-50/94 text-amber-700 shadow-[0_10px_22px_rgba(245,158,11,0.08)] dark:border-amber-300/18 dark:bg-amber-400/10 dark:text-amber-100",
       };
     }
 
     return {
       label: "Live",
       detail: "Synchronized to platform data",
-      classes: "border-emerald-300/18 bg-emerald-400/10 text-emerald-100",
+      classes: "border-emerald-300/55 bg-emerald-50/92 text-emerald-700 shadow-[0_10px_22px_rgba(16,185,129,0.08)] dark:border-emerald-300/18 dark:bg-emerald-400/10 dark:text-emerald-100",
     };
   }, [overviewError, platformDataMode, portfolioError, tenantsError, usersError]);
   const liveSignalLanes = React.useMemo(

@@ -30,6 +30,10 @@ import {
 import { PLAN_IDS } from "../../constants/plans";
 import { getEnabledModuleOptions } from "../../tenant/tenantModules";
 import {
+  getWorkspaceRoleLabel,
+  normalizeWorkspaceRole,
+} from "../../utils/workspaceRoles";
+import {
   buildTenantPressureList,
   formatPercentLabel,
   getSeatUsageSummary,
@@ -123,6 +127,25 @@ function DetailTabButton({ active = false, label, count, onClick }) {
       ) : null}
     </button>
   );
+}
+
+function getTenantMemberRolePillClass(role) {
+  switch (normalizeWorkspaceRole(role, "STAFF")) {
+    case "OWNER":
+      return "border-amber-300/45 bg-amber-400/14 text-amber-200";
+    case "ADMIN":
+      return "border-fuchsia-300/35 bg-fuchsia-400/12 text-fuchsia-200";
+    case "MANAGER":
+      return "border-emerald-300/35 bg-emerald-400/12 text-emerald-200";
+    default:
+      return "border-sky-300/35 bg-sky-400/12 text-sky-200";
+  }
+}
+
+function getTenantMemberStatusPillClass(active) {
+  return active
+    ? "border-emerald-300/35 bg-emerald-400/18 text-emerald-100"
+    : "border-rose-300/35 bg-rose-400/16 text-rose-100";
 }
 
 export default function PlatformTenantsPage() {
@@ -1147,12 +1170,17 @@ export default function PlatformTenantsPage() {
                                       {member.email || "No email"}
                                     </div>
                                   </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    <Badge kind="role" value={member.role || "STAFF"} />
-                                    <Badge
-                                      kind="active"
-                                      value={member.active ? "ENABLED" : "DISABLED"}
-                                    />
+                                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                    <span
+                                      className={`inline-flex min-h-[1.9rem] items-center rounded-full border px-3 py-1 text-[11px] font-semibold leading-none ${getTenantMemberRolePillClass(member.role)}`}
+                                    >
+                                      {getWorkspaceRoleLabel(member.role || "STAFF")}
+                                    </span>
+                                    <span
+                                      className={`inline-flex min-h-[1.9rem] items-center rounded-full border px-3 py-1 text-[11px] font-semibold leading-none ${getTenantMemberStatusPillClass(member.active)}`}
+                                    >
+                                      {member.active ? "ENABLED" : "DISABLED"}
+                                    </span>
                                   </div>
                                 </div>
                               </div>

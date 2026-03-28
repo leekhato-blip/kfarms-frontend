@@ -31,7 +31,7 @@ import InventoryFormModal from "./InventoryFormModal";
 import GlassToast from "./GlassToast";
 import api from "../api/apiClient";
 import { search as searchApi } from "../services/searchService";
-import { getLivestock } from "../services/livestockService";
+import { getLivestock, getLivestockOverview } from "../services/livestockService";
 import { resolveSearchTarget } from "../search/searchUtils";
 import useSmartBackNavigation from "../hooks/useSmartBackNavigation";
 import {
@@ -208,6 +208,68 @@ function resolveNotificationTarget(notification) {
   return KFARMS_ROUTE_REGISTRY.dashboard.appPath;
 }
 
+function toLowerText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeLivestockNotificationContext(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const totals =
+    payload.totals && typeof payload.totals === "object" ? payload.totals : payload;
+  const totalBatches = Number(
+    totals.totalBatches ??
+      payload.totalBatches ??
+      payload.totalLivestockBatches ??
+      payload.totalGroups ??
+      0,
+  );
+  const totalAlive = Number(
+    totals.totalAlive ??
+      payload.totalAlive ??
+      payload.totalQuantityAlive ??
+      0,
+  );
+
+  return {
+    totalBatches: Number.isFinite(totalBatches) ? totalBatches : 0,
+    totalAlive: Number.isFinite(totalAlive) ? totalAlive : 0,
+  };
+}
+
+function isEmptyWorkspaceLowLivestockNotification(notification, livestockContext) {
+  if (!notification || !livestockContext) {
+    return false;
+  }
+
+  const title = toLowerText(notification.title);
+  const message = toLowerText(notification.message || notification.body);
+  if (!title.includes("low livestock count")) {
+    return false;
+  }
+
+  const looksLikeLowCountAlert =
+    message.includes("below 50") || message.includes("please inspect");
+  if (!looksLikeLowCountAlert) {
+    return false;
+  }
+
+  return livestockContext.totalBatches <= 0 && livestockContext.totalAlive <= 0;
+}
+
+function filterWorkspaceNotifications(notifications = [], livestockContext = null) {
+  if (!Array.isArray(notifications) || notifications.length === 0) {
+    return [];
+  }
+
+  return notifications.filter(
+    (notification) =>
+      !isEmptyWorkspaceLowLivestockNotification(notification, livestockContext),
+  );
+}
+
 function getNotificationMeta(type) {
   switch ((type || "").toUpperCase()) {
     case "FISH":
@@ -333,6 +395,7 @@ export default function Topbar() {
     message: "",
     type: "info",
   });
+  const livestockNotificationContextRef = React.useRef(null);
 
   React.useEffect(() => {
     const trimmed = query.trim();
@@ -387,13 +450,23 @@ export default function Topbar() {
         setNotificationsLoading(true);
       }
 
-      const res = await fetchNotifications();
+      const [res, livestockContext] = await Promise.all([
+        fetchNotifications(),
+        poultryEnabled
+          ? getLivestockOverview()
+              .then((payload) => normalizeLivestockNotificationContext(payload))
+              .catch(() => null)
+          : Promise.resolve(null),
+      ]);
       if (!isActive) {
         return;
       }
 
+      livestockNotificationContextRef.current = livestockContext;
+
       if (res.success) {
-        setNotifications((prev) => mergeNotifications(background ? prev : [], res.data || []));
+        const filtered = filterWorkspaceNotifications(res.data || [], livestockContext);
+        setNotifications((prev) => mergeNotifications(background ? prev : [], filtered));
       } else if (!background) {
         setNotifications([]);
       }
@@ -432,6 +505,14 @@ export default function Topbar() {
 
         try {
           const payload = JSON.parse(event.data);
+          if (
+            isEmptyWorkspaceLowLivestockNotification(
+              payload,
+              livestockNotificationContextRef.current,
+            )
+          ) {
+            return;
+          }
           setNotifications((prev) => mergeNotifications(prev, [payload]));
         } catch (err) {
           console.error("Failed to parse notification stream:", err);
@@ -472,7 +553,7 @@ export default function Topbar() {
         window.clearInterval(pollId);
       }
     };
-  }, [activeTenantId, user?.id]);
+  }, [activeTenantId, poultryEnabled, user?.id]);
 
   const unreadCount = notifications.length;
   const visibleNotifications = notifications.slice(0, NOTIFICATION_DROPDOWN_LIMIT);
@@ -685,7 +766,7 @@ export default function Topbar() {
       ref={rootRef}
       className="w-full sticky top-0 z-50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div className="min-w-0">
+      <div className="min-w-0 pr-24 sm:pr-0">
         {showBackButton && (
           <button
             type="button"

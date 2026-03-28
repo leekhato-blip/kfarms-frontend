@@ -111,8 +111,29 @@ describe("supportAssistantService", () => {
 
     expect(apiPost).not.toHaveBeenCalled();
     expect(result.reply.toLowerCase()).toContain("absolutely");
+    expect(result.reply).toContain("KAI Free");
     expect(result.reply.toLowerCase()).toContain("feed planning");
     expect(result.actions.some((action) => action.label === "Open Feeds")).toBe(true);
+  });
+
+  it("gives pro-grade capability guidance when the workspace is on pro", async () => {
+    const { askSupportAssistant } = await import("./supportAssistantService");
+
+    const result = await askSupportAssistant({
+      tenantId: 22,
+      tenantName: "Delta Farm",
+      userName: "Lee",
+      message: "what can you do",
+      context: {
+        currentPath: "/dashboard",
+        modules: ["POULTRY", "FISH_FARMING"],
+        plan: "PRO",
+      },
+    });
+
+    expect(apiPost).not.toHaveBeenCalled();
+    expect(result.reply).toContain("KAI Pro");
+    expect(result.reply).toContain("Smarter operational coaching");
   });
 
   it("answers sales summary requests honestly in placeholder mode and offers the right actions", async () => {
@@ -130,9 +151,31 @@ describe("supportAssistantService", () => {
       },
     });
 
-    expect(result.reply).toContain("local assistant mode");
+    expect(result.reply).toContain("KAI Free local mode");
     expect(result.actions.some((action) => action.target === "/app/kfarms/sales")).toBe(true);
     expect(result.suggestions).toContain("What sales fields are mandatory?");
+  });
+
+  it("adds enterprise-grade coaching for dashboard fallback replies", async () => {
+    apiPost.mockRejectedValue({ response: { status: 404 } });
+
+    const { askSupportAssistant } = await import("./supportAssistantService");
+    const result = await askSupportAssistant({
+      tenantId: 30,
+      tenantName: "Delta Farm",
+      userName: "Lee",
+      message: "What needs attention today?",
+      context: {
+        currentPath: "/dashboard",
+        modules: ["POULTRY", "FISH_FARMING"],
+        plan: "ENTERPRISE",
+      },
+    });
+
+    expect(result.reply).toContain("KAI Enterprise local mode");
+    expect(result.reply).toContain("KAI Enterprise lens:");
+    expect(result.suggestions).toContain("What should leaders escalate today?");
+    expect(result.actions.some((action) => action.label === "Open Users")).toBe(true);
   });
 
   it("fills in suggestions and actions when the API reply omits them", async () => {

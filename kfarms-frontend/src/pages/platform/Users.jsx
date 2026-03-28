@@ -32,12 +32,14 @@ import {
   normalizePagination,
 } from "../../utils/formatters";
 import {
+  canAssignPlatformFunction,
+  canManagePlatformAvailability,
+  canManagePlatformRole,
   comparePlatformUsersByAuthority,
   filterPlatformUsers,
   getUserId,
   resolvePlatformAccessTier,
   resolvePlatformUserEnabled,
-  resolvePlatformUserRole,
 } from "./platformInsights";
 import { buildPlatformDemoSnapshot } from "./platformWorkbench";
 import {
@@ -49,6 +51,7 @@ import {
   resolveRootsFunction,
   writeStoredRootsUserFunctions,
 } from "../../utils/rootsUserFunctions";
+import { getPlatformRoleLabel } from "../../utils/platformRoles";
 
 function UserDetailSkeleton() {
   return (
@@ -267,7 +270,7 @@ export default function PlatformUsersPage() {
   );
 
   const platformAdminsOnPage = React.useMemo(
-    () => visibleUsers.filter((user) => resolvePlatformUserRole(user) === "PLATFORM_ADMIN").length,
+    () => visibleUsers.filter((user) => resolvePlatformAccessTier(user) === "PLATFORM_ADMIN").length,
     [visibleUsers],
   );
 
@@ -284,6 +287,10 @@ export default function PlatformUsersPage() {
   const selectedEnabled = React.useMemo(
     () => resolvePlatformUserEnabled(selectedUser || {}),
     [selectedUser],
+  );
+  const currentAccessTier = React.useMemo(
+    () => resolvePlatformAccessTier(currentPlatformUser || {}),
+    [currentPlatformUser],
   );
 
   const selectedTenantCount = React.useMemo(
@@ -320,6 +327,48 @@ export default function PlatformUsersPage() {
     [currentPlatformUser?.id],
   );
 
+  const describeAccessRestriction = React.useCallback(
+    (targetUser) => {
+      if (isCurrentPlatformUser(targetUser)) {
+        return "Current session cannot edit itself.";
+      }
+
+      const targetLabel = getPlatformRoleLabel(resolvePlatformAccessTier(targetUser));
+
+      if (currentAccessTier === "PLATFORM_ADMIN") {
+        return "ROOTS Admin can only manage ROOTS Ops and lower lanes here.";
+      }
+
+      if (currentAccessTier === "PLATFORM_STAFF") {
+        return `ROOTS Ops can review this account but cannot change ${targetLabel} access.`;
+      }
+
+      return `${targetLabel} changes are restricted in this view.`;
+    },
+    [currentAccessTier, isCurrentPlatformUser],
+  );
+
+  const describeFunctionRestriction = React.useCallback(
+    (targetUser) => {
+      if (currentAccessTier === "PLATFORM_STAFF") {
+        return canAssignPlatformFunction(currentPlatformUser, targetUser)
+          ? "ROOTS Ops can assign functions within ops lanes."
+          : "ROOTS Ops cannot assign functions to ROOTS Prime or ROOTS Admin.";
+      }
+
+      if (currentAccessTier === "PLATFORM_ADMIN") {
+        return "ROOTS Admin can assign functions below the admin lane.";
+      }
+
+      if (currentAccessTier === "PLATFORM_OWNER") {
+        return "ROOTS Prime can assign functions across the platform.";
+      }
+
+      return "This ROOTS lane cannot assign operator functions.";
+    },
+    [currentAccessTier, currentPlatformUser],
+  );
+
   const assignedFunctionsOnPage = React.useMemo(
     () =>
       visibleUsers.filter((user) => Boolean(resolveRootsFunction(user, rootsFunctionAssignments)))
@@ -343,8 +392,13 @@ export default function PlatformUsersPage() {
       return;
     }
 
+    if (!canManagePlatformRole(currentPlatformUser, user)) {
+      notify(describeAccessRestriction(user), "info");
+      return;
+    }
+
     const userId = getUserId(user);
-    const current = resolvePlatformUserRole(user) === "PLATFORM_ADMIN";
+    const current = resolvePlatformAccessTier(user) === "PLATFORM_ADMIN";
 
     setConfirm({
       open: true,
@@ -361,6 +415,11 @@ export default function PlatformUsersPage() {
   const askToggleEnabled = (user) => {
     if (isCurrentPlatformUser(user)) {
       notify("Use another ROOTS admin account to change your own sign-in access.", "info");
+      return;
+    }
+
+    if (!canManagePlatformAvailability(currentPlatformUser, user)) {
+      notify(describeAccessRestriction(user), "info");
       return;
     }
 
@@ -422,6 +481,10 @@ export default function PlatformUsersPage() {
 
   const saveRootsFunction = React.useCallback(() => {
     if (!selectedUser || !rootsFunctionDraft) return;
+    if (!canAssignPlatformFunction(currentPlatformUser, selectedUser)) {
+      notify(describeFunctionRestriction(selectedUser), "info");
+      return;
+    }
 
     const nextAssignments = assignRootsFunction(
       selectedUser,
@@ -434,6 +497,8 @@ export default function PlatformUsersPage() {
       "success",
     );
   }, [
+    currentPlatformUser,
+    describeFunctionRestriction,
     notify,
     rootsFunctionAssignments,
     rootsFunctionDraft,
@@ -573,6 +638,7 @@ export default function PlatformUsersPage() {
                   const accessTier = resolvePlatformAccessTier(user);
                   const active = resolvePlatformUserEnabled(user);
                   const selfRow = isCurrentPlatformUser(user);
+                  const canManageUserAccess = canManagePlatformRole(currentPlatformUser, user);
                   const isSelected = String(userId) === String(selectedUserId);
 
                   return (
@@ -652,21 +718,19 @@ export default function PlatformUsersPage() {
                             variant="outline"
                             size="sm"
                             className="w-full sm:flex-1"
-                            disabled={selfRow}
+                            disabled={selfRow || !canManageUserAccess}
                             onClick={(event) => {
                               event.stopPropagation();
                               askToggleAdmin(user);
                             }}
                           >
-                            {resolvePlatformUserRole(user) === "PLATFORM_ADMIN"
-                              ? "Demote"
-                              : "Promote"}
+                            {accessTier === "PLATFORM_ADMIN" ? "Demote" : "Promote"}
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             className="w-full sm:flex-1"
-                            disabled={selfRow}
+                            disabled={selfRow || !canManageUserAccess}
                             onClick={(event) => {
                               event.stopPropagation();
                               askToggleEnabled(user);
@@ -676,9 +740,9 @@ export default function PlatformUsersPage() {
                           </Button>
                         </div>
 
-                        {selfRow ? (
+                        {selfRow || !canManageUserAccess ? (
                           <div className="text-xs text-[var(--atlas-muted)]">
-                            Current session cannot edit itself.
+                            {selfRow ? "Current session cannot edit itself." : describeAccessRestriction(user)}
                           </div>
                         ) : null}
                       </div>
@@ -701,10 +765,10 @@ export default function PlatformUsersPage() {
               rowKey={(user) => getUserId(user)}
               onRowClick={(user) => selectUser(getUserId(user))}
               renderRow={(user) => {
-                const role = resolvePlatformUserRole(user);
                 const accessTier = resolvePlatformAccessTier(user);
                 const active = resolvePlatformUserEnabled(user);
                 const selfRow = isCurrentPlatformUser(user);
+                const canManageUserAccess = canManagePlatformRole(currentPlatformUser, user);
                 const isSelected = String(getUserId(user)) === String(selectedUserId);
                 const cellAccentClass = isSelected
                   ? "border-violet-400/55 bg-[color:var(--atlas-surface-hover)]"
@@ -751,19 +815,19 @@ export default function PlatformUsersPage() {
                           variant="outline"
                           size="sm"
                           className="w-full 2xl:w-auto"
-                          disabled={selfRow}
+                          disabled={selfRow || !canManageUserAccess}
                           onClick={(event) => {
                             event.stopPropagation();
                             askToggleAdmin(user);
                           }}
                         >
-                          {role === "PLATFORM_ADMIN" ? "Demote" : "Promote"}
+                          {accessTier === "PLATFORM_ADMIN" ? "Demote" : "Promote"}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="w-full 2xl:w-auto"
-                          disabled={selfRow}
+                          disabled={selfRow || !canManageUserAccess}
                           onClick={(event) => {
                             event.stopPropagation();
                             askToggleEnabled(user);
@@ -772,9 +836,9 @@ export default function PlatformUsersPage() {
                           {active ? "Disable" : "Enable"}
                         </Button>
                       </div>
-                      {selfRow ? (
+                      {selfRow || !canManageUserAccess ? (
                         <div className="mt-2 text-right text-xs text-[var(--atlas-muted)]">
-                          Current session
+                          {selfRow ? "Current session" : "Restricted"}
                         </div>
                       ) : null}
                     </td>
@@ -959,6 +1023,7 @@ export default function PlatformUsersPage() {
                         <select
                           value={rootsFunctionDraft}
                           onChange={(event) => setRootsFunctionDraft(event.target.value)}
+                          disabled={!canAssignPlatformFunction(currentPlatformUser, selectedUser)}
                           className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
                         >
                           <option value="">Select ROOTS function</option>
@@ -975,6 +1040,7 @@ export default function PlatformUsersPage() {
                         className="w-full sm:w-auto sm:self-end"
                         onClick={saveRootsFunction}
                         disabled={
+                          !canAssignPlatformFunction(currentPlatformUser, selectedUser) ||
                           !rootsFunctionDraft ||
                           rootsFunctionDraft === selectedRootsFunction
                         }
@@ -985,7 +1051,9 @@ export default function PlatformUsersPage() {
                     </div>
 
                     <div className="mt-3 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/70 px-3 py-3 text-xs leading-6 text-[var(--atlas-muted)]">
-                      {previewRootsFunctionMeta
+                      {!canAssignPlatformFunction(currentPlatformUser, selectedUser)
+                        ? describeFunctionRestriction(selectedUser)
+                        : previewRootsFunctionMeta
                         ? previewRootsFunctionMeta.description
                         : "Pick a ROOTS function to clarify what this operator owns."}
                     </div>
@@ -1047,8 +1115,9 @@ export default function PlatformUsersPage() {
                       Access controls
                     </div>
                     <div className="mt-1 text-xs leading-6 text-[var(--atlas-muted)]">
-                      {isCurrentPlatformUser(selectedUser)
-                        ? "This signed-in ROOTS session cannot demote or disable itself."
+                      {isCurrentPlatformUser(selectedUser) ||
+                      !canManagePlatformRole(currentPlatformUser, selectedUser)
+                        ? describeAccessRestriction(selectedUser)
                         : "Adjust access safely without leaving the operator list."}
                     </div>
 
@@ -1056,17 +1125,23 @@ export default function PlatformUsersPage() {
                       <Button
                         variant="outline"
                         className="w-full sm:flex-1"
-                        disabled={isCurrentPlatformUser(selectedUser)}
+                        disabled={
+                          isCurrentPlatformUser(selectedUser) ||
+                          !canManagePlatformRole(currentPlatformUser, selectedUser)
+                        }
                         onClick={() => askToggleAdmin(selectedUser)}
                       >
-                        {resolvePlatformUserRole(selectedUser) === "PLATFORM_ADMIN"
+                        {selectedAccessTier === "PLATFORM_ADMIN"
                           ? "Remove ROOTS admin"
                           : "Promote to ROOTS admin"}
                       </Button>
                       <Button
                         variant="outline"
                         className="w-full sm:flex-1"
-                        disabled={isCurrentPlatformUser(selectedUser)}
+                        disabled={
+                          isCurrentPlatformUser(selectedUser) ||
+                          !canManagePlatformAvailability(currentPlatformUser, selectedUser)
+                        }
                         onClick={() => askToggleEnabled(selectedUser)}
                       >
                         {selectedEnabled ? "Disable sign-in" : "Enable sign-in"}
@@ -1076,8 +1151,8 @@ export default function PlatformUsersPage() {
 
                   <Card className="atlas-data-shell">
                     <div className="text-sm leading-6 text-[var(--atlas-muted)]">
-                      ROOTS safety is active here. Backend rules keep at least one enabled
-                      ROOTS admin in place, and the current session cannot edit itself.
+                      ROOTS safety is active here. Higher lanes manage lower lanes, and ROOTS Ops
+                      cannot change ROOTS Prime or ROOTS Admin controls from this screen.
                     </div>
                   </Card>
                 </div>

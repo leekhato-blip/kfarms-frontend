@@ -3,6 +3,7 @@ import {
   normalizeKfarmsLegacyPath,
   toKfarmsAppPath,
 } from "../apps/kfarms/paths";
+import { getPlanById, isPlanAtLeast, normalizePlanId } from "../constants/plans";
 
 const ASSISTANT_STORAGE_KEY = "kf-placeholder-support-assistant";
 
@@ -16,6 +17,8 @@ const DEFAULT_FALLBACK_PROMPTS = Object.freeze([
   "How do I avoid feed stockout?",
   "How can I ask for help?",
 ]);
+
+const KAI_NAME = "KAI";
 
 const GREETING_PHRASES = Object.freeze([
   "hi",
@@ -363,6 +366,34 @@ function normalizeModules(context = {}) {
   return ["POULTRY", "FISH_FARMING"];
 }
 
+function getAssistantPlanId(context = {}) {
+  return normalizePlanId(context.plan, "FREE");
+}
+
+function getAssistantPlanMeta(context = {}) {
+  return getPlanById(getAssistantPlanId(context), "FREE");
+}
+
+function getAssistantLabel(context = {}) {
+  const plan = getAssistantPlanMeta(context);
+  return plan.assistantLabel || `${KAI_NAME} ${plan.name}`;
+}
+
+function getAssistantSummary(context = {}) {
+  const plan = getAssistantPlanMeta(context);
+  return (
+    plan.assistantSummary ||
+    "Farm guidance, decision support, and support handoff for your workspace."
+  );
+}
+
+function buildAssistantTransportLabel({ source = "api", context = {} } = {}) {
+  const label = getAssistantLabel(context);
+  if (source === "placeholder") return `${label} local mode`;
+  if (source === "hybrid") return `${label} smart mode`;
+  return `${label} live mode`;
+}
+
 function hasModule(context, moduleId) {
   return normalizeModules(context).includes(moduleId);
 }
@@ -518,26 +549,40 @@ function buildSupportTicketTarget({
 }
 
 function buildStarterSuggestions(context = {}) {
+  const planId = getAssistantPlanId(context);
   const suggestions = ["What needs attention today?"];
   if (hasModule(context, "FISH_FARMING")) {
     suggestions.push("Show me a daily pond checklist");
   }
-  suggestions.push("How do I avoid feed stockout?");
-  suggestions.push(
-    hasModule(context, "POULTRY")
-      ? "What should I check in poultry today?"
-      : "How are sales this week?",
-  );
+  if (isPlanAtLeast(planId, "PRO")) {
+    suggestions.push("Build a priority plan for today");
+    suggestions.push("How do I avoid feed stockout this week?");
+  } else {
+    suggestions.push("How do I avoid feed stockout?");
+    suggestions.push(
+      hasModule(context, "POULTRY")
+        ? "What should I check in poultry today?"
+        : "How are sales this week?",
+    );
+  }
+  if (planId === "ENTERPRISE") {
+    suggestions.push("What should leaders escalate today?");
+  }
   return normalizeSuggestions(suggestions, DEFAULT_FALLBACK_PROMPTS);
 }
 
 function buildStarterActions(context = {}) {
+  const planId = getAssistantPlanId(context);
   const actions = [
     { type: "navigate", label: "Open Dashboard", target: "/dashboard" },
     hasModule(context, "FISH_FARMING")
       ? { type: "navigate", label: "Open Fish Ponds", target: "/fish-ponds" }
       : { type: "navigate", label: "Open Feeds", target: "/feeds" },
-    { type: "navigate", label: "Open Support", target: "/support" },
+    planId === "ENTERPRISE"
+      ? { type: "navigate", label: "Open Users", target: "/users" }
+      : planId === "PRO"
+        ? { type: "navigate", label: "Open Inventory", target: "/inventory" }
+        : { type: "navigate", label: "Open Support", target: "/support" },
   ];
   return normalizeActions(actions);
 }
@@ -610,6 +655,8 @@ function buildConversationalReply({
   tenantName = "your farm",
 } = {}) {
   const routeLabel = inferRouteLabel(context);
+  const assistantLabel = getAssistantLabel(context);
+  const assistantSummary = getAssistantSummary(context);
   const routeHint = routeLabel
     ? `We can start with ${routeLabel} since that is where you are now, or jump anywhere else.`
     : "We can do a quick farm check-in or jump into any area you want.";
@@ -618,20 +665,21 @@ function buildConversationalReply({
   switch (intent) {
     case "greeting":
       return userHasSpokenBefore
-        ? `Hi again ${userName}. I am here with you for ${tenantName}. ${routeHint} What would you like help with today?`
-        : `Hi ${userName}. Nice to hear from you. I am here with you for ${tenantName}. ${routeHint} What would you like help with today?`;
+        ? `Hi again ${userName}. ${assistantLabel} is here with you for ${tenantName}. ${routeHint} What would you like help with today?`
+        : `Hi ${userName}. Nice to hear from you. ${assistantLabel} is here with you for ${tenantName}. ${routeHint} What would you like help with today?`;
     case "how_are_you":
-      return `I am doing well and ready to help. ${routeHint}`;
+      return `I am doing well and ready to help. ${assistantLabel} is tuned for ${tenantName}. ${routeHint}`;
     case "thanks":
       return "Anytime. If you want, I can help with the next step too.";
     case "goodbye":
       return `See you soon ${userName}. Come back anytime you want a quick checklist, a review flow, or help finding the right page.`;
     case "identity":
-      return `I am the KFarms Assistant for ${tenantName}. I can chat with you naturally, help you think through farm work, and point you to the right page when you need to act.`;
+      return `I am ${assistantLabel} for ${tenantName}. ${assistantSummary}`;
     case "capabilities":
       return [
         "Absolutely.",
-        "I can help with quick farm check-ins, pond routines, feed planning, inventory control, poultry reviews, sales follow-up, billing questions, team access, and support steps.",
+        `${assistantLabel} can help with quick farm check-ins, pond routines, feed planning, inventory control, poultry reviews, sales follow-up, billing questions, team access, and support steps.`,
+        assistantSummary,
         "Tell me what you are trying to do, and I will keep it practical.",
       ].join(" ");
     default:
@@ -644,6 +692,8 @@ function buildWelcomeMessage({
   tenantName = "your farm",
   context = {},
 } = {}) {
+  const assistantLabel = getAssistantLabel(context);
+  const assistantSummary = getAssistantSummary(context);
   const focusAreas = [
     hasModule(context, "FISH_FARMING") ? "pond checks and fish health" : "",
     "feed planning and stock control",
@@ -655,7 +705,8 @@ function buildWelcomeMessage({
   return normalizeMessage({
     role: "assistant",
     content:
-      `Hi ${userName}. I am your KFarms Assistant for ${tenantName}. ` +
+      `Hi ${userName}. I am ${assistantLabel} for ${tenantName}. ` +
+      `${assistantSummary} ` +
       `I can help with ${focusAreas.join(", ")}. ` +
       "Ask me for a checklist, a troubleshooting plan, a weekly review flow, or the best page to open next.",
     createdAt: nowIso(),
@@ -676,15 +727,141 @@ function ensureInitializedConversation({
 
 function buildLiveDataNote(message, topic, intent) {
   if (!asksForLiveData(message, topic, intent)) return "";
-  return "I cannot read live totals in local assistant mode, but I can point you to the fastest review flow:";
+  return "";
+}
+
+function buildPlanAwareLiveDataNote(message, topic, intent, context = {}) {
+  const fallback = buildLiveDataNote(message, topic, intent);
+  if (!asksForLiveData(message, topic, intent)) return fallback;
+  return `${buildAssistantTransportLabel({ source: "placeholder", context })} cannot read live totals yet, but I can point you to the fastest review flow:`;
+}
+
+function buildGradeCoaching({ topic, context = {} } = {}) {
+  const planId = getAssistantPlanId(context);
+
+  if (!isPlanAtLeast(planId, "PRO")) {
+    return "";
+  }
+
+  const proNotes = {
+    dashboard: [
+      "KAI Pro move:",
+      "- Turn the first two issues into named actions before midday.",
+      "- Recheck the same priorities before close of day.",
+    ].join("\n"),
+    fish: [
+      "KAI Pro move:",
+      "- Assign one owner for response, one owner for logging, and review trend changes for 7 days.",
+      "- Compare water, feed, and mortality changes before adjusting treatment.",
+    ].join("\n"),
+    feeds: [
+      "KAI Pro move:",
+      "- Track weekly usage drift and supplier lead-time changes before updating reorder levels.",
+      "- Review wastage and emergency purchases in one short weekly loop.",
+    ].join("\n"),
+    inventory: [
+      "KAI Pro move:",
+      "- Separate critical stock from routine stock and review both on different rhythms.",
+      "- Assign restock ownership so low-stock warnings always have a next step.",
+    ].join("\n"),
+    poultry: [
+      "KAI Pro move:",
+      "- Compare current flock performance with stage, feed intake, and recent losses before changing action.",
+      "- Escalate repeated drops early instead of waiting for a larger dip.",
+    ].join("\n"),
+    sales: [
+      "KAI Pro move:",
+      "- Review unpaid balances, top products, and weekly sales accuracy in one pass.",
+      "- Tie sales follow-up to stock movement so cashflow and stock stay aligned.",
+    ].join("\n"),
+    billing: [
+      "KAI Pro move:",
+      "- Keep a named owner, payment reference, and follow-up note for every billing issue.",
+      "- Review plan fit monthly so tools and team size stay aligned.",
+    ].join("\n"),
+    team: [
+      "KAI Pro move:",
+      "- Review access after role changes and major incidents, not just during onboarding.",
+      "- Keep sensitive actions limited to the smallest practical group.",
+    ].join("\n"),
+    support: [
+      "KAI Pro move:",
+      "- Include impact, urgency, and what you already tried so support can act faster.",
+    ].join("\n"),
+    general: [
+      "KAI Pro move:",
+      "- Turn advice into named actions, owners, and a review time.",
+    ].join("\n"),
+  };
+
+  if (planId !== "ENTERPRISE") {
+    return proNotes[topic] || proNotes.general;
+  }
+
+  const enterpriseNotes = {
+    dashboard: [
+      "KAI Enterprise lens:",
+      "- Use the same daily review pattern across teams so exceptions are comparable.",
+      "- Escalate issues that threaten output, cash, compliance, or customer delivery.",
+    ].join("\n"),
+    fish: [
+      "KAI Enterprise lens:",
+      "- Standardize pond incident response across teams and log exceptions the same way everywhere.",
+      "- Review repeated water or mortality problems as an operations pattern, not a one-off.",
+    ].join("\n"),
+    feeds: [
+      "KAI Enterprise lens:",
+      "- Standardize reorder logic, supplier assumptions, and approval thresholds across operations.",
+      "- Flag sites or teams that drift from planned usage too often.",
+    ].join("\n"),
+    inventory: [
+      "KAI Enterprise lens:",
+      "- Separate operating stock, emergency stock, and controlled stock with clear ownership.",
+      "- Escalate repeated count mismatches or emergency buys into a process review.",
+    ].join("\n"),
+    poultry: [
+      "KAI Enterprise lens:",
+      "- Use one playbook for daily checks, exception logging, and escalation across all teams.",
+      "- Review flock drops with both site context and management response quality.",
+    ].join("\n"),
+    sales: [
+      "KAI Enterprise lens:",
+      "- Review collections, overdue balances, and reporting accuracy across managers, not just one site.",
+      "- Escalate stale receivables before they distort planning.",
+    ].join("\n"),
+    billing: [
+      "KAI Enterprise lens:",
+      "- Keep billing ownership, references, and approval flow visible for leadership review.",
+      "- Match subscription posture to rollout stage and workspace growth.",
+    ].join("\n"),
+    team: [
+      "KAI Enterprise lens:",
+      "- Use role templates, review checkpoints, and audit follow-up for sensitive access.",
+      "- Escalate recurring access mistakes into policy updates, not just one-off fixes.",
+    ].join("\n"),
+    support: [
+      "KAI Enterprise lens:",
+      "- Every escalation should include owner, business impact, affected workflow, and expected response window.",
+    ].join("\n"),
+    general: [
+      "KAI Enterprise lens:",
+      "- Standardize the workflow, define escalation points, and review exceptions at leadership level.",
+    ].join("\n"),
+  };
+
+  return enterpriseNotes[topic] || enterpriseNotes.general;
+}
+
+function appendGradeCoaching(reply = "", options = {}) {
+  const trimmedReply = String(reply || "").trim();
+  const coaching = buildGradeCoaching(options);
+  if (!trimmedReply || !coaching) return trimmedReply;
+  return `${trimmedReply}\n\n${coaching}`;
 }
 
 function buildDashboardReply({ tenantName, context, message, intent }) {
-  const lines = [buildLiveDataNote(message, "dashboard", intent) || `For ${tenantName}, start with this quick daily review:`];
-
-  if (!buildLiveDataNote(message, "dashboard", intent)) {
-    lines[0] = `For ${tenantName}, start with this quick daily review:`;
-  }
+  const liveNote = buildPlanAwareLiveDataNote(message, "dashboard", intent, context);
+  const lines = [liveNote || `For ${tenantName}, start with this quick daily review:`];
 
   lines.push("- Dashboard: scan overdue tasks first, then anything due soon or marked urgent.");
   if (hasModule(context, "FISH_FARMING")) {
@@ -696,7 +873,7 @@ function buildDashboardReply({ tenantName, context, message, intent }) {
   lines.push("- Feeds and inventory: restock anything at or below reorder level before the workday gets busy.");
   lines.push("- Sales and cash: reconcile recent sales, receipts, and unpaid balances.");
   lines.push("Ask me to zoom into ponds, feeds, inventory, poultry, sales, billing, or support.");
-  return lines.join("\n");
+  return appendGradeCoaching(lines.join("\n"), { topic: "dashboard", context });
 }
 
 function buildFishReply({ intent, isFollowUp }) {
@@ -741,8 +918,8 @@ function buildFishReply({ intent, isFollowUp }) {
   ].join("\n");
 }
 
-function buildFeedsReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "feeds", intent);
+function buildFeedsReply({ message, intent, isFollowUp, context = {} }) {
+  const liveNote = buildPlanAwareLiveDataNote(message, "feeds", intent, context);
 
   if (intent === "checklist") {
     return [
@@ -784,8 +961,8 @@ function buildFeedsReply({ message, intent, isFollowUp }) {
   ].join("\n");
 }
 
-function buildInventoryReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "inventory", intent);
+function buildInventoryReply({ message, intent, isFollowUp, context = {} }) {
+  const liveNote = buildPlanAwareLiveDataNote(message, "inventory", intent, context);
 
   if (intent === "action") {
     return [
@@ -867,8 +1044,8 @@ function buildPoultryReply({ intent, isFollowUp }) {
   ].join("\n");
 }
 
-function buildSalesReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "sales", intent);
+function buildSalesReply({ message, intent, isFollowUp, context = {} }) {
+  const liveNote = buildPlanAwareLiveDataNote(message, "sales", intent, context);
 
   if (intent === "action") {
     return [
@@ -911,8 +1088,8 @@ function buildSalesReply({ message, intent, isFollowUp }) {
   ].join("\n");
 }
 
-function buildBillingReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "billing", intent);
+function buildBillingReply({ message, intent, isFollowUp, context = {} }) {
+  const liveNote = buildPlanAwareLiveDataNote(message, "billing", intent, context);
 
   if (intent === "action" && /\b(upgrade|downgrade|change plan|plan)\b/.test(normalizeText(message))) {
     return [
@@ -1009,7 +1186,7 @@ function buildClarifyingReply(context = {}) {
     ? `Since you are on ${TOPIC_CONFIG[routeTopic].label}, I can start there.`
     : "";
 
-  return [
+  return appendGradeCoaching([
     routeHint || "I can help best when you point me to one farm area.",
     "Try one of these:",
     "- What needs attention today?",
@@ -1019,17 +1196,17 @@ function buildClarifyingReply(context = {}) {
     "- How do I ask for help?",
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n"), { topic: "general", context });
 }
 
 function buildReplyForTopic({ message, context, topic, intent }) {
   const isFollowUp = intent === "follow_up" || FOLLOW_UP_PATTERN.test(normalizeText(message));
 
   if (intent === "navigate" && topic !== "general") {
-    return [
+    return appendGradeCoaching([
       `The best page for that is ${TOPIC_CONFIG[topic].label}.`,
       "Use the action button below to open it, then ask me for a checklist, review flow, or next steps once you are there.",
-    ].join("\n");
+    ].join("\n"), { topic, context });
   }
 
   switch (topic) {
@@ -1041,36 +1218,44 @@ function buildReplyForTopic({ message, context, topic, intent }) {
         intent,
       });
     case "fish":
-      return buildFishReply({ intent, isFollowUp });
+      return appendGradeCoaching(buildFishReply({ intent, isFollowUp }), { topic: "fish", context });
     case "feeds":
-      return buildFeedsReply({ message, intent, isFollowUp });
+      return appendGradeCoaching(buildFeedsReply({ message, intent, isFollowUp, context }), { topic: "feeds", context });
     case "inventory":
-      return buildInventoryReply({ message, intent, isFollowUp });
+      return appendGradeCoaching(buildInventoryReply({ message, intent, isFollowUp, context }), { topic: "inventory", context });
     case "poultry":
-      return buildPoultryReply({ intent, isFollowUp });
+      return appendGradeCoaching(buildPoultryReply({ intent, isFollowUp }), { topic: "poultry", context });
     case "sales":
-      return buildSalesReply({ message, intent, isFollowUp });
+      return appendGradeCoaching(buildSalesReply({ message, intent, isFollowUp, context }), { topic: "sales", context });
     case "billing":
-      return buildBillingReply({ message, intent, isFollowUp });
+      return appendGradeCoaching(buildBillingReply({ message, intent, isFollowUp, context }), { topic: "billing", context });
     case "team":
-      return buildTeamReply({ intent, isFollowUp });
+      return appendGradeCoaching(buildTeamReply({ intent, isFollowUp }), { topic: "team", context });
     case "support":
-      return buildSupportReply({ topic, intent, isFollowUp: true });
+      return appendGradeCoaching(buildSupportReply({ topic, intent, isFollowUp: true }), { topic: "support", context });
     default:
       return buildClarifyingReply(context);
   }
 }
 
 function buildSuggestionsForTopic({ topic, context }) {
+  const planId = getAssistantPlanId(context);
   switch (topic) {
     case "dashboard":
-      return normalizeSuggestions([
-        hasModule(context, "FISH_FARMING")
-          ? "Show me a daily pond checklist"
-          : "How do I avoid feed stockout?",
-        "How do I avoid feed stockout?",
-        "How are sales this week?",
-      ], DEFAULT_FALLBACK_PROMPTS);
+      return normalizeSuggestions(
+        [
+          hasModule(context, "FISH_FARMING")
+            ? "Show me a daily pond checklist"
+            : "How do I avoid feed stockout?",
+          isPlanAtLeast(planId, "PRO")
+            ? "Build a priority plan for today"
+            : "How do I avoid feed stockout?",
+          planId === "ENTERPRISE"
+            ? "What should leaders escalate today?"
+            : "How are sales this week?",
+        ],
+        DEFAULT_FALLBACK_PROMPTS,
+      );
     case "fish":
       return normalizeSuggestions([
         "Show me a daily pond checklist",
@@ -1125,6 +1310,7 @@ function buildSuggestionsForTopic({ topic, context }) {
 }
 
 function buildActionsForTopic({ topic, context }) {
+  const planId = getAssistantPlanId(context);
   switch (topic) {
     case "dashboard":
       return normalizeActions([
@@ -1136,7 +1322,9 @@ function buildActionsForTopic({ topic, context }) {
               message: "Show me a daily pond checklist",
             }
           : { type: "navigate", label: "Open Feeds", target: "/feeds" },
-        { type: "navigate", label: "Open Inventory", target: "/inventory" },
+        planId === "ENTERPRISE"
+          ? { type: "navigate", label: "Open Users", target: "/users" }
+          : { type: "navigate", label: "Open Inventory", target: "/inventory" },
       ]);
     case "fish":
       return normalizeActions([

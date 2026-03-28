@@ -8,7 +8,16 @@ import { TenantProvider } from "./tenant/TenantContext.jsx";
 import { PlatformAuthProvider } from "./auth/AuthProvider.jsx";
 import { initializeOfflineSync } from "./offline/offlineSync.js";
 
+const SPA_REDIRECT_STORAGE_KEY = "kf_spa_redirect";
 const root = document.getElementById("root");
+
+if (typeof window !== "undefined" && window.location.pathname === "/") {
+  const pendingRedirect = window.sessionStorage.getItem(SPA_REDIRECT_STORAGE_KEY);
+  if (pendingRedirect?.startsWith("/")) {
+    window.sessionStorage.removeItem(SPA_REDIRECT_STORAGE_KEY);
+    window.history.replaceState(null, "", pendingRedirect);
+  }
+}
 
 initializeOfflineSync();
 

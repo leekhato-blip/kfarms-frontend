@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Plus, Sparkles, X } from "lucide-react";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
@@ -60,8 +61,9 @@ export default function PlatformAppModal({ open, onClose, onSubmit }) {
   );
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[130] overflow-y-auto bg-[color:var(--atlas-overlay)] px-4 py-6 md:px-6 md:py-8"
       onClick={onClose}
@@ -203,6 +205,7 @@ export default function PlatformAppModal({ open, onClose, onSubmit }) {
           </form>
         </Card>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

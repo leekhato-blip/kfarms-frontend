@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 
 export default function TaskModal({ open, onClose, onSave, initial = {} }) {
@@ -96,6 +97,7 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
   }, [open]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   // Mapping task types to color styles
   const typeColors = {
@@ -114,7 +116,7 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     3: { text: "Low", dot: "bg-status-success" },
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop with blur effect */}
       <div
@@ -322,6 +324,7 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
           </div>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

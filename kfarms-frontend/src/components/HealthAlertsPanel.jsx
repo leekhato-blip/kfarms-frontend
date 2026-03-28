@@ -90,17 +90,7 @@ export default function HealthAlertsPanel({
 
   return (
     <div className="bg-white dark:bg-darkCard dark:shadow-dark shadow-neo p-4 rounded-xl w-full">
-      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-        {/* <div className="text-center sm:text-left">
-          
-          <h3 className="text-lg font-semibold font-header">
-            Health Alerts
-          </h3>
-          <p className="text-xs text-slate-400 font-body">
-            Diagnoses issues and recommends actions
-          </p>
-        </div> */}
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-md bg-gradient-to-br from-[#FF0078] via-[#FF3D00] to-[#FFB74D]">
             <AlertTriangle className="w-5 h-5 text-white" />

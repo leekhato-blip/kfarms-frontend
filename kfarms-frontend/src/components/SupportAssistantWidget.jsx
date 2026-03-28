@@ -14,6 +14,7 @@ import {
   normalizeKfarmsLegacyPath,
   toKfarmsAppPath,
 } from "../apps/kfarms/paths";
+import { getPlanById } from "../constants/plans";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
 import { getUserDisplayName } from "../services/userProfileService";
@@ -28,6 +29,8 @@ const DEFAULT_PROMPTS = [
   "How do I avoid feed stockout?",
   "How can I ask for help?",
 ];
+
+const ASSISTANT_NAME = "KAI";
 
 const PATH_SUPPORT_CATEGORY = Object.freeze([
   { match: "/billing", category: "Billing & plan" },
@@ -87,11 +90,11 @@ function buildSupportEscalationSearch({ pathname = "", tenantName = "", input = 
   const summary =
     cleanInput ||
     userMessages.at(-1)?.content ||
-    "I need help with something I was discussing with the assistant.";
+    `I need help with something I was discussing with ${ASSISTANT_NAME}.`;
   const transcript = (Array.isArray(messages) ? messages : [])
     .slice(-6)
     .map((message) => {
-      const role = String(message?.role || "").toLowerCase() === "assistant" ? "Assistant" : "Farmer";
+      const role = String(message?.role || "").toLowerCase() === "assistant" ? ASSISTANT_NAME : "Farmer";
       const content = String(message?.content || "").trim();
       return content ? `${role}: ${content}` : "";
     })
@@ -99,7 +102,7 @@ function buildSupportEscalationSearch({ pathname = "", tenantName = "", input = 
     .join("\n");
 
   const descriptionParts = [
-    "Please help me continue this issue from the assistant chat.",
+    `Please help me continue this issue from my ${ASSISTANT_NAME} chat.`,
     tenantName ? `Workspace: ${tenantName}` : "",
     normalizedPath ? `Page: ${normalizedPath}` : "",
     "",
@@ -109,11 +112,27 @@ function buildSupportEscalationSearch({ pathname = "", tenantName = "", input = 
 
   const params = new URLSearchParams();
   params.set("tab", "tickets");
-  params.set("subject", truncateText(`Assistant escalation: ${summary}`, 140));
+  params.set("subject", truncateText(`${ASSISTANT_NAME} escalation: ${summary}`, 140));
   params.set("category", inferSupportCategory(normalizedPath));
   params.set("priority", inferSupportPriority(`${summary}\n${transcript}`));
   params.set("description", truncateText(descriptionParts.join("\n"), 2400));
   return params.toString();
+}
+
+function getAssistantModeLabel(source = "api") {
+  if (source === "placeholder") return "Local mode";
+  if (source === "hybrid") return "Smart mode";
+  return "Live mode";
+}
+
+function getAssistantModeHint(source = "api", assistantLabel = ASSISTANT_NAME) {
+  if (source === "placeholder") {
+    return `${assistantLabel} is giving plan-aware guidance while live totals load.`;
+  }
+  if (source === "hybrid") {
+    return `${assistantLabel} is blending live support with tier-aware coaching.`;
+  }
+  return `${assistantLabel} is connected to your live workspace support flow.`;
 }
 
 export default function SupportAssistantWidget() {
@@ -137,6 +156,10 @@ export default function SupportAssistantWidget() {
 
   const tenantName = activeTenant?.name || "your farm";
   const userName = getUserDisplayName(user, "Farmer");
+  const assistantPlan = React.useMemo(
+    () => getPlanById(activeTenant?.plan || "FREE"),
+    [activeTenant?.plan],
+  );
   const assistantContext = React.useMemo(
     () => ({
       currentPath: location.pathname,
@@ -146,12 +169,12 @@ export default function SupportAssistantWidget() {
     }),
     [activeTenant?.modules, activeTenant?.myRole, activeTenant?.plan, location.pathname, user?.role],
   );
-  const assistantModeLabel =
-    source === "placeholder"
-      ? "Local assistant mode"
-      : source === "hybrid"
-        ? "Smart assistant mode"
-        : "Live assistant mode";
+  const assistantLabel = assistantPlan.assistantLabel || `${ASSISTANT_NAME} ${assistantPlan.name}`;
+  const assistantSummary =
+    assistantPlan.assistantSummary ||
+    "Farm guidance, decision support, and help handoff for your workspace.";
+  const assistantModeLabel = getAssistantModeLabel(source);
+  const assistantModeHint = getAssistantModeHint(source, assistantLabel);
   const supportEscalationSearch = React.useMemo(
     () =>
       buildSupportEscalationSearch({
@@ -221,7 +244,7 @@ export default function SupportAssistantWidget() {
     const content = String(text || "").trim();
     if (!content || sending) return;
     if (!activeTenantId) {
-      setErrorMessage("Choose or create a farm before using the assistant.");
+      setErrorMessage(`Choose or create a farm before using ${ASSISTANT_NAME}.`);
       return;
     }
 
@@ -239,7 +262,7 @@ export default function SupportAssistantWidget() {
       });
       applyAssistantPayload(result);
     } catch (error) {
-      setErrorMessage(error?.message || "Could not reach support assistant.");
+      setErrorMessage(error?.message || `Could not reach ${ASSISTANT_NAME}.`);
     } finally {
       setSending(false);
     }
@@ -253,7 +276,7 @@ export default function SupportAssistantWidget() {
   async function handleReset() {
     if (resetting) return;
     if (!activeTenantId) {
-      setErrorMessage("Choose or create a farm before clearing this chat.");
+      setErrorMessage(`Choose or create a farm before clearing this ${ASSISTANT_NAME} chat.`);
       return;
     }
     setResetting(true);
@@ -311,19 +334,24 @@ export default function SupportAssistantWidget() {
               type="button"
               onClick={() => setOpen(false)}
               className="absolute right-3 top-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/55 bg-black/25 text-white shadow-sm transition hover:bg-black/35"
-              aria-label="Close assistant"
+              aria-label={`Close ${ASSISTANT_NAME}`}
             >
               <X className="h-4 w-4" />
             </button>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
-                  <Bot className="h-3 w-3" />
-                  Kfarms Assistant
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
+                    <Bot className="h-3 w-3" />
+                    {ASSISTANT_NAME}
+                  </div>
+                  <div className="inline-flex items-center rounded-full border border-white/25 bg-black/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/95">
+                    {assistantPlan.name}
+                  </div>
                 </div>
-                <h3 className="mt-1 text-sm font-semibold">Farmer Chat Support</h3>
+                <h3 className="mt-1 text-sm font-semibold">{assistantLabel}</h3>
                 <p className="text-[11px] text-blue-50/90">
-                  Ask about pond care, feeds, inventory, sales, and support steps.
+                  {assistantSummary}
                 </p>
               </div>
             </div>
@@ -337,7 +365,7 @@ export default function SupportAssistantWidget() {
                   Farm needed
                 </div>
                 <p className="mt-1">
-                  Assistant chat works after you choose or create a farm.
+                  {ASSISTANT_NAME} works after you choose or create a farm.
                 </p>
                 <button
                   type="button"
@@ -350,11 +378,16 @@ export default function SupportAssistantWidget() {
               </div>
             )}
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-300">
-              <span className="inline-flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                {assistantModeLabel}
-              </span>
+            <div className="flex items-start justify-between gap-3 text-[11px] text-slate-500 dark:text-slate-300">
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1 font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  {assistantModeLabel}
+                </span>
+                <p className="mt-0.5 text-[10px] text-slate-500/90 dark:text-slate-300/85">
+                  {assistantModeHint}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={handleReset}
@@ -369,11 +402,11 @@ export default function SupportAssistantWidget() {
             <div className="max-h-[42vh] min-h-[220px] space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/40 p-2 dark:bg-white/5 md:max-h-[46vh] md:min-h-[240px]">
               {loadingConversation ? (
                 <div className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
-                  Loading assistant conversation...
+                  Loading {ASSISTANT_NAME} conversation...
                 </div>
               ) : messages.length === 0 ? (
                 <div className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
-                  Start by asking a farm operations question.
+                  Start by asking {ASSISTANT_NAME} a farm operations question.
                 </div>
               ) : (
                 messages.map((message) => {
@@ -445,7 +478,7 @@ export default function SupportAssistantWidget() {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={2}
-                placeholder="Ask the assistant anything about your farm operations..."
+                placeholder={`Ask ${ASSISTANT_NAME} anything about your farm operations...`}
                 disabled={!activeTenantId}
                 className="w-full rounded-xl border border-white/15 bg-white/60 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-accent-primary/50 dark:bg-white/10 dark:text-slate-100"
               />
@@ -495,11 +528,11 @@ export default function SupportAssistantWidget() {
         type="button"
         onClick={() => setOpen((state) => !state)}
         className="group inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-accent-primary/40 bg-accent-primary text-sm font-semibold text-white shadow-soft transition-all duration-300 hover:w-36 hover:justify-start hover:px-4 focus-visible:w-36 focus-visible:justify-start focus-visible:px-4"
-        aria-label="Open support assistant"
+        aria-label={`Open ${ASSISTANT_NAME}`}
       >
         <MessageCircle className="h-4 w-4" />
         <span className="ml-0 max-w-0 whitespace-nowrap opacity-0 transition-all duration-300 group-hover:ml-2 group-hover:max-w-[84px] group-hover:opacity-100 group-focus-visible:ml-2 group-focus-visible:max-w-[84px] group-focus-visible:opacity-100">
-          Assistant
+          {ASSISTANT_NAME}
         </span>
       </button>
     </div>

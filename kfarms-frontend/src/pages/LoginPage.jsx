@@ -31,7 +31,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loading: authLoading } = useAuth();
-  const { refreshTenants, ensureActiveTenant, setActiveTenant } = useTenant();
+  const { refreshTenants, ensureActiveTenant, setActiveTenant, resetTenantState } = useTenant();
   const brandName = "KFarms";
   const brandLogo = kfarmsLogo;
   const brandPrimaryColor = "#2563EB";
@@ -122,6 +122,7 @@ export default function LoginPage() {
       setLoaderLabel("Signing you in...");
       const loggedInUser = await login({ identifier: nextIdentifier, password: nextPassword });
       loginSuccessRef.current = true;
+      resetTenantState();
 
       const tenantList = await refreshTenants({ force: true });
       const hasTenants = Array.isArray(tenantList) && tenantList.length > 0;

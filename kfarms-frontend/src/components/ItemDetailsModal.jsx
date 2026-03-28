@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Edit, Trash2 } from "lucide-react";
 
 export default function ItemDetailsModal({
@@ -25,10 +26,11 @@ export default function ItemDetailsModal({
   }, [open, onClose]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   const safeFields = Array.isArray(fields) ? fields : [];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -131,6 +133,7 @@ export default function ItemDetailsModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

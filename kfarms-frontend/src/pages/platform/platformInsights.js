@@ -1,5 +1,6 @@
 import { PLAN_IDS, PLAN_TIER_CONFIG, normalizePlanId } from "../../constants/plans";
 import { formatDateTime } from "../../utils/formatters";
+import { getUserDisplayName } from "../../services/userProfileService";
 
 export const PLAN_MEMBER_LIMITS = Object.freeze({
   FREE: 2,
@@ -34,22 +35,76 @@ export function isPlatformOwner(user) {
   return String(user?.email || "").trim().toLowerCase() === "leekhato@gmail.com";
 }
 
-import { getUserDisplayName } from "../../services/userProfileService";
+function normalizeIdentity(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+export function isPlatformOpsIdentity(user) {
+  const username = normalizeIdentity(user?.username);
+  const email = normalizeIdentity(user?.email);
+  const emailLocalPart = email.split("@")[0];
+
+  return (
+    username === "roots.ops" ||
+    username === "platform.ops" ||
+    emailLocalPart === "roots.ops" ||
+    emailLocalPart === "platform.ops" ||
+    email === "platform.ops@demo.kfarms.local"
+  );
+}
 
 export function resolvePlatformAccessTier(user) {
   if (isPlatformOwner(user)) return "PLATFORM_OWNER";
+  if (isPlatformOpsIdentity(user) && hasPlatformAccess(user)) return "PLATFORM_STAFF";
   if (resolvePlatformUserRole(user) === "PLATFORM_ADMIN") return "PLATFORM_ADMIN";
   if (hasPlatformAccess(user)) return "PLATFORM_STAFF";
   return "USER";
 }
 
-export function getPlatformAccessRank(user) {
-  const accessTier = resolvePlatformAccessTier(user);
-
+function getPlatformTierRank(accessTier) {
   if (accessTier === "PLATFORM_OWNER") return 400;
   if (accessTier === "PLATFORM_ADMIN") return 300;
   if (accessTier === "PLATFORM_STAFF") return 200;
   return 100;
+}
+
+export function getPlatformAccessRank(user) {
+  return getPlatformTierRank(resolvePlatformAccessTier(user));
+}
+
+export function canManagePlatformRole(actor, target) {
+  const actorTier = resolvePlatformAccessTier(actor);
+  const targetTier = resolvePlatformAccessTier(target);
+
+  if (actorTier !== "PLATFORM_OWNER" && actorTier !== "PLATFORM_ADMIN") {
+    return false;
+  }
+
+  return getPlatformTierRank(actorTier) > getPlatformTierRank(targetTier);
+}
+
+export function canManagePlatformAvailability(actor, target) {
+  return canManagePlatformRole(actor, target);
+}
+
+export function canAssignPlatformFunction(actor, target) {
+  const actorTier = resolvePlatformAccessTier(actor);
+  const targetTier = resolvePlatformAccessTier(target);
+  const targetRank = getPlatformTierRank(targetTier);
+
+  if (actorTier === "PLATFORM_OWNER") {
+    return targetRank < getPlatformTierRank("PLATFORM_OWNER");
+  }
+
+  if (actorTier === "PLATFORM_ADMIN") {
+    return targetRank < getPlatformTierRank("PLATFORM_ADMIN");
+  }
+
+  if (actorTier === "PLATFORM_STAFF") {
+    return targetRank <= getPlatformTierRank("PLATFORM_STAFF");
+  }
+
+  return false;
 }
 
 export function resolvePlatformUserEnabled(user) {

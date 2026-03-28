@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import Button from "./Button";
 
 export default function ConfirmDialog({
@@ -23,8 +24,9 @@ export default function ConfirmDialog({
   }, [open, onCancel]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[color:var(--atlas-overlay)] px-4">
       <div className="atlas-glass-card w-full max-w-md rounded-xl border border-[color:var(--atlas-border-strong)] p-5">
         <h3 className="text-lg font-semibold text-[var(--atlas-text-strong)]">{title}</h3>
@@ -39,6 +41,7 @@ export default function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

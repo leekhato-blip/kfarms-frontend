@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, RotateCcw, Trash2, X } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import ItemDetailsModal from "./ItemDetailsModal";
@@ -114,8 +115,9 @@ export default function TrashModal({
   }
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/55 backdrop-blur-md" onClick={onClose} />
 
@@ -322,6 +324,7 @@ export default function TrashModal({
           ) : null}
         </>
       ) : null}
-    </div>
+    </div>,
+    document.body,
   );
 }

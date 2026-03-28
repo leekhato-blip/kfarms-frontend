@@ -162,7 +162,7 @@ const DEMO_USER_BLUEPRINTS = Object.freeze([
     id: 802,
     username: "roots.ops",
     email: "platform.ops@demo.kfarms.local",
-    role: "PLATFORM_ADMIN",
+    role: "USER",
     enabled: true,
     createdHoursAgo: 2200,
   },
@@ -245,7 +245,7 @@ const PLATFORM_DEMO_SUMMARY = Object.freeze({
   activeTenants: 5,
   suspendedTenants: 0,
   totalUsers: 11,
-  platformAdmins: 2,
+  platformAdmins: 1,
 });
 
 function canUseStorage() {

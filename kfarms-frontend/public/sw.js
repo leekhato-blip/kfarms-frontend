@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "kfarms-app-shell-v1";
-const RUNTIME_CACHE = "kfarms-runtime-v1";
+const APP_SHELL_CACHE = "kfarms-app-shell-v2";
+const RUNTIME_CACHE = "kfarms-runtime-v2";
 const APP_SHELL_URLS = [
   "/",
   "/index.html",
@@ -49,10 +49,16 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          return response;
+        .then(async (response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+            return response;
+          }
+
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          return caches.match("/index.html") || response;
         })
         .catch(async () => {
           const cached = await caches.match(request);
@@ -67,8 +73,10 @@ self.addEventListener("fetch", (event) => {
     caches.match(request).then((cachedResponse) => {
       const networkPromise = fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
         .catch(() => cachedResponse);

@@ -15,7 +15,7 @@ import {
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
 const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
-const PING_PATH = "/actuator/health";
+const PING_PATH = "/auth/login";
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
 const AUTH_PUBLIC_401_PATHS = new Set([
@@ -114,6 +114,21 @@ function getHeaderValue(headers, key) {
     return headers.get(key) || "";
   }
   return headers[key] || headers[String(key).toLowerCase()] || headers[String(key).toUpperCase()] || "";
+}
+
+function isBackendReachableResponse(response) {
+  const status = Number(response?.status || 0);
+  if (!Number.isFinite(status) || status <= 0) {
+    return false;
+  }
+
+  const renderRouting = String(getHeaderValue(response?.headers, "x-render-routing") || "").toLowerCase();
+  if (renderRouting.includes("no-server")) {
+    return false;
+  }
+
+  // For readiness checks, any real HTTP response means the host is awake.
+  return true;
 }
 
 function isCanceledError(error) {
@@ -218,11 +233,11 @@ export async function probeBackendConnection({ silent = false } = {}) {
   }
 
   try {
-    const response = await pingClient.get(PING_PATH, {
+    const response = await pingClient.options(PING_PATH, {
       validateStatus: () => true,
     });
 
-    if (response.status >= 200 && response.status < 300) {
+    if (isBackendReachableResponse(response)) {
       confirmBackendUp();
       return true;
     }

@@ -660,7 +660,7 @@ export default function SettingsPage() {
 
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-emerald-400/35 bg-emerald-500/10 px-3 py-1 text-emerald-700 dark:text-emerald-200">
-              Backend sync active
+              Workspace ready
             </span>
             <span className="rounded-full border border-white/10 bg-white/60 px-3 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">
               Role: {activeTenant?.myRole || "Member"}
@@ -676,8 +676,8 @@ export default function SettingsPage() {
           }`}
         >
           {canManageWorkspaceSettings
-            ? "Workspace changes save directly to the backend for everyone in this organization. Profile appearance stays local to this device, while contact verification updates your account everywhere."
-            : "You can update your profile, verification details, preferences, and password here. Workspace details are view-only for your role."}
+            ? "Update your workspace details here. Personal preferences stay with your account, and verified contact details help you receive important updates."
+            : "Update your profile, contact details, preferences, and password here. Workspace details are view-only for your role."}
         </div>
 
         {!loading ? (

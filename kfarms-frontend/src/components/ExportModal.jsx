@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { X, Download } from "lucide-react";
 import { useTenant } from "../tenant/TenantContext";
@@ -69,6 +70,7 @@ export default function ExportModal({
   ]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -79,7 +81,7 @@ export default function ExportModal({
     onSubmit?.({ type, category, start: start || null, end: end || null });
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -224,6 +226,7 @@ export default function ExportModal({
           </div>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }
