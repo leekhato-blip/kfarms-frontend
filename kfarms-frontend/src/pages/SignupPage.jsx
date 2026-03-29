@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
-  CheckCircle2,
+  Check,
   Droplets,
   Feather,
   ShieldCheck,
@@ -431,7 +431,7 @@ export default function SignupPage() {
                         }`}
                       >
                         {complete ? (
-                          <CheckCircle2 className="h-4 w-4" />
+                          <Check className="h-4 w-4" strokeWidth={3} />
                         ) : (
                           React.createElement(step.icon, { className: "h-4 w-4" })
                         )}
@@ -514,7 +514,7 @@ export default function SignupPage() {
                                 : "bg-slate-200/80 text-slate-500 dark:bg-white/10 dark:text-slate-300"
                             }`}
                           >
-                            {complete ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+                            {complete ? <Check className="h-4 w-4" strokeWidth={3} /> : index + 1}
                           </span>
                           <span className="min-w-0">
                             <span className="block text-xs uppercase tracking-[0.14em] text-slate-400">

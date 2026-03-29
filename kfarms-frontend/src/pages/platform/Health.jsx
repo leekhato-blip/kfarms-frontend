@@ -263,8 +263,8 @@ export default function PlatformHealthPage() {
     if (Number(overview.suspendedTenants || 0) > 0) {
       items.push({
         tone: "rose",
-        title: "Suspended workspaces need review",
-        detail: `${formatNumber(overview.suspendedTenants)} tenant workspace(s) are suspended.`,
+        title: "Suspended workspaces",
+        detail: `${formatNumber(overview.suspendedTenants)} suspended now.`,
       });
     }
 
@@ -272,39 +272,39 @@ export default function PlatformHealthPage() {
       items.push({
         tone: "rose",
         title: "Team limits exceeded",
-        detail: `${formatNumber(overLimitTenants.length)} tenant(s) are above their team limit.`,
+        detail: `${formatNumber(overLimitTenants.length)} over limit.`,
       });
     }
 
     if (pressuredTenants.length > overLimitTenants.length) {
       items.push({
         tone: "amber",
-        title: "Team limit pressure building",
-        detail: `${formatNumber(pressuredTenants.length)} tenant(s) are near their team limit.`,
+        title: "Team pressure rising",
+        detail: `${formatNumber(pressuredTenants.length)} near limit.`,
       });
     }
 
     if (disabledUsers > 0) {
       items.push({
         tone: "amber",
-        title: "Disabled operator accounts detected",
-        detail: `${formatNumber(disabledUsers)} ROOTS account(s) are inactive.`,
+        title: "Inactive accounts",
+        detail: `${formatNumber(disabledUsers)} accounts inactive.`,
       });
     }
 
     if (activeAdmins < 2) {
       items.push({
         tone: "amber",
-        title: "Thin ROOTS admin coverage",
-        detail: `Only ${formatNumber(activeAdmins)} enabled ROOTS admin account(s) are active.`,
+        title: "Thin admin cover",
+        detail: `Only ${formatNumber(activeAdmins)} admins active.`,
       });
     }
 
     if (items.length === 0) {
       items.push({
         tone: "green",
-        title: "ROOTS posture looks healthy",
-        detail: "No immediate team-limit, suspension, or operator-access risks detected.",
+        title: "Platform looks healthy",
+        detail: "No urgent access or capacity risk.",
       });
     }
 
@@ -327,11 +327,10 @@ export default function PlatformHealthPage() {
               ROOTS Health
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.4rem]">
-              Read the platform pulse before risk compounds.
+              Read the ROOTS pulse before risk lands.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Track capacity strain, admin coverage, and live tenant health from one sharper
-              control room.
+              Capacity, access, and tenant strain in one live feed.
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2.5">
@@ -404,7 +403,7 @@ export default function PlatformHealthPage() {
                 disabled={loading}
               >
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                Refresh health
+                Refresh
               </Button>
             </div>
           </div>
@@ -422,28 +421,28 @@ export default function PlatformHealthPage() {
           icon={ShieldCheck}
           label="Health Score"
           value={`${healthScore}/100`}
-          hint="A blended score of capacity, suspensions, and access coverage."
+          hint="Capacity, suspension, and access score."
           tone="green"
         />
         <PlatformMetricCard
           icon={Radar}
           label="Active Workspace Share"
           value={activeTenantShare}
-          hint={`${formatNumber(overview.activeTenants || 0)} of ${formatNumber(overview.totalTenants || 0)} tenants are active.`}
+          hint={`${formatNumber(overview.activeTenants || 0)} of ${formatNumber(overview.totalTenants || 0)} workspaces live.`}
           tone="blue"
         />
         <PlatformMetricCard
           icon={ShieldX}
           label="Disabled Operators"
           value={formatNumber(disabledUsers)}
-          hint="ROOTS accounts currently unable to sign in."
+          hint="Accounts blocked from sign-in."
           tone="purple"
         />
         <PlatformMetricCard
           icon={UserCog}
           label="ROOTS Admins"
           value={formatNumber(activeAdmins)}
-          hint="Enabled admin coverage across ROOTS."
+          hint="Enabled admin coverage."
           tone="green"
         />
       </div>
@@ -457,7 +456,7 @@ export default function PlatformHealthPage() {
                   Risk Register
                 </h2>
                 <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                  The biggest issues shaping platform posture right now.
+                  The top signals right now.
                 </p>
               </div>
               <span className="rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--atlas-muted)]">

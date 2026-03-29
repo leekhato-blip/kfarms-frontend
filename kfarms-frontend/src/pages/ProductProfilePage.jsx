@@ -527,7 +527,7 @@ export default function ProductProfilePage() {
                     {HERO_TRUST_POINTS.map((item) => (
                       <div key={item} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
                         <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-                          <CheckCircle2 className="w-4 h-4" />
+                          <Check className="w-4 h-4" strokeWidth={3} />
                         </span>
                         <span>{item}</span>
                       </div>

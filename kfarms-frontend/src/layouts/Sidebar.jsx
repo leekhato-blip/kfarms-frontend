@@ -42,7 +42,7 @@ const SIDEBAR_PULSE_SIGNALS = [
     to: "/platform/apps",
     tone: "from-sky-400 via-blue-400 to-indigo-300",
     glow: "shadow-[0_0_18px_rgba(96,165,250,0.26)]",
-    describe: (value) => `${formatNumber(value)} tracked across ROOTS.`,
+    describe: (value) => `${formatNumber(value)} lanes rooted in ROOTS.`,
   },
   {
     id: "liveApps",
@@ -51,7 +51,7 @@ const SIDEBAR_PULSE_SIGNALS = [
     to: "/platform/apps",
     tone: "from-cyan-400 via-sky-400 to-blue-300",
     glow: "shadow-[0_0_18px_rgba(56,189,248,0.24)]",
-    describe: (value) => `${formatNumber(value)} app lane${Number(value) === 1 ? "" : "s"} are live.`,
+    describe: (value) => `${formatNumber(value)} running live now.`,
   },
   {
     id: "tenants",
@@ -60,7 +60,7 @@ const SIDEBAR_PULSE_SIGNALS = [
     to: "/platform/tenants",
     tone: "from-violet-400 via-fuchsia-400 to-indigo-300",
     glow: "shadow-[0_0_18px_rgba(168,85,247,0.24)]",
-    describe: (value) => `${formatNumber(value)} workspace${Number(value) === 1 ? "" : "s"} are visible.`,
+    describe: (value) => `${formatNumber(value)} workspaces in the network.`,
   },
   {
     id: "activeTenants",
@@ -69,7 +69,7 @@ const SIDEBAR_PULSE_SIGNALS = [
     to: "/platform/health",
     tone: "from-fuchsia-400 via-violet-400 to-pink-300",
     glow: "shadow-[0_0_18px_rgba(217,70,239,0.24)]",
-    describe: (value) => `${formatNumber(value)} workspace${Number(value) === 1 ? "" : "s"} are active now.`,
+    describe: (value) => `${formatNumber(value)} active in the field.`,
   },
   {
     id: "users",
@@ -78,7 +78,7 @@ const SIDEBAR_PULSE_SIGNALS = [
     to: "/platform/users",
     tone: "from-emerald-400 via-green-400 to-teal-300",
     glow: "shadow-[0_0_18px_rgba(52,211,153,0.24)]",
-    describe: (value) => `${formatNumber(value)} operator${Number(value) === 1 ? "" : "s"} are visible.`,
+    describe: (value) => `${formatNumber(value)} operators on deck.`,
   },
   {
     id: "admins",
@@ -87,7 +87,7 @@ const SIDEBAR_PULSE_SIGNALS = [
     to: "/platform/settings",
     tone: "from-lime-300 via-emerald-400 to-green-300",
     glow: "shadow-[0_0_18px_rgba(74,222,128,0.24)]",
-    describe: (value) => `${formatNumber(value)} ROOTS admin${Number(value) === 1 ? "" : "s"} have platform access.`,
+    describe: (value) => `${formatNumber(value)} holding the control plane.`,
   },
 ];
 

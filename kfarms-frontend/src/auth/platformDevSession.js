@@ -3,15 +3,23 @@ import { normalizePlatformRole } from "../utils/platformRoles";
 
 export const PLATFORM_DEV_TOKEN_PREFIX = "platform-dev::";
 export const PLATFORM_DEV_PROFILE_KEY = "roots_platform_dev_profile";
+const PLATFORM_DEMO_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const PLATFORM_DEMO_HOST_SUFFIXES = [".onrender.com"];
 
 function canUseBrowserStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
 }
 
+export function isPlatformDemoHost(hostname) {
+  const normalizedHostname = String(hostname || "").trim().toLowerCase();
+  if (!normalizedHostname) return false;
+  if (PLATFORM_DEMO_HOSTS.has(normalizedHostname)) return true;
+  return PLATFORM_DEMO_HOST_SUFFIXES.some((suffix) => normalizedHostname.endsWith(suffix));
+}
+
 export function canUsePlatformDevSession() {
   if (typeof window === "undefined") return false;
-  const hostname = String(window.location.hostname || "").trim().toLowerCase();
-  return hostname === "localhost" || hostname === "127.0.0.1";
+  return isPlatformDemoHost(window.location.hostname);
 }
 
 function normalizeDemoUser(user) {

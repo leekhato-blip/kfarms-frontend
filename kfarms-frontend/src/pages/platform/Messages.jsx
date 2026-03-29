@@ -27,19 +27,19 @@ const QUICK_REPLY_TEMPLATES = [
     id: "request-context",
     label: "Ask for detail",
     body:
-      "Thanks for reaching out. Please share the exact steps, screenshots, and the time this happened so we can investigate faster.",
+      "Thanks for reaching out. Please share the steps, screenshots, and time so we can investigate fast.",
   },
   {
     id: "confirm-review",
     label: "Confirm review",
     body:
-      "We have reviewed this and escalated it for follow-up. We will update you again after the next check is complete.",
+      "We reviewed this and escalated it. We will update you after the next check.",
   },
   {
     id: "resolve-confirmation",
     label: "Mark resolved",
     body:
-      "This looks resolved from our side. Please confirm everything is working normally in your workspace and we will close the thread.",
+      "This looks resolved on our side. Please confirm it is working so we can close the thread.",
   },
 ];
 
@@ -283,10 +283,10 @@ export default function PlatformMessagesPage() {
               Support Inbox
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.35rem]">
-              Manage tenant conversations in one inbox.
+              Stay close to every tenant signal.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              All workspace support threads appear here. Pro and Enterprise tickets are easy to spot and handle fast.
+              Spot pressure early, reply with speed, and keep the line moving.
             </div>
           </div>
           <Button
@@ -306,28 +306,28 @@ export default function PlatformMessagesPage() {
           icon={MessageSquareText}
           label="Visible Threads"
           value={formatNumber(tickets.length)}
-          hint="Current inbox view after filters."
+          hint="Threads in view."
           tone="purple"
         />
         <PlatformMetricCard
           icon={ShieldAlert}
           label="Priority Lane"
           value={formatNumber(Number(laneCounts.PRIORITY || 0) + Number(laneCounts.DEDICATED || 0))}
-          hint="Pro and Enterprise conversations needing faster handling."
+          hint="High-touch threads."
           tone="amber"
         />
         <PlatformMetricCard
           icon={Sparkles}
           label="Open Threads"
           value={formatNumber(Number(statusCounts.OPEN || 0))}
-          hint="Threads that still need a platform reply."
+          hint="Need a platform reply."
           tone="green"
         />
         <PlatformMetricCard
           icon={LifeBuoy}
           label="Pending Threads"
           value={formatNumber(Number(statusCounts.PENDING || 0))}
-          hint="Conversations waiting on the next reply."
+          hint="Waiting on the next move."
           tone="blue"
         />
       </div>
@@ -341,7 +341,7 @@ export default function PlatformMessagesPage() {
             onKeyDown={(event) => {
               if (event.key === "Enter") handleApplyFilters();
             }}
-            placeholder="Search by ticket, tenant, subject, or email"
+            placeholder="Search ticket, tenant, subject, or email"
             className="atlas-input"
           />
           <select
@@ -405,7 +405,7 @@ export default function PlatformMessagesPage() {
             ) : tickets.length === 0 ? (
               <EmptyState
                 title="No tenant messages"
-                message="No support threads match your current filters."
+                message="No threads match this view."
               />
             ) : (
               <div className="space-y-3">
@@ -480,7 +480,7 @@ export default function PlatformMessagesPage() {
             {!selectedTicket ? (
               <EmptyState
                 title="Choose a thread"
-                message="Pick any tenant message from the left to read the conversation and reply."
+                message="Pick a thread to read and reply."
               />
             ) : (
               <div className="flex h-full min-h-[480px] flex-col">
@@ -606,15 +606,15 @@ export default function PlatformMessagesPage() {
                     rows={4}
                     value={replyBody}
                     onChange={(event) => setReplyBody(event.target.value)}
-                    placeholder="Write the next reply, ask for more detail, or confirm the next step."
+                    placeholder="Write the next clear reply."
                     className="atlas-input min-h-[112px] resize-y"
                   />
                   <div className="mt-2 text-xs text-[var(--atlas-muted)]">
                     {selectedTicket.lane === "DEDICATED"
-                      ? "Enterprise tickets: keep replies clear, specific, and fast."
+                      ? "Enterprise: be clear, specific, and fast."
                       : selectedTicket.lane === "PRIORITY"
-                        ? "Pro tickets: give the next action and expected turnaround."
-                        : "Standard tickets: acknowledge the issue and guide the tenant to the next step."}
+                        ? "Pro: give the next step and timing."
+                        : "Standard: acknowledge and guide the next step."}
                   </div>
                   <div className="mt-3 flex justify-end">
                     <Button

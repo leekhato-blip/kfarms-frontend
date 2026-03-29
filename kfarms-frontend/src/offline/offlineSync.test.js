@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   hasDemoAccountHintMock: vi.fn(() => false),
   requestMock: vi.fn(),
+  isBackendUnavailableErrorMock: vi.fn((error) => !error?.response),
   getOfflineQueueSnapshotMock: vi.fn(() => ({ failed: 0 })),
   listQueuedMutationsMock: vi.fn(),
   markQueuedMutationFailedMock: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("../api/apiClient", () => ({
   default: {
     request: mocks.requestMock,
   },
+  isBackendUnavailableError: mocks.isBackendUnavailableErrorMock,
 }));
 
 vi.mock("../auth/demoMode", () => ({
@@ -38,6 +40,8 @@ describe("offlineSync", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mocks.requestMock.mockReset();
+    mocks.isBackendUnavailableErrorMock.mockReset();
+    mocks.isBackendUnavailableErrorMock.mockImplementation((error) => !error?.response);
     mocks.hasDemoAccountHintMock.mockReset();
     mocks.hasDemoAccountHintMock.mockReturnValue(false);
     mocks.getOfflineQueueSnapshotMock.mockReturnValue({ failed: 0 });
@@ -63,7 +67,7 @@ describe("offlineSync", () => {
     };
   });
 
-  it("keeps paused state on network failure and throttles immediate backend-up retries", async () => {
+  it("retries immediately when the backend comes back after a paused sync", async () => {
     mocks.listQueuedMutationsMock.mockReturnValue([
       {
         requestId: "req-1",
@@ -91,13 +95,38 @@ describe("offlineSync", () => {
 
     const secondResult = await flushOfflineQueue({ source: "backend-up" });
 
-    expect(secondResult).toBe(false);
-    expect(mocks.requestMock).toHaveBeenCalledTimes(1);
-
-    const thirdResult = await flushOfflineQueue({ source: "manual" });
-
-    expect(thirdResult).toBe(true);
+    expect(secondResult).toBe(true);
     expect(mocks.requestMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("treats backend unavailable responses as temporary sync pauses", async () => {
+    mocks.listQueuedMutationsMock.mockReturnValue([
+      {
+        requestId: "req-2",
+        status: "queued",
+        method: "POST",
+        path: "/api/tasks",
+        payload: { title: "Restart aerator" },
+        tenantId: 7,
+      },
+    ]);
+    mocks.isBackendUnavailableErrorMock.mockReturnValue(true);
+    mocks.requestMock.mockRejectedValueOnce({
+      response: {
+        status: 503,
+        headers: {},
+      },
+    });
+
+    const result = await flushOfflineQueue({ source: "manual" });
+
+    expect(result).toBe(false);
+    expect(mocks.markQueuedMutationQueuedMock).toHaveBeenCalledWith("req-2");
+    expect(mocks.markQueuedMutationFailedMock).not.toHaveBeenCalled();
+    expect(mocks.setOfflineSyncSnapshotMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "paused",
+      remaining: 1,
+    });
   });
 
   it("skips replay entirely while demo mode is active", async () => {

@@ -51,42 +51,42 @@ const METRIC_CONFIG = [
     icon: Blocks,
     label: "Apps In Portfolio",
     tone: "blue",
-    note: "Products tracked in ROOTS",
+    note: "Apps in ROOTS",
   },
   {
     key: "liveApps",
     icon: Rocket,
     label: "Live Apps",
     tone: "blue",
-    note: "Currently serving live workspaces",
+    note: "Serving live workspaces",
   },
   {
     key: "totalTenants",
     icon: Building2,
     label: "Total Tenants",
     tone: "purple",
-    note: "Customer workspaces under management",
+    note: "Managed workspaces",
   },
   {
     key: "activeTenants",
     icon: Activity,
     label: "Active Tenants",
     tone: "purple",
-    note: "Workspaces currently active",
+    note: "Active right now",
   },
   {
     key: "totalUsers",
     icon: Users,
     label: "Total Users",
     tone: "green",
-    note: "Operators visible across ROOTS",
+    note: "Visible operators",
   },
   {
     key: "platformAdmins",
     icon: ShieldCheck,
     label: "ROOTS Admins",
     tone: "green",
-    note: "Admins with full platform access",
+    note: "Full-access admins",
   },
 ];
 
@@ -578,7 +578,7 @@ export default function PlatformDashboardPage() {
     if (platformDataMode === "demo") {
       return {
         label: "Demo",
-        detail: "Demo signal feed",
+        detail: "ROOTS demo pulse",
         classes: "border-blue-300/55 bg-blue-50/92 text-blue-700 shadow-[0_10px_22px_rgba(59,130,246,0.08)] dark:border-blue-300/18 dark:bg-blue-400/10 dark:text-blue-100",
       };
     }
@@ -586,14 +586,14 @@ export default function PlatformDashboardPage() {
     if (overviewError || portfolioError || tenantsError || usersError) {
       return {
         label: "Snapshot",
-        detail: "Fallback signal surface",
+        detail: "Saved ROOTS pulse",
         classes: "border-amber-300/55 bg-amber-50/94 text-amber-700 shadow-[0_10px_22px_rgba(245,158,11,0.08)] dark:border-amber-300/18 dark:bg-amber-400/10 dark:text-amber-100",
       };
     }
 
     return {
       label: "Live",
-      detail: "Synchronized to platform data",
+      detail: "Live ROOTS pulse",
       classes: "border-emerald-300/55 bg-emerald-50/92 text-emerald-700 shadow-[0_10px_22px_rgba(16,185,129,0.08)] dark:border-emerald-300/18 dark:bg-emerald-400/10 dark:text-emerald-100",
     };
   }, [overviewError, platformDataMode, portfolioError, tenantsError, usersError]);
@@ -603,14 +603,14 @@ export default function PlatformDashboardPage() {
         id: "workspaces",
         label: "Workspaces",
         value: `${formatNumber(displayMetrics.activeTenants)}/${formatNumber(displayMetrics.totalTenants)}`,
-        detail: "Currently active across ROOTS",
+        detail: "Live across the network",
         tone: "violet",
       },
       {
         id: "operators",
         label: "Operators",
         value: formatNumber(displayMetrics.totalUsers),
-        detail: `${formatNumber(displayMetrics.platformAdmins)} admins in command lanes`,
+        detail: `${formatNumber(displayMetrics.platformAdmins)} on the control plane`,
         tone: "blue",
       },
       {
@@ -619,7 +619,7 @@ export default function PlatformDashboardPage() {
         value: formatCompactCurrencyValue(portfolioRevenue, portfolioRevenueCurrency, {
           maximumFractionDigits: 1,
         }),
-        detail: `${formatNumber(displayMetrics.liveApps)} live app lane${Number(displayMetrics.liveApps) === 1 ? "" : "s"} contributing`,
+        detail: `${formatNumber(displayMetrics.liveApps)} live lane${Number(displayMetrics.liveApps) === 1 ? "" : "s"} driving it`,
         tone: "emerald",
       },
     ],
@@ -642,7 +642,7 @@ export default function PlatformDashboardPage() {
       !platformLimitedAccess &&
       (overviewError || portfolioError || tenantsError || usersError)
     ) {
-      notify("Some dashboard sections are unavailable. Showing partial live data.", "info");
+      notify("Some dashboard data is unavailable. Showing what we have.", "info");
     }
   }, [
     notify,
@@ -688,35 +688,35 @@ export default function PlatformDashboardPage() {
                 Platform Snapshot
               </div>
               <h1 className="mt-5 max-w-xl font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.6rem]">
-                Manage apps, workspaces, and operators from one ROOTS view.
+                See the ROOTS network move from one control room.
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--atlas-muted)] md:text-[15px]">
-                Track revenue, workspace health, access coverage, and product status in one place.
+                Track growth, risk, access, and uptime in one live pulse.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              <div className="col-span-2 rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-4 md:col-span-1">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+            <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+              <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-3 text-center md:p-4 md:text-left">
+                <div className="text-[9px] uppercase tracking-[0.14em] text-[var(--atlas-muted)] md:text-[10px] md:tracking-[0.2em]">
                   Live Apps
                 </div>
-                <div className="mt-2 text-2xl font-semibold text-[var(--atlas-text-strong)]">
+                <div className="mt-1.5 text-[1.7rem] font-semibold leading-none text-[var(--atlas-text-strong)] md:mt-2 md:text-2xl">
                   {formatNumber(metrics.liveApps)}
                 </div>
               </div>
-              <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-4">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+              <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-3 text-center md:p-4 md:text-left">
+                <div className="text-[9px] uppercase tracking-[0.14em] text-[var(--atlas-muted)] md:text-[10px] md:tracking-[0.2em]">
                   Workspaces
                 </div>
-                <div className="mt-2 text-2xl font-semibold text-[var(--atlas-text-strong)]">
+                <div className="mt-1.5 text-[1.7rem] font-semibold leading-none text-[var(--atlas-text-strong)] md:mt-2 md:text-2xl">
                   {formatNumber(metrics.totalTenants)}
                 </div>
               </div>
-              <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-4">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
+              <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-3 text-center md:p-4 md:text-left">
+                <div className="text-[9px] uppercase tracking-[0.14em] text-[var(--atlas-muted)] md:text-[10px] md:tracking-[0.2em]">
                   Operators
                 </div>
-                <div className="mt-2 text-2xl font-semibold text-[var(--atlas-text-strong)]">
+                <div className="mt-1.5 text-[1.7rem] font-semibold leading-none text-[var(--atlas-text-strong)] md:mt-2 md:text-2xl">
                   {formatNumber(metrics.totalUsers)}
                 </div>
               </div>
@@ -752,7 +752,7 @@ export default function PlatformDashboardPage() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="relative z-10 mt-4 grid grid-cols-3 gap-2">
             {liveSignalLanes.map((lane) => {
               const laneColors = signalLaneColors(lane.tone);
               const isActive = activeSignalLane?.id === lane.id;
@@ -763,14 +763,14 @@ export default function PlatformDashboardPage() {
                   type="button"
                   onClick={() => setActiveSignalLaneId(lane.id)}
                   onFocus={() => setActiveSignalLaneId(lane.id)}
-                  className={`rounded-[1rem] border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--atlas-surface)] ${isActive ? laneColors.tint : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 text-[var(--atlas-text)] hover:border-[color:var(--atlas-border-strong)]"}`}
+                  className={`rounded-[1rem] border px-2 py-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--atlas-surface)] sm:px-3 sm:py-3 sm:text-left ${isActive ? laneColors.tint : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 text-[var(--atlas-text)] hover:border-[color:var(--atlas-border-strong)]"}`}
                 >
-                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.16em]">
+                  <div className="flex min-h-[3.5rem] flex-col items-center justify-center gap-1.5 text-[9px] uppercase tracking-[0.12em] sm:min-h-0 sm:flex-row sm:justify-start sm:gap-2 sm:text-[10px] sm:tracking-[0.16em]">
                     <span
                       className="h-2 w-2 rounded-full"
                       style={{ backgroundColor: signalLaneColors(lane.tone).stroke }}
                     />
-                    <span>{lane.label}</span>
+                    <span className="leading-tight">{lane.label}</span>
                   </div>
                 </button>
               );
@@ -833,7 +833,7 @@ export default function PlatformDashboardPage() {
         loading={portfolioLoading}
         compact
         title="Platform analytics"
-        subtitle="Revenue, footprint, and lifecycle charts for the ROOTS platform."
+        subtitle="Revenue, reach, and rollout across ROOTS."
       />
 
       <section>
@@ -841,10 +841,10 @@ export default function PlatformDashboardPage() {
           <div className="border-b border-[color:var(--atlas-border)] px-4 py-3">
             <div className="flex items-center gap-2">
               <Blocks size={16} className="text-[var(--atlas-muted)]" />
-              <h3 className="font-header text-xl font-semibold text-[var(--atlas-text-strong)]">Application Portfolio</h3>
+              <h3 className="font-header text-xl font-semibold text-[var(--atlas-text-strong)]">ROOTS app lanes</h3>
             </div>
             <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-              Live and planned apps across ROOTS.
+              Live lanes and what is coming next.
             </p>
           </div>
 

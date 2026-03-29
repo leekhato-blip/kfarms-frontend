@@ -18,6 +18,13 @@ const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const PING_PATH = "/auth/login";
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
+const BACKEND_UNAVAILABLE_STATUS_CODES = new Set([502, 503, 504]);
+const BACKEND_UNAVAILABLE_ERROR_CODES = new Set([
+  "ECONNABORTED",
+  "ECONNREFUSED",
+  "ERR_NETWORK",
+  "ETIMEDOUT",
+]);
 const AUTH_PUBLIC_401_PATHS = new Set([
   "/api/auth/login",
   "/api/auth/signup",
@@ -116,14 +123,30 @@ function getHeaderValue(headers, key) {
   return headers[key] || headers[String(key).toLowerCase()] || headers[String(key).toUpperCase()] || "";
 }
 
+function getRenderRoutingHeader(headers) {
+  return String(getHeaderValue(headers, "x-render-routing") || "").toLowerCase();
+}
+
+export function isBackendUnavailableResponse(response) {
+  const status = Number(response?.status || 0);
+  if (!Number.isFinite(status) || status <= 0) {
+    return false;
+  }
+
+  if (getRenderRoutingHeader(response?.headers).includes("no-server")) {
+    return true;
+  }
+
+  return BACKEND_UNAVAILABLE_STATUS_CODES.has(status);
+}
+
 function isBackendReachableResponse(response) {
   const status = Number(response?.status || 0);
   if (!Number.isFinite(status) || status <= 0) {
     return false;
   }
 
-  const renderRouting = String(getHeaderValue(response?.headers, "x-render-routing") || "").toLowerCase();
-  if (renderRouting.includes("no-server")) {
+  if (isBackendUnavailableResponse(response)) {
     return false;
   }
 
@@ -149,7 +172,29 @@ function isNetworkError(error) {
     return true;
   }
 
-  return error.code === "ERR_NETWORK" || error.message === "Network Error";
+  const code = String(error.code || "").toUpperCase();
+  const message = String(error.message || "").toLowerCase();
+
+  return (
+    BACKEND_UNAVAILABLE_ERROR_CODES.has(code) ||
+    message.includes("network error") ||
+    message.includes("connection refused") ||
+    message.includes("failed to fetch") ||
+    message.includes("load failed") ||
+    message.includes("timeout")
+  );
+}
+
+export function isBackendUnavailableError(error) {
+  if (!error || isCanceledError(error)) {
+    return false;
+  }
+
+  if (isBackendUnavailableResponse(error.response)) {
+    return true;
+  }
+
+  return isNetworkError(error);
 }
 
 function isGetRequest(config) {
@@ -196,6 +241,13 @@ function getRequestStartedAt(config) {
   return Number.isFinite(startedAt) && startedAt > 0 ? startedAt : 0;
 }
 
+export function getBackendConnectionSnapshot() {
+  return {
+    backendDown,
+    lastBackendConfirmedAt,
+  };
+}
+
 function confirmBackendUp() {
   lastBackendConfirmedAt = Date.now();
   if (!backendDown) return;
@@ -224,8 +276,15 @@ function stopPing() {
   pingTimer = null;
 }
 
-export async function probeBackendConnection({ silent = false } = {}) {
-  if (typeof window !== "undefined" && window.navigator?.onLine === false) {
+export async function probeBackendConnection({
+  silent = false,
+  bypassBrowserCheck = false,
+} = {}) {
+  if (
+    !bypassBrowserCheck &&
+    typeof window !== "undefined" &&
+    window.navigator?.onLine === false
+  ) {
     if (!silent) {
       markBackendDown({ _kfRequestStartedAt: Date.now() });
     }
@@ -247,7 +306,7 @@ export async function probeBackendConnection({ silent = false } = {}) {
     }
     return false;
   } catch (error) {
-    if (!silent && isNetworkError(error)) {
+    if (!silent && isBackendUnavailableError(error)) {
       markBackendDown({ _kfRequestStartedAt: Date.now() });
     }
     return false;
@@ -258,6 +317,7 @@ export async function waitForBackendConnection({
   timeoutMs = 180000,
   intervalMs = 5000,
   silent = false,
+  bypassBrowserCheck = false,
 } = {}) {
   if (backendWaitPromise) {
     return backendWaitPromise;
@@ -267,7 +327,7 @@ export async function waitForBackendConnection({
     const startedAt = Date.now();
 
     while (Date.now() - startedAt < timeoutMs) {
-      const reachable = await probeBackendConnection({ silent });
+      const reachable = await probeBackendConnection({ silent, bypassBrowserCheck });
       if (reachable) {
         return true;
       }
@@ -291,7 +351,7 @@ function startPing() {
   if (pingTimer) return;
 
   const runProbe = () => {
-    void probeBackendConnection({ silent: true });
+    void probeBackendConnection({ silent: true, bypassBrowserCheck: true });
   };
 
   pingTimer = setInterval(runProbe, 3000);
@@ -394,7 +454,9 @@ apiClient.interceptors.response.use(
       });
     }
 
-    if (!isOfflineSyntheticResponse(response)) {
+    if (isBackendUnavailableResponse(response)) {
+      markBackendDown(response.config);
+    } else if (!isOfflineSyntheticResponse(response)) {
       confirmBackendUp();
     }
     return response;
@@ -406,7 +468,7 @@ apiClient.interceptors.response.use(
     const requestPath = resolveRequestPath(error.config);
 
     // If we received any HTTP response, the backend is reachable again.
-    if (status) {
+    if (status && !isBackendUnavailableResponse(error.response)) {
       confirmBackendUp();
     }
 
@@ -441,11 +503,11 @@ apiClient.interceptors.response.use(
       emitDemoAccountBlocked(message || DEMO_ACCOUNT_BLOCKED_MESSAGE);
     }
 
-    if (isNetworkError(error)) {
+    if (isBackendUnavailableError(error)) {
       markBackendDown(error.config);
     }
 
-    if (isNetworkError(error) && isGetRequest(error.config)) {
+    if (isBackendUnavailableError(error) && isGetRequest(error.config)) {
       const cachedData = getCachedApiResponse({
         tenantId: error.config?.headers?.["X-Tenant-Id"],
         path: requestPath,
@@ -465,7 +527,11 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (isNetworkError(error) && isMutationRequest(error.config) && error.config?.offline?.enabled) {
+    if (
+      isBackendUnavailableError(error) &&
+      isMutationRequest(error.config) &&
+      error.config?.offline?.enabled
+    ) {
       return Promise.resolve(createQueuedAxiosResponse(error.config, requestPath));
     }
 

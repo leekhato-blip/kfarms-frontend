@@ -373,25 +373,25 @@ export default function PlatformSettingsPage() {
   const quickLinks = [
     {
       title: "Access control",
-      detail: "Review operator roles, admin coverage, and account state.",
+      detail: "Review roles, admin cover, and account state.",
       to: "/platform/users",
       icon: Users,
     },
     {
       title: "Tenant posture",
-      detail: "Inspect workspace lifecycle, plan state, and suspension posture.",
+      detail: "Review plan, status, and suspension state.",
       to: "/platform/tenants",
       icon: Building2,
     },
     {
       title: "Platform health",
-      detail: "Watch platform health, risk, and capacity.",
+      detail: "Track risk, health, and capacity.",
       to: "/platform/health",
       icon: Activity,
     },
     {
       title: "App portfolio",
-      detail: "See apps, revenue visibility, and product status.",
+      detail: "Track apps, revenue, and status.",
       to: "/platform/apps",
       icon: Blocks,
     },
@@ -405,7 +405,7 @@ export default function PlatformSettingsPage() {
     window.setTimeout(() => {
       setSavingPlatform(false);
       notify(
-        "Platform settings saved locally for this session.",
+        "Settings saved for this session.",
         "success",
       );
     }, 220);
@@ -418,7 +418,7 @@ export default function PlatformSettingsPage() {
     setAccountSettings(nextSettings);
     window.setTimeout(() => {
       setSavingAccount(false);
-      notify("Account preferences saved locally for this admin session.", "success");
+      notify("Account preferences saved for this session.", "success");
     }, 220);
   }
 
@@ -428,7 +428,7 @@ export default function PlatformSettingsPage() {
     );
     setPlatformSettings(nextSettings);
     writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
-    notify("Platform settings reset to the default baseline.", "info");
+    notify("Platform settings reset.", "info");
   }
 
   function resetAccountSettings() {
@@ -437,7 +437,7 @@ export default function PlatformSettingsPage() {
     );
     setAccountSettings(nextSettings);
     writeStoredState(PLATFORM_ACCOUNT_SETTINGS_KEY, nextSettings);
-    notify("Account preferences reset to their default admin profile.", "info");
+    notify("Account preferences reset.", "info");
   }
 
   function saveUserProfile() {
@@ -483,10 +483,10 @@ export default function PlatformSettingsPage() {
               Platform Settings
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.3rem]">
-              Manage how ROOTS works for admins.
+              Tune the ROOTS control plane.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Update platform defaults, safeguards, and your account preferences.
+              Shape defaults, safety rails, and your admin rhythm.
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={loadOverview} disabled={loading}>
@@ -507,7 +507,7 @@ export default function PlatformSettingsPage() {
           icon={ShieldCheck}
           label="ROOTS Admins"
           value={formatNumber(overview.platformAdmins || 0)}
-          hint="Accounts with full platform access."
+          hint="Full-access accounts."
           tone="green"
         />
         <PlatformMetricCard
@@ -521,14 +521,14 @@ export default function PlatformSettingsPage() {
           icon={Users}
           label="Total Operators"
           value={formatNumber(overview.totalUsers || 0)}
-          hint="Platform-visible users across ROOTS."
+          hint="Users across ROOTS."
           tone="purple"
         />
         <PlatformMetricCard
           icon={UserCircle2}
           label="Current Account"
           value={getPlatformRoleLabel(currentAccessTier)}
-          hint={profileLoading ? "Loading current admin profile..." : currentUser?.email || "Admin session"}
+          hint={profileLoading ? "Loading profile..." : currentUser?.email || "Admin session"}
           tone="blue"
         />
       </div>
@@ -540,7 +540,7 @@ export default function PlatformSettingsPage() {
               Settings sections
             </div>
             <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
-              Work through one platform settings area at a time instead of scanning the full page.
+              Work one settings area at a time.
             </div>
           </div>
           <div className="rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--atlas-text-strong)]">
@@ -609,7 +609,7 @@ export default function PlatformSettingsPage() {
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <SettingsField
                 label="Platform identity"
-                hint="Shown as the main platform name."
+                hint="Shown as the platform name."
               >
                 <input
                   type="text"
@@ -627,7 +627,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Operations email"
-                hint="Contact mailbox for platform issues and admin escalation."
+                hint="Mailbox for ops and escalations."
               >
                 <input
                   type="email"
@@ -645,7 +645,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Platform timezone"
-                hint="Shared timezone for ROOTS timestamps and operational reviews."
+                hint="Timezone for platform time."
               >
                 <select
                   value={platformSettings.timezone}
@@ -667,7 +667,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Release channel"
-                hint="How quickly new platform changes spread through ROOTS."
+                hint="Controls rollout speed."
               >
                 <select
                   value={platformSettings.releaseChannel}
@@ -689,7 +689,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Audit retention"
-                hint="How long platform decisions should stay in the audit trail."
+                hint="How long audit history stays."
               >
                 <select
                   value={platformSettings.auditRetentionDays}
@@ -713,7 +713,7 @@ export default function PlatformSettingsPage() {
             <div className="mt-5 space-y-3">
               <ToggleRow
                 label="Admin change alerts"
-                hint="Notify platform operators when admin roles or sign-in access are changed across ROOTS."
+                hint="Alert admins when access changes."
                 checked={platformSettings.adminChangeAlerts}
                 onChange={(checked) =>
                   setPlatformSettings((current) => ({
@@ -723,8 +723,8 @@ export default function PlatformSettingsPage() {
                 }
               />
               <ToggleRow
-                label="Revenue visibility across ROOTS"
-                hint="Keep portfolio revenue and commercial rollups visible in ROOTS analytics."
+                label="Revenue visibility"
+                hint="Show revenue in platform analytics."
                 checked={platformSettings.revenueVisibility}
                 onChange={(checked) =>
                   setPlatformSettings((current) => ({
@@ -735,7 +735,7 @@ export default function PlatformSettingsPage() {
               />
               <ToggleRow
                 label="High-risk action confirmation"
-                hint="Require explicit confirmation before high-impact ROOTS actions."
+                hint="Confirm high-impact actions."
                 checked={platformSettings.riskyActionConfirmation}
                 onChange={(checked) =>
                   setPlatformSettings((current) => ({
@@ -746,7 +746,7 @@ export default function PlatformSettingsPage() {
               />
               <ToggleRow
                 label="Maintenance banner"
-                hint="Prepare a platform-wide maintenance message for admins."
+                hint="Show a platform-wide maintenance note."
                 checked={platformSettings.maintenanceBannerEnabled}
                 onChange={(checked) =>
                   setPlatformSettings((current) => ({
@@ -816,7 +816,7 @@ export default function PlatformSettingsPage() {
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <SettingsField
                 label="Display name"
-                hint="How this account should appear around ROOTS."
+                hint="How this account appears in ROOTS."
               >
                 <input
                   type="text"
@@ -834,7 +834,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Phone number"
-                hint="A direct number for platform coordination."
+                hint="Direct line for coordination."
               >
                 <input
                   type="text"
@@ -852,7 +852,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Work title"
-                hint="A short descriptor for your platform responsibility."
+                hint="Your role in the platform."
               >
                 <input
                   type="text"
@@ -870,7 +870,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Account email"
-                hint="Email remains managed by platform authentication."
+                hint="Managed by platform sign-in."
               >
                 <input
                   type="text"
@@ -884,7 +884,7 @@ export default function PlatformSettingsPage() {
               <div className="md:col-span-2">
                 <SettingsField
                   label="Short bio"
-                  hint="A quick note about what you handle across ROOTS."
+                  hint="A quick note on what you own."
                 >
                   <textarea
                     rows={3}
@@ -904,7 +904,7 @@ export default function PlatformSettingsPage() {
 
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-4 py-3">
               <div className="text-sm leading-6 text-[var(--atlas-muted)]">
-                Profile changes update the visible ROOTS shell on this device right away.
+                Profile changes update this device right away.
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -938,13 +938,13 @@ export default function PlatformSettingsPage() {
               Preferences for the admin account guiding this session
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
-              Personalize how you move through ROOTS without changing product-specific settings inside KFarms or any future app.
+              Personalize ROOTS without changing app-level settings.
             </p>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <SettingsField
                 label="Start page"
-                hint="Which ROOTS view should feel like home when this account begins work."
+                hint="Your default ROOTS view."
               >
                 <select
                   value={accountSettings.startPage}
@@ -966,7 +966,7 @@ export default function PlatformSettingsPage() {
 
               <SettingsField
                 label="Timestamp timezone"
-                hint="How this account prefers to read ROOTS timestamps and reviews."
+                hint="How you read time in ROOTS."
               >
                 <select
                   value={accountSettings.timezone}
@@ -990,7 +990,7 @@ export default function PlatformSettingsPage() {
             <div className="mt-5 space-y-3">
               <ToggleRow
                 label="Email updates"
-                hint="Receive ROOTS digest and action summaries by email."
+                hint="Get email summaries."
                 checked={accountSettings.emailUpdates}
                 onChange={(checked) =>
                   setAccountSettings((current) => ({
@@ -1001,7 +1001,7 @@ export default function PlatformSettingsPage() {
               />
               <ToggleRow
                 label="Security alerts"
-                hint="Prioritize warnings about access changes, login risk, and admin coverage."
+                hint="Prioritize access and login warnings."
                 checked={accountSettings.securityAlerts}
                 onChange={(checked) =>
                   setAccountSettings((current) => ({
@@ -1012,7 +1012,7 @@ export default function PlatformSettingsPage() {
               />
               <ToggleRow
                 label="Weekly digest"
-                hint="Receive a summary of workspace activity and ROOTS posture once a week."
+                hint="Get a weekly platform summary."
                 checked={accountSettings.weeklyDigest}
                 onChange={(checked) =>
                   setAccountSettings((current) => ({
@@ -1023,7 +1023,7 @@ export default function PlatformSettingsPage() {
               />
               <ToggleRow
                 label="Compact navigation"
-                hint="Favor denser navigation behavior for faster admin work."
+                hint="Use denser navigation."
                 checked={accountSettings.compactNavigation}
                 onChange={(checked) =>
                   setAccountSettings((current) => ({
@@ -1034,7 +1034,7 @@ export default function PlatformSettingsPage() {
               />
               <ToggleRow
                 label="Command hints"
-                hint="Keep keyboard and command-palette affordances visible inside ROOTS."
+                hint="Keep keyboard hints visible."
                 checked={accountSettings.commandHints}
                 onChange={(checked) =>
                   setAccountSettings((current) => ({

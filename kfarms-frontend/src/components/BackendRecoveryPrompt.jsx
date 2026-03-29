@@ -1,13 +1,21 @@
 import React from "react";
-import { AlertTriangle, CheckCircle2, X } from "lucide-react";
-import { probeBackendConnection } from "../api/apiClient";
+import { AlertTriangle, Check, X } from "lucide-react";
+import {
+  getBackendConnectionSnapshot,
+  probeBackendConnection,
+} from "../api/apiClient";
 import {
   getOfflineQueueSnapshot,
   getOfflineSyncSnapshot,
 } from "../offline/offlineStore";
 
+const AUTO_PROBE_INTERVAL_MS = 5000;
+const RECOVERY_HIDE_DELAY_MS = 6000;
+
 export default function BackendRecoveryPrompt() {
-  const [backendDown, setBackendDown] = React.useState(false);
+  const [backendDown, setBackendDown] = React.useState(
+    () => getBackendConnectionSnapshot().backendDown,
+  );
   const [browserOffline, setBrowserOffline] = React.useState(
     () => typeof window !== "undefined" && !window.navigator.onLine,
   );
@@ -17,30 +25,63 @@ export default function BackendRecoveryPrompt() {
   const [queueSnapshot, setQueueSnapshot] = React.useState(() => getOfflineQueueSnapshot());
   const [syncSnapshot, setSyncSnapshot] = React.useState(() => getOfflineSyncSnapshot());
   const hideRecoveredTimerRef = React.useRef(null);
+  const probingConnectionRef = React.useRef(false);
 
-  const requestBackendProbe = React.useCallback(async ({ triggerSync = false } = {}) => {
-    if (typeof window === "undefined") return false;
+  const clearRecoveredTimer = React.useCallback(() => {
+    if (!hideRecoveredTimerRef.current) return;
+    clearTimeout(hideRecoveredTimerRef.current);
+    hideRecoveredTimerRef.current = null;
+  }, []);
 
+  const showRecoveredBanner = React.useCallback(() => {
+    clearRecoveredTimer();
+    setShowRecovered(true);
+    setDismissed(false);
+    hideRecoveredTimerRef.current = setTimeout(() => {
+      setShowRecovered(false);
+    }, RECOVERY_HIDE_DELAY_MS);
+  }, [clearRecoveredTimer]);
+
+  const queuedChanges = Number(queueSnapshot.total || 0);
+  const failedChanges = Number(queueSnapshot.failed || 0);
+  const syncingChanges = syncSnapshot.status === "syncing";
+  const pausedSync = syncSnapshot.status === "paused";
+  const hasConnectionIssue = browserOffline || backendDown || pausedSync;
+  const shouldShowQueuePrompt = !hasConnectionIssue && queuedChanges > 0;
+  const onLoginPage =
+    typeof window !== "undefined" && window.location.pathname === "/auth/login";
+
+  const requestBackendProbe = React.useCallback(async ({
+    triggerSync = false,
+    bypassBrowserCheck = false,
+  } = {}) => {
+    if (typeof window === "undefined" || probingConnectionRef.current) return false;
+
+    probingConnectionRef.current = true;
     setProbingConnection(true);
     try {
-      const reachable = await probeBackendConnection();
+      const reachable = await probeBackendConnection({
+        bypassBrowserCheck,
+      });
+      if (reachable) {
+        setBrowserOffline(false);
+        setBackendDown(false);
+        if (hasConnectionIssue) {
+          showRecoveredBanner();
+        }
+      }
       if (reachable && triggerSync) {
         window.dispatchEvent(new Event("kf-offline-sync-requested"));
       }
       return reachable;
     } finally {
+      probingConnectionRef.current = false;
       setProbingConnection(false);
     }
-  }, []);
+  }, [hasConnectionIssue, showRecoveredBanner]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
-
-    const clearRecoveredTimer = () => {
-      if (!hideRecoveredTimerRef.current) return;
-      clearTimeout(hideRecoveredTimerRef.current);
-      hideRecoveredTimerRef.current = null;
-    };
 
     const handleDown = () => {
       clearRecoveredTimer();
@@ -50,22 +91,23 @@ export default function BackendRecoveryPrompt() {
     };
 
     const handleUp = () => {
-      clearRecoveredTimer();
+      setBrowserOffline(false);
       setBackendDown(false);
-      setShowRecovered(true);
-      setDismissed(false);
-      hideRecoveredTimerRef.current = setTimeout(() => {
-        setShowRecovered(false);
-      }, 6000);
+      showRecoveredBanner();
     };
 
     const handleBrowserOffline = () => {
+      clearRecoveredTimer();
+      setShowRecovered(false);
       setBrowserOffline(true);
-      handleDown();
+      setDismissed(false);
     };
     const handleBrowserOnline = () => {
       setBrowserOffline(false);
-      void requestBackendProbe();
+      void requestBackendProbe({
+        triggerSync: true,
+        bypassBrowserCheck: true,
+      });
     };
     const handleQueueUpdated = (event) => {
       setQueueSnapshot(event?.detail || getOfflineQueueSnapshot());
@@ -83,7 +125,8 @@ export default function BackendRecoveryPrompt() {
 
     if (!window.navigator.onLine) {
       setBrowserOffline(true);
-      handleDown();
+      setShowRecovered(false);
+      setDismissed(false);
     }
 
     return () => {
@@ -95,21 +138,33 @@ export default function BackendRecoveryPrompt() {
       window.removeEventListener("kf-offline-queue-updated", handleQueueUpdated);
       window.removeEventListener("kf-offline-sync-state", handleSyncUpdated);
     };
-  }, [requestBackendProbe]);
+  }, [clearRecoveredTimer, requestBackendProbe, showRecoveredBanner]);
 
-  const queuedChanges = Number(queueSnapshot.total || 0);
-  const failedChanges = Number(queueSnapshot.failed || 0);
-  const syncingChanges = syncSnapshot.status === "syncing";
-  const pausedSync = syncSnapshot.status === "paused";
-  const hasConnectionIssue = browserOffline || backendDown || pausedSync;
-  const shouldShowQueuePrompt = !hasConnectionIssue && queuedChanges > 0;
-  const onLoginPage =
-    typeof window !== "undefined" && window.location.pathname === "/auth/login";
+  React.useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    if (!hasConnectionIssue) return undefined;
+
+    const timer = window.setInterval(() => {
+      void requestBackendProbe({
+        triggerSync: true,
+        bypassBrowserCheck: true,
+      });
+    }, AUTO_PROBE_INTERVAL_MS);
+
+    void requestBackendProbe({
+      triggerSync: true,
+      bypassBrowserCheck: true,
+    });
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [hasConnectionIssue, requestBackendProbe]);
 
   if ((!hasConnectionIssue && !showRecovered && !shouldShowQueuePrompt) || dismissed) return null;
 
   const title = browserOffline
-    ? "Working offline"
+    ? "No internet connection"
     : backendDown || pausedSync
       ? "Connection interrupted"
     : syncingChanges
@@ -123,7 +178,7 @@ export default function BackendRecoveryPrompt() {
   const description = browserOffline
     ? queuedChanges > 0
       ? `${queuedChanges} change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} saved locally. Keep working and we will sync automatically when the server is back.`
-      : "You can still review cached data and save basic work locally until the server is back."
+      : "Your internet connection looks unavailable right now. We will keep checking automatically and reconnect as soon as it returns."
     : backendDown || pausedSync
       ? queuedChanges > 0
         ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} waiting while we reconnect to the server.`
@@ -136,7 +191,7 @@ export default function BackendRecoveryPrompt() {
         ? `${failedChanges} saved change${failedChanges === 1 ? "" : "s"} could not sync yet. You can try again now.`
         : queuedChanges > 0
           ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} queued and ready to sync.`
-          : "You’re back online. Data should refresh automatically.";
+          : "Service is back online. We are syncing and refreshing automatically.";
 
   return (
     <div className="fixed inset-x-4 top-4 z-[12000] mx-auto max-w-md">
@@ -162,7 +217,7 @@ export default function BackendRecoveryPrompt() {
             {hasConnectionIssue || failedChanges > 0 ? (
               <AlertTriangle className="h-4 w-4" />
             ) : (
-              <CheckCircle2 className="h-4 w-4" />
+              <Check className="h-4 w-4" strokeWidth={3} />
             )}
           </div>
 
@@ -178,13 +233,11 @@ export default function BackendRecoveryPrompt() {
                   disabled={probingConnection || syncingChanges}
                   className="rounded-md border border-current/30 bg-transparent px-3 py-1.5 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/10"
                   onClick={async () => {
-                    if (browserOffline) {
-                      window.location.reload();
-                      return;
-                    }
-
                     if (hasConnectionIssue) {
-                      await requestBackendProbe({ triggerSync: true });
+                      await requestBackendProbe({
+                        triggerSync: true,
+                        bypassBrowserCheck: true,
+                      });
                       return;
                     }
 

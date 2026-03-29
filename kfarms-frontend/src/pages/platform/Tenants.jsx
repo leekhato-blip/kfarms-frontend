@@ -499,10 +499,10 @@ export default function PlatformTenantsPage() {
               Tenant Workspaces
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.35rem]">
-              View every workspace from one place.
+              Watch every ROOTS workspace take shape.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Review plans, team limits, and workspace status across ROOTS.
+              Plans, team limits, and live posture stay in one lane.
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={fetchTenants}>
@@ -517,28 +517,28 @@ export default function PlatformTenantsPage() {
           icon={Building2}
           label="Filtered Tenants"
           value={formatNumber(totalItems)}
-          hint="Based on the current search and plan filters."
+          hint="Matches current filters."
           tone="purple"
         />
         <PlatformMetricCard
           icon={Radar}
           label="Active On Page"
           value={formatNumber(activeTenantsOnPage)}
-          hint="Workspaces currently in active service."
+          hint="Serving now."
           tone="blue"
         />
         <PlatformMetricCard
           icon={Users}
           label="Team Limit Watch"
           value={formatNumber(pressuredTenantsOnPage)}
-          hint="Tenants approaching their team limit."
+          hint="Near team limit."
           tone="green"
         />
         <PlatformMetricCard
           icon={ShieldAlert}
           label="Selected Scope"
           value={selectedSeatUsage.label}
-          hint={`${selectedTenantName} team members in use right now.`}
+          hint={`${selectedTenantName} seats in use.`}
           tone="blue"
         />
       </div>
@@ -562,7 +562,7 @@ export default function PlatformTenantsPage() {
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search name, slug, owner email"
+                  placeholder="Search name, slug, or owner"
                   className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] pl-9 pr-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
                 />
               </label>
@@ -805,14 +805,14 @@ export default function PlatformTenantsPage() {
                 );
               }}
               emptyTitle="No tenants found"
-              emptyMessage="Try a broader search or clear filters."
+              emptyMessage="Try a wider search."
             />
           </div>
 
           {!loading && tenants.length === 0 && !error && (
             <EmptyState
               title="No tenants found"
-              message="No organizations match your current filters."
+              message="No workspaces match this filter."
             />
           )}
 
@@ -882,7 +882,7 @@ export default function PlatformTenantsPage() {
                 </h2>
                 {selectedTenantId ? (
                   <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                    Select a workspace to review details, members, and controls.
+                    Review members, plan, and controls.
                   </div>
                 ) : null}
               </div>
@@ -920,7 +920,7 @@ export default function PlatformTenantsPage() {
             {!selectedTenantId && (
               <EmptyState
                 title="Select a tenant"
-                message="Choose any row from the left to inspect members, plan posture, and module activity."
+                message="Pick a workspace to review members, plan, and modules."
               />
             )}
 

@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Package, Save, StickyNote, Truck, User, Wallet } from "lucide-react";
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
+import GuidedFormModal, {
+  GUIDED_FORM_FIELD_CLASS,
+  GUIDED_FORM_ICON_CLASS,
+  GUIDED_FORM_LABEL_CLASS,
+  GUIDED_FORM_PRIMARY_BUTTON_CLASS,
+  GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS,
+  GUIDED_FORM_SECONDARY_BUTTON_CLASS,
+  GuidedFormSection,
+} from "./GuidedFormModal";
 import { createSupply, updateSupply } from "../services/suppliesService";
 
 function defaultForm() {
@@ -131,7 +139,7 @@ export default function SuppliesFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+            className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
           >
             Back
           </button>
@@ -139,7 +147,7 @@ export default function SuppliesFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+            className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
           >
             Cancel
           </button>
@@ -150,7 +158,7 @@ export default function SuppliesFormModal({
             type="button"
             disabled={!stepOneComplete}
             onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
           >
             Continue
           </button>
@@ -158,7 +166,7 @@ export default function SuppliesFormModal({
           <button
             type="submit"
             disabled={saving || !stepOneComplete || !stepTwoComplete}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save purchase"}
@@ -191,8 +199,8 @@ export default function SuppliesFormModal({
           >
             <div className="space-y-4">
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Package className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <Package className={GUIDED_FORM_ICON_CLASS} />
                   Item <Required />
                 </label>
                 <input
@@ -200,7 +208,7 @@ export default function SuppliesFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, itemName: event.target.value }))
                   }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  className={GUIDED_FORM_FIELD_CLASS}
                   placeholder="e.g. Layer feed grower"
                   autoFocus
                   required
@@ -231,8 +239,8 @@ export default function SuppliesFormModal({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <Package className="h-4 w-4 text-slate-500" />
+                  <label className={GUIDED_FORM_LABEL_CLASS}>
+                    <Package className={GUIDED_FORM_ICON_CLASS} />
                     Quantity <Required />
                   </label>
                   <input
@@ -242,14 +250,14 @@ export default function SuppliesFormModal({
                     onChange={(event) =>
                       setForm((current) => ({ ...current, quantity: event.target.value }))
                     }
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                    className={GUIDED_FORM_FIELD_CLASS}
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <Wallet className="h-4 w-4 text-slate-500" />
+                  <label className={GUIDED_FORM_LABEL_CLASS}>
+                    <Wallet className={GUIDED_FORM_ICON_CLASS} />
                     Unit price (Naira) <Required />
                   </label>
                   <input
@@ -268,7 +276,7 @@ export default function SuppliesFormModal({
                         unitPrice: String(Number(current.unitPrice)),
                       }));
                     }}
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                    className={GUIDED_FORM_FIELD_CLASS}
                     placeholder="0"
                     required
                   />
@@ -297,8 +305,8 @@ export default function SuppliesFormModal({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <User className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <User className={GUIDED_FORM_ICON_CLASS} />
                   Supplier
                 </label>
                 <input
@@ -306,14 +314,14 @@ export default function SuppliesFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, supplierName: event.target.value }))
                   }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  className={GUIDED_FORM_FIELD_CLASS}
                   placeholder="Supplier or shop name"
                 />
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <CalendarDays className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <CalendarDays className={GUIDED_FORM_ICON_CLASS} />
                   Purchase date <Required />
                 </label>
                 <input
@@ -322,7 +330,7 @@ export default function SuppliesFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, supplyDate: event.target.value }))
                   }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  className={GUIDED_FORM_FIELD_CLASS}
                   required
                 />
               </div>
@@ -333,8 +341,8 @@ export default function SuppliesFormModal({
             title="Optional note"
             description="Use this only for details you may want to remember later."
           >
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
+            <label className={GUIDED_FORM_LABEL_CLASS}>
+              <StickyNote className={GUIDED_FORM_ICON_CLASS} />
               Note
             </label>
             <textarea
@@ -342,7 +350,7 @@ export default function SuppliesFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-              className="h-24 w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+              className={`${GUIDED_FORM_FIELD_CLASS} h-24 resize-none`}
               placeholder="Optional details about the purchase"
             />
           </GuidedFormSection>

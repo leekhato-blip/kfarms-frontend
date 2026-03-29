@@ -91,10 +91,10 @@ function AppCard({ app, onOpenConsole }) {
 
       <div className="relative z-10">
         <div className="text-sm font-medium text-[var(--atlas-text-strong)]">
-          {app.headline || "Platform app"}
+          {app.headline || "App lane"}
         </div>
         <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
-          {app.description || "Add more details as this product grows."}
+          {app.description || "More detail soon."}
         </div>
       </div>
 
@@ -118,7 +118,7 @@ function AppCard({ app, onOpenConsole }) {
             {formatNumber(app.operatorCount)}
           </div>
           <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
-            Platform coverage
+            Platform reach
           </div>
         </div>
         <div className="min-w-0 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
@@ -134,7 +134,7 @@ function AppCard({ app, onOpenConsole }) {
             </span>
           </div>
           <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
-            {isLive ? "Billing is active" : "Billing is not active yet"}
+            {isLive ? "Billing live" : "Billing idle"}
           </div>
         </div>
         <div className="min-w-0 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
@@ -145,7 +145,7 @@ function AppCard({ app, onOpenConsole }) {
             {formatNumber(app.suspendedTenantCount)}
           </div>
           <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
-            Paused workspaces
+            Paused
           </div>
         </div>
       </div>
@@ -171,12 +171,12 @@ function AppCard({ app, onOpenConsole }) {
           disabled={!app.consolePath}
         >
           <ArrowUpRight size={14} />
-          {isLive ? "Open app" : "View planned app"}
+          {isLive ? "Open app" : "View plan"}
         </Button>
         <div className="min-w-0 text-xs leading-5 text-[var(--atlas-muted)] sm:max-w-[12.5rem] sm:text-right lg:max-w-none">
           {app.workspacePath
             ? `Workspace route ${app.workspacePath}`
-            : "No live workspace route yet"}
+            : "No live route yet"}
         </div>
       </div>
     </Card>
@@ -320,10 +320,10 @@ export default function PlatformAppsPage() {
               App Portfolio
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.4rem]">
-              Manage live and planned apps across ROOTS.
+              Shape what ROOTS launches next.
             </h1>
             <p className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              See what is live, what is planned, and how each app fits into the platform.
+              Track live lanes, planned lanes, and the products pulling growth.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               {canManagePortfolio ? (
@@ -333,7 +333,7 @@ export default function PlatformAppsPage() {
                   onClick={openGlobalCreateApp || openCreateApp}
                 >
                   <Plus size={14} />
-                  Create planned app
+                  Create app
                 </Button>
               ) : null}
               <Button
@@ -343,7 +343,7 @@ export default function PlatformAppsPage() {
                 disabled={loading}
               >
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                Refresh portfolio
+                Refresh
               </Button>
               <Button
                 variant="ghost"
@@ -384,7 +384,7 @@ export default function PlatformAppsPage() {
                 {formatNumber(portfolio.liveApps)}
               </div>
               <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                Apps already serving active workspaces.
+                Serving workspaces now.
               </div>
             </div>
             <div className="rounded-[1.25rem] border border-violet-300/40 bg-violet-50/75 p-4 dark:border-fuchsia-400/20 dark:bg-fuchsia-500/10">
@@ -395,7 +395,7 @@ export default function PlatformAppsPage() {
                 {formatNumber(portfolio.plannedApps)}
               </div>
               <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                Planned apps already added to ROOTS.
+                Ready for launch.
               </div>
             </div>
           </div>
@@ -435,28 +435,28 @@ export default function PlatformAppsPage() {
           icon={Blocks}
           label="Apps In Portfolio"
           value={formatNumber(portfolio.totalApps)}
-          hint="Registered apps in ROOTS."
+          hint="Lanes rooted in ROOTS."
           tone="purple"
         />
         <PlatformMetricCard
           icon={Rocket}
           label="Live Apps"
           value={formatNumber(portfolio.liveApps)}
-          hint="Apps already serving live workspaces."
+          hint="Live on the grid."
           tone="blue"
         />
         <PlatformMetricCard
           icon={Globe2}
           label="Planned Apps"
           value={formatNumber(portfolio.plannedApps)}
-          hint="Planned apps already added to ROOTS."
+          hint="Next in the line."
           tone="green"
         />
         <PlatformMetricCard
           icon={Building2}
           label="Total Workspaces"
           value={formatNumber(portfolio.totalWorkspaces)}
-          hint={`${formatNumber(portfolio.totalOperators)} operators visible across ROOTS.`}
+          hint={`${formatNumber(portfolio.totalOperators)} operators across the network.`}
           tone="blue"
         />
       </div>
@@ -465,7 +465,7 @@ export default function PlatformAppsPage() {
         apps={visibleApps}
         loading={loading}
         title="App hub analytics"
-        subtitle="Revenue, usage, and lifecycle charts for the app portfolio."
+        subtitle="Revenue, reach, and rollout for every lane."
       />
 
       <div className="space-y-4">
@@ -476,7 +476,7 @@ export default function PlatformAppsPage() {
                 Live apps
               </h2>
               <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Apps already serving live workspaces and users.
+                Live lanes serving the field.
               </p>
             </div>
             <div className="text-sm text-[var(--atlas-muted)]">
@@ -486,13 +486,13 @@ export default function PlatformAppsPage() {
 
           {loading ? (
             <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-6 text-sm text-[var(--atlas-muted)]">
-              Loading live app portfolio...
+              Loading live apps...
             </div>
           ) : live.length === 0 ? (
             <div className="space-y-3">
               <EmptyState
                 title="No live apps yet"
-                message="Create the first live app and it will appear here."
+                message="Launch the first live app to see it here."
               />
               {canManagePortfolio ? (
                 <div className="flex justify-center">
@@ -502,7 +502,7 @@ export default function PlatformAppsPage() {
                     onClick={openGlobalCreateApp || openCreateApp}
                   >
                     <Plus size={14} />
-                    Create planned app
+                    Create app
                   </Button>
                 </div>
               ) : null}
@@ -523,7 +523,7 @@ export default function PlatformAppsPage() {
                 Planned apps
               </h2>
               <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Apps that are defined but not live yet.
+                Built on paper, not live yet.
               </p>
             </div>
             <div className="text-sm text-[var(--atlas-muted)]">
@@ -533,19 +533,19 @@ export default function PlatformAppsPage() {
 
           {loading ? (
             <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-6 text-sm text-[var(--atlas-muted)]">
-              Loading planned app lanes...
+              Loading planned apps...
             </div>
           ) : upcoming.length === 0 ? (
             <div className="space-y-3">
               <EmptyState
                 title="No planned apps configured"
-                message="Add the next app and it will appear here."
+                message="Add the next app to see it here."
               />
               {canManagePortfolio ? (
                 <div className="flex justify-center">
                   <Button variant="outline" onClick={openGlobalCreateApp || openCreateApp}>
                     <Plus size={14} />
-                    Create planned app
+                    Create app
                   </Button>
                 </div>
               ) : null}

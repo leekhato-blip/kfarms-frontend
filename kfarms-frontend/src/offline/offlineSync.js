@@ -1,4 +1,4 @@
-import apiClient from "../api/apiClient";
+import apiClient, { isBackendUnavailableError } from "../api/apiClient";
 import { hasDemoAccountHint } from "../auth/demoMode";
 import {
   getOfflineQueueSnapshot,
@@ -27,7 +27,7 @@ function extractErrorMessage(error) {
 }
 
 function isNetworkFailure(error) {
-  return !error?.response;
+  return isBackendUnavailableError(error);
 }
 
 async function replayMutation(mutation) {
@@ -68,6 +68,7 @@ export async function flushOfflineQueue(options = {}) {
   if (
     source !== "manual" &&
     source !== "online" &&
+    source !== "backend-up" &&
     autoRetryBlockedUntil > Date.now()
   ) {
     return false;

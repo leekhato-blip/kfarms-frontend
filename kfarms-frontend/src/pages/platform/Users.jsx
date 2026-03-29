@@ -87,12 +87,12 @@ function RootsFunctionBadge({ value }) {
 
 const DEFAULT_FUNCTION_EXPERIENCE = Object.freeze({
   label: "Unassigned",
-  summary: "Pick a function to tailor this operator view around what they own most.",
-  focusAreas: ["Set a clear ownership lane", "Align daily work with the role", "Remove overlap with other operators"],
+  summary: "Assign a function to sharpen ownership.",
+  focusAreas: ["Claim an ownership lane", "Match work to role", "Cut overlap"],
   notificationTopics: [
-    "No dedicated notification lane is active yet",
-    "Route escalations manually until a function is assigned",
-    "Assign a function to shape alerts and expectations",
+    "No alert lane yet",
+    "Escalations stay manual",
+    "Assign a function to shape alerts",
   ],
 });
 
@@ -526,10 +526,10 @@ export default function PlatformUsersPage() {
               ROOTS Access
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.35rem]">
-              Run the ROOTS operator list without UI friction.
+              Steer who carries ROOTS forward.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Review access, tenant reach, and session safety from one clean control surface.
+              Keep roles, reach, and sign-in clean across the network.
             </div>
           </div>
           <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={fetchUsers}>
@@ -544,28 +544,28 @@ export default function PlatformUsersPage() {
           icon={UsersIcon}
           label="ROOTS Users"
           value={formatNumber(totalItems)}
-          hint="Platform accounts in the current result."
+          hint="Users in view."
           tone="purple"
         />
         <PlatformMetricCard
           icon={ShieldCheck}
           label="Enabled On Page"
           value={formatNumber(enabledUsersOnPage)}
-          hint="Accounts currently able to sign in."
+          hint="Can sign in now."
           tone="green"
         />
         <PlatformMetricCard
           icon={Shield}
           label="ROOTS Admins"
           value={formatNumber(platformAdminsOnPage)}
-          hint="Admins visible in the current page view."
+          hint="Admins in view."
           tone="blue"
         />
         <PlatformMetricCard
           icon={Activity}
           label="Assigned Functions"
           value={formatNumber(assignedFunctionsOnPage)}
-          hint={`${formatNumber(activeFunctionCount)} ROOTS function lane(s) represented in this page view.`}
+          hint={`${formatNumber(activeFunctionCount)} function lane${activeFunctionCount === 1 ? "" : "s"} in view.`}
           tone="blue"
         />
       </div>
@@ -589,7 +589,7 @@ export default function PlatformUsersPage() {
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search ROOTS username or email"
+                  placeholder="Search username or email"
                   className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] pl-9 pr-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
                 />
               </label>
@@ -601,7 +601,7 @@ export default function PlatformUsersPage() {
                 disabled={loading}
               >
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                Refresh list
+                Refresh
               </Button>
             </div>
           </Card>
@@ -846,14 +846,14 @@ export default function PlatformUsersPage() {
                 );
               }}
               emptyTitle="No operators found"
-              emptyMessage="Try another search query."
+              emptyMessage="Try a different search."
             />
           </div>
 
           {!loading && visibleUsers.length === 0 && !error ? (
             <EmptyState
               title="No users found"
-              message="No ROOTS operators match your current filter."
+              message="No users match this filter."
             />
           ) : null}
 
@@ -941,7 +941,7 @@ export default function PlatformUsersPage() {
               <div className="mt-4">
                 <EmptyState
                   title="Select a ROOTS operator"
-                  message="Choose any user from the left to review access level, tenant reach, and control actions."
+                  message="Pick a user to review access and actions."
                 />
               </div>
             ) : null}

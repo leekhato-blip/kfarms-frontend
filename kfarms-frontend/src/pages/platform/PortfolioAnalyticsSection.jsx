@@ -194,36 +194,36 @@ function AnalyticsHighlights({ apps = [], currency = "NGN" }) {
       value: formatCompactCurrencyValue(totalRevenue, currency, {
         maximumFractionDigits: 1,
       }),
-      detail: `${formatNumber(totalWorkspaces)} workspace${totalWorkspaces === 1 ? "" : "s"} contributing to recurring billing`,
+      detail: `${formatNumber(totalWorkspaces)} billing workspace${totalWorkspaces === 1 ? "" : "s"} in the grid`,
     },
     {
       label: "Top billing app",
       value: topRevenueApp?.name || "Not live yet",
       detail: topRevenueApp
         ? formatCurrencyValue(topRevenueApp.revenue, currency)
-        : "Recurring billing appears when an app starts serving paying workspaces",
+        : "Billing starts at launch",
     },
     {
       label: "Live coverage",
       value: `${formatNumber(liveApps.length)}/${formatNumber(apps.length || 0)}`,
-      detail: `${formatNumber(Math.max(apps.length - liveApps.length, 0))} app lane${apps.length - liveApps.length === 1 ? "" : "s"} still in the pipeline`,
+      detail: `${formatNumber(Math.max(apps.length - liveApps.length, 0))} lane${Math.max(apps.length - liveApps.length, 0) === 1 ? "" : "s"} still in the pipeline`,
     },
   ];
 
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
       {highlightItems.map((item) => (
         <div
           key={item.label}
-          className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 p-3"
+          className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 p-2.5 text-center sm:p-3 sm:text-left"
         >
-          <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+          <div className="text-[9px] uppercase tracking-[0.12em] text-[var(--atlas-muted)] sm:text-[10px] sm:tracking-[0.18em]">
             {item.label}
           </div>
-          <div className="mt-2 text-lg font-semibold text-[var(--atlas-text-strong)]">
+          <div className="mt-1.5 text-base font-semibold leading-tight text-[var(--atlas-text-strong)] sm:mt-2 sm:text-lg">
             {item.value}
           </div>
-          <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">
+          <div className="mt-1 hidden text-xs leading-5 text-[var(--atlas-muted)] sm:block">
             {item.detail}
           </div>
         </div>
@@ -245,7 +245,7 @@ function RevenueByAppChart({ apps = [], compact = false }) {
       icon={CircleDollarSign}
       eyebrow="Commercial"
       title="Revenue by app"
-      subtitle="Recurring billing by app across ROOTS."
+      subtitle="Where ROOTS earns, lane by lane."
       compact={compact}
       footer={
         hasRevenue && leader ? (
@@ -259,7 +259,7 @@ function RevenueByAppChart({ apps = [], compact = false }) {
       }
     >
       {!hasRevenue ? (
-        <ChartEmptyState message="Recurring revenue will appear here as soon as an app begins serving paying workspaces." />
+        <ChartEmptyState message="Revenue appears when billing starts." />
       ) : (
         <div className="h-[230px] sm:h-[250px]" style={{ height: barHeight }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -320,7 +320,7 @@ function PortfolioFootprintChart({ apps = [], compact = false }) {
       icon={BarChart3}
       eyebrow="Adoption"
       title="Workspace and operator load"
-      subtitle="See which apps carry the most workspace and operator activity."
+      subtitle="Where the network is carrying weight."
       compact={compact}
       footer={
         <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--atlas-muted)]">
@@ -336,7 +336,7 @@ function PortfolioFootprintChart({ apps = [], compact = false }) {
       }
     >
       {!hasVolume ? (
-        <ChartEmptyState message="Workspace and operator analytics will deepen here once the portfolio has active tenant traffic." />
+        <ChartEmptyState message="Usage appears once apps serve live tenants." />
       ) : (
         <div className={`w-full ${compact ? "h-[230px]" : "h-[260px]"}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -374,7 +374,7 @@ function LifecycleMixChart({ apps = [], compact = false }) {
       icon={Layers3}
       eyebrow="Lifecycle"
       title="Portfolio stage mix"
-      subtitle="A quick split between live apps and planned apps."
+      subtitle="What is live and what is still taking root."
       compact={compact}
       footer={data.length > 0 ? (
         <div className="space-y-2">
@@ -405,7 +405,7 @@ function LifecycleMixChart({ apps = [], compact = false }) {
       ) : null}
     >
       {totalApps === 0 ? (
-        <ChartEmptyState message="Add portfolio apps and the lifecycle mix will appear here." />
+        <ChartEmptyState message="Add apps to see the mix." />
       ) : (
         <div className="grid h-full gap-4 md:grid-cols-[minmax(0,240px)_1fr] md:items-center">
           <div className={`relative ${compact ? "h-[210px]" : "h-[240px]"}`}>
@@ -442,28 +442,32 @@ function LifecycleMixChart({ apps = [], compact = false }) {
             </div>
           </div>
 
-          <div className="space-y-3">
-            {data.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 p-3"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {item.label}
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-1 md:gap-3">
+            {data.map((item, index) => {
+              const shouldSpanFull = data.length % 2 === 1 && index === data.length - 1;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`rounded-[1.05rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 px-3 py-2.5 ${shouldSpanFull ? "col-span-2 md:col-span-1" : ""}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="truncate text-[0.98rem] font-semibold text-[var(--atlas-text-strong)]">
+                        {item.label}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-[1.45rem] font-semibold leading-none text-[var(--atlas-text-strong)]">
+                      {formatNumber(item.value)}
                     </span>
                   </div>
-                  <span className="text-sm text-[var(--atlas-muted)]">
-                    {formatNumber(item.value)}
-                  </span>
+                  <div className="mt-2 text-[11px] leading-5 text-[var(--atlas-muted)] md:text-xs">
+                    {item.id === "LIVE" ? "Serving now." : "Next stage."}
+                  </div>
                 </div>
-                <div className="mt-2 text-xs leading-5 text-[var(--atlas-muted)]">
-                  {item.id === "LIVE" ? "Serving live workspaces right now." : "Reserved for the next stage of platform expansion."}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -533,7 +537,7 @@ export default function PortfolioAnalyticsSection({
   loading = false,
   compact = false,
   title = "Portfolio analytics",
-  subtitle = "Clear chart views for revenue, adoption, and app lifecycle across the suite.",
+  subtitle = "Revenue, reach, and rollout in one view.",
 }) {
   const currency = React.useMemo(() => getPrimaryCurrency(apps), [apps]);
 

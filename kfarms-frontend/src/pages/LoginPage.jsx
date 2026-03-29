@@ -92,6 +92,9 @@ export default function LoginPage() {
     const isNetwork =
       err?.message === "Network Error" ||
       err?.code === "ECONNABORTED" ||
+      status === 502 ||
+      status === 503 ||
+      status === 504 ||
       !err?.response;
 
     if (isNetwork) {
