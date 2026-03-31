@@ -20,10 +20,8 @@ const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
 const BACKEND_UNAVAILABLE_STATUS_CODES = new Set([502, 503, 504]);
 const BACKEND_UNAVAILABLE_ERROR_CODES = new Set([
-  "ECONNABORTED",
   "ECONNREFUSED",
   "ERR_NETWORK",
-  "ETIMEDOUT",
 ]);
 const AUTH_PUBLIC_401_PATHS = new Set([
   "/api/auth/login",
@@ -180,8 +178,7 @@ function isNetworkError(error) {
     message.includes("network error") ||
     message.includes("connection refused") ||
     message.includes("failed to fetch") ||
-    message.includes("load failed") ||
-    message.includes("timeout")
+    message.includes("load failed")
   );
 }
 

@@ -1,5 +1,12 @@
 import React from "react";
-import { AlertTriangle, Check, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  LoaderCircle,
+  RefreshCw,
+  WifiOff,
+  X,
+} from "lucide-react";
 import {
   getBackendConnectionSnapshot,
   probeBackendConnection,
@@ -10,7 +17,7 @@ import {
 } from "../offline/offlineStore";
 
 const AUTO_PROBE_INTERVAL_MS = 5000;
-const RECOVERY_HIDE_DELAY_MS = 6000;
+const RECOVERY_HIDE_DELAY_MS = 3200;
 
 export default function BackendRecoveryPrompt() {
   const [backendDown, setBackendDown] = React.useState(
@@ -46,8 +53,11 @@ export default function BackendRecoveryPrompt() {
   const failedChanges = Number(queueSnapshot.failed || 0);
   const syncingChanges = syncSnapshot.status === "syncing";
   const pausedSync = syncSnapshot.status === "paused";
-  const hasConnectionIssue = browserOffline || backendDown || pausedSync;
-  const shouldShowQueuePrompt = !hasConnectionIssue && queuedChanges > 0;
+  const hasConnectionIssue = browserOffline || backendDown;
+  const shouldShowQueuedStatus = !hasConnectionIssue && queuedChanges > 0;
+  const shouldShowFailedStatus = !hasConnectionIssue && failedChanges > 0;
+  const shouldShowSyncingStatus = !hasConnectionIssue && syncingChanges;
+  const shouldShowPausedStatus = !hasConnectionIssue && pausedSync && queuedChanges > 0;
   const onLoginPage =
     typeof window !== "undefined" && window.location.pathname === "/auth/login";
 
@@ -64,9 +74,10 @@ export default function BackendRecoveryPrompt() {
         bypassBrowserCheck,
       });
       if (reachable) {
+        const recoveredFromIssue = browserOffline || backendDown;
         setBrowserOffline(false);
         setBackendDown(false);
-        if (hasConnectionIssue) {
+        if (recoveredFromIssue) {
           showRecoveredBanner();
         }
       }
@@ -78,7 +89,7 @@ export default function BackendRecoveryPrompt() {
       probingConnectionRef.current = false;
       setProbingConnection(false);
     }
-  }, [hasConnectionIssue, showRecoveredBanner]);
+  }, [backendDown, browserOffline, showRecoveredBanner]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -161,115 +172,143 @@ export default function BackendRecoveryPrompt() {
     };
   }, [hasConnectionIssue, requestBackendProbe]);
 
-  if ((!hasConnectionIssue && !showRecovered && !shouldShowQueuePrompt) || dismissed) return null;
+  if (
+    (
+      !hasConnectionIssue &&
+      !showRecovered &&
+      !shouldShowQueuedStatus &&
+      !shouldShowFailedStatus &&
+      !shouldShowSyncingStatus &&
+      !shouldShowPausedStatus
+    ) ||
+    dismissed
+  ) {
+    return null;
+  }
 
-  const title = browserOffline
-    ? "No internet connection"
-    : backendDown || pausedSync
-      ? "Connection interrupted"
-    : syncingChanges
-      ? "Syncing saved changes"
-      : failedChanges > 0
-        ? "Some changes need attention"
-        : queuedChanges > 0
-          ? "Saved changes are waiting"
-          : "Connection restored";
+  const processedChanges = Math.max(
+    Number(syncSnapshot.total || 0) - Number(syncSnapshot.remaining || 0),
+    0,
+  );
 
-  const description = browserOffline
-    ? queuedChanges > 0
-      ? `${queuedChanges} change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} saved locally. Keep working and we will sync automatically when the server is back.`
-      : "Your internet connection looks unavailable right now. We will keep checking automatically and reconnect as soon as it returns."
-    : backendDown || pausedSync
-      ? queuedChanges > 0
-        ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} waiting while we reconnect to the server.`
-        : onLoginPage
-          ? "We cannot reach the server right now. Free hosting may take about 2-3 minutes to wake up, and we will keep checking automatically."
-          : "We cannot reach the server right now. We will try again automatically."
-    : syncingChanges
-      ? `Syncing ${Math.max(Number(syncSnapshot.total || 0) - Number(syncSnapshot.remaining || 0), 0)} of ${Number(syncSnapshot.total || 0)} saved change${Number(syncSnapshot.total || 0) === 1 ? "" : "s"}.`
-      : failedChanges > 0
-        ? `${failedChanges} saved change${failedChanges === 1 ? "" : "s"} could not sync yet. You can try again now.`
-        : queuedChanges > 0
-          ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} queued and ready to sync.`
-          : "Service is back online. We are syncing and refreshing automatically.";
+  const status = browserOffline
+    ? {
+        label: "Offline",
+        detail:
+          queuedChanges > 0
+            ? `${queuedChanges} saved ${queuedChanges === 1 ? "change is" : "changes are"} waiting`
+            : "Waiting for internet",
+        tone: "border-amber-300/75 bg-amber-50/95 text-amber-950 dark:border-amber-500/40 dark:bg-amber-950/80 dark:text-amber-100",
+        iconTone: "bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
+        Icon: WifiOff,
+        actionLabel: "",
+      }
+    : backendDown
+      ? {
+          label: onLoginPage ? "Server waking up" : "Server unreachable",
+          detail:
+            queuedChanges > 0
+              ? `${queuedChanges} saved ${queuedChanges === 1 ? "change is" : "changes are"} queued`
+              : "Reconnecting in the background",
+          tone: "border-sky-300/70 bg-sky-50/95 text-sky-950 dark:border-sky-500/40 dark:bg-sky-950/80 dark:text-sky-100",
+          iconTone: "bg-sky-500/15 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200",
+          Icon: LoaderCircle,
+          actionLabel: "Retry",
+        }
+      : shouldShowFailedStatus
+        ? {
+            label: "Sync needs attention",
+            detail: `${failedChanges} ${failedChanges === 1 ? "change" : "changes"} failed to sync`,
+            tone: "border-rose-300/75 bg-rose-50/95 text-rose-950 dark:border-rose-500/40 dark:bg-rose-950/80 dark:text-rose-100",
+            iconTone: "bg-rose-500/15 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+            Icon: AlertTriangle,
+            actionLabel: "Sync",
+          }
+        : shouldShowSyncingStatus
+          ? {
+              label: "Syncing",
+              detail: `${processedChanges}/${Number(syncSnapshot.total || 0)} saved changes`,
+              tone: "border-indigo-300/75 bg-indigo-50/95 text-indigo-950 dark:border-indigo-500/40 dark:bg-indigo-950/80 dark:text-indigo-100",
+              iconTone: "bg-indigo-500/15 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200",
+              Icon: LoaderCircle,
+              actionLabel: "",
+            }
+          : shouldShowPausedStatus || shouldShowQueuedStatus
+            ? {
+                label: shouldShowPausedStatus ? "Saved changes waiting" : "Ready to sync",
+                detail: `${queuedChanges} ${queuedChanges === 1 ? "change" : "changes"} queued locally`,
+                tone: "border-slate-300/80 bg-white/95 text-slate-900 dark:border-white/12 dark:bg-[#07111f]/88 dark:text-slate-100",
+                iconTone: "bg-slate-500/10 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+                Icon: RefreshCw,
+                actionLabel: "Sync",
+              }
+            : {
+                label: "Back online",
+                detail: "Live sync restored",
+                tone: "border-emerald-300/75 bg-emerald-50/95 text-emerald-950 dark:border-emerald-500/40 dark:bg-emerald-950/80 dark:text-emerald-100",
+                iconTone: "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
+                Icon: Check,
+                actionLabel: "",
+              };
+
+  const StatusIcon = status.Icon;
+  const iconClassName = `h-3.5 w-3.5 ${
+    status.label === "Syncing" || status.label === "Server waking up"
+      ? "animate-spin"
+      : ""
+  }`;
+  const showActionButton = Boolean(status.actionLabel) && !browserOffline;
 
   return (
-    <div className="fixed inset-x-4 top-4 z-[12000] mx-auto max-w-md">
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-[12000] flex justify-center px-3 sm:top-4">
       <div
-        className={`rounded-2xl border px-4 py-3 shadow-neo dark:shadow-dark ${
-          hasConnectionIssue
-            ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/50 dark:bg-amber-950 dark:text-amber-100"
-            : failedChanges > 0
-              ? "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/40 dark:bg-rose-950 dark:text-rose-100"
-            : "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/50 dark:bg-emerald-950 dark:text-emerald-100"
-        }`}
+        className={`pointer-events-auto inline-flex max-w-[min(92vw,28rem)] items-center gap-2.5 rounded-full border px-3 py-2 shadow-[0_18px_35px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:shadow-[0_18px_40px_rgba(0,0,0,0.34)] ${status.tone}`}
       >
-        <div className="flex items-start gap-3">
-          <div
-            className={`mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full ${
-              hasConnectionIssue
-                ? "bg-amber-200 text-amber-700 dark:bg-amber-700/30 dark:text-amber-200"
-                : failedChanges > 0
-                  ? "bg-rose-200 text-rose-700 dark:bg-rose-700/30 dark:text-rose-200"
-                : "bg-emerald-200 text-emerald-700 dark:bg-emerald-700/30 dark:text-emerald-200"
-            }`}
-          >
-            {hasConnectionIssue || failedChanges > 0 ? (
-              <AlertTriangle className="h-4 w-4" />
-            ) : (
-              <Check className="h-4 w-4" strokeWidth={3} />
-            )}
+        <span
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${status.iconTone}`}
+        >
+          <StatusIcon className={iconClassName} strokeWidth={2.3} />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[0.76rem] font-semibold uppercase tracking-[0.16em] opacity-80">
+            {status.label}
           </div>
+          <div className="truncate text-sm font-medium">{status.detail}</div>
+        </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold font-header">{title}</div>
-            <div className="mt-1 text-xs leading-relaxed opacity-90">
-              {description}
-            </div>
-            {(hasConnectionIssue || shouldShowQueuePrompt || failedChanges > 0) && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={probingConnection || syncingChanges}
-                  className="rounded-md border border-current/30 bg-transparent px-3 py-1.5 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/10"
-                  onClick={async () => {
-                    if (hasConnectionIssue) {
-                      await requestBackendProbe({
-                        triggerSync: true,
-                        bypassBrowserCheck: true,
-                      });
-                      return;
-                    }
-
-                    window.dispatchEvent(new Event("kf-offline-sync-requested"));
-                  }}
-                >
-                  {probingConnection
-                    ? "Checking..."
-                    : hasConnectionIssue
-                      ? "Retry"
-                      : syncingChanges
-                        ? "Syncing..."
-                        : "Sync now"}
-                </button>
-                {queuedChanges > 0 ? (
-                  <span className="inline-flex items-center rounded-full border border-current/20 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] opacity-80">
-                    {queuedChanges} queued
-                  </span>
-                ) : null}
-              </div>
-            )}
-          </div>
-
+        {showActionButton ? (
           <button
             type="button"
-            aria-label="Dismiss message"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10"
-            onClick={() => setDismissed(true)}
+            disabled={probingConnection || syncingChanges}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-current/15 px-3 text-xs font-semibold transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/10"
+            onClick={async () => {
+              if (hasConnectionIssue) {
+                await requestBackendProbe({
+                  triggerSync: true,
+                  bypassBrowserCheck: true,
+                });
+                return;
+              }
+
+              window.dispatchEvent(new Event("kf-offline-sync-requested"));
+            }}
           >
-            <X className="h-4 w-4" />
+            {probingConnection ? "Checking" : status.actionLabel}
           </button>
-        </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => {
+            setDismissed(true);
+            setShowRecovered(false);
+          }}
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-current/70 transition hover:bg-black/5 hover:text-current dark:hover:bg-white/10"
+          aria-label="Dismiss connection message"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ import {
   THEME_STORAGE_KEY,
   getStoredThemeMode,
 } from "../constants/settings";
+import { WORKSPACE_QUICK_ACTION_EVENT } from "../constants/workspaceQuickActions";
 import { getUserDisplayName } from "../services/userProfileService";
 import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
 
@@ -598,7 +599,7 @@ export default function Topbar() {
   }
 
   const [quickOpen, setQuickOpen] = React.useState(false);
-  async function quickAdd(action) {
+  const quickAdd = React.useCallback(async (action) => {
     setQuickOpen(false);
     if (action === "sales") {
       setSalesModalOpen(true);
@@ -642,7 +643,7 @@ export default function Topbar() {
     }
 
     navigate(KFARMS_ROUTE_REGISTRY.dashboard.appPath);
-  }
+  }, [layerBatchesLoading, navigate]);
 
   const [theme, setTheme] = React.useState(getStoredThemeMode);
   React.useEffect(() => {
@@ -697,6 +698,19 @@ export default function Topbar() {
       document.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  React.useEffect(() => {
+    function handleWorkspaceQuickAction(event) {
+      const action = String(event?.detail?.action || "").trim();
+      if (!action) return;
+      void quickAdd(action);
+    }
+
+    window.addEventListener(WORKSPACE_QUICK_ACTION_EVENT, handleWorkspaceQuickAction);
+    return () => {
+      window.removeEventListener(WORKSPACE_QUICK_ACTION_EVENT, handleWorkspaceQuickAction);
+    };
+  }, [quickAdd]);
 
   function clearSearch() {
     setQuery("");
@@ -1020,7 +1034,7 @@ export default function Topbar() {
           </button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative hidden md:block">
             <button
               onClick={() => {
                 setQuickOpen(false);

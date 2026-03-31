@@ -39,13 +39,13 @@ describe("apiClient workspace auth guards", () => {
     ).toBe(false);
   });
 
-  it("treats timeout and connection failures as backend unavailable errors", () => {
+  it("treats true network and gateway failures as backend unavailable errors", () => {
     expect(
       isBackendUnavailableError({
         code: "ECONNABORTED",
         message: "timeout of 15000ms exceeded",
       }),
-    ).toBe(true);
+    ).toBe(false);
 
     expect(
       isBackendUnavailableError({
