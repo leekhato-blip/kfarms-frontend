@@ -9,7 +9,29 @@ import { PlatformAuthProvider } from "./auth/AuthProvider.jsx";
 import { initializeOfflineSync } from "./offline/offlineSync.js";
 
 const SPA_REDIRECT_STORAGE_KEY = "kf_spa_redirect";
+const LEGACY_CACHE_PREFIXES = ["kfarms-app-shell-", "kfarms-runtime-"];
 const root = document.getElementById("root");
+
+async function clearLegacyAppCaches() {
+  if (typeof window === "undefined" || !("caches" in window)) return;
+
+  const cacheKeys = await window.caches.keys();
+  await Promise.all(
+    cacheKeys
+      .filter((key) => LEGACY_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)))
+      .map((key) => window.caches.delete(key)),
+  );
+}
+
+async function disableLegacyServiceWorkers() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(
+    registrations.map((registration) => registration.unregister().catch(() => false)),
+  );
+  await clearLegacyAppCaches();
+}
 
 if (typeof window !== "undefined" && window.location.pathname === "/") {
   const pendingRedirect = window.sessionStorage.getItem(SPA_REDIRECT_STORAGE_KEY);
@@ -23,8 +45,8 @@ initializeOfflineSync();
 
 if (typeof window !== "undefined" && "serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.error("Service worker registration failed", error);
+    disableLegacyServiceWorkers().catch((error) => {
+      console.error("Legacy service worker cleanup failed", error);
     });
   });
 }

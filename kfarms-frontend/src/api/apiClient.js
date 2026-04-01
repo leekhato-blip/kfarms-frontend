@@ -23,6 +23,8 @@ const BACKEND_UNAVAILABLE_ERROR_CODES = new Set([
   "ECONNREFUSED",
   "ERR_NETWORK",
 ]);
+const BACKEND_DOWN_GRACE_WINDOW_MS = 6000;
+const BACKEND_DOWN_CONFIRM_DELAY_MS = 1400;
 const AUTH_PUBLIC_401_PATHS = new Set([
   "/api/auth/login",
   "/api/auth/signup",
@@ -56,6 +58,7 @@ let pingTimer = null;
 let sessionValidationPromise = null;
 let backendWaitPromise = null;
 let lastBackendConfirmedAt = 0;
+let backendDownConfirmTimer = null;
 
 function dispatchWindowEvent(event) {
   if (typeof window === "undefined") return;
@@ -245,12 +248,54 @@ export function getBackendConnectionSnapshot() {
   };
 }
 
+function clearPendingBackendDownConfirmation() {
+  if (!backendDownConfirmTimer) return;
+  clearTimeout(backendDownConfirmTimer);
+  backendDownConfirmTimer = null;
+}
+
 function confirmBackendUp() {
   lastBackendConfirmedAt = Date.now();
-  if (!backendDown) return;
+  clearPendingBackendDownConfirmation();
+  if (!backendDown) {
+    stopPing();
+    return;
+  }
   backendDown = false;
   stopPing();
   dispatchWindowEvent(new Event("kf-backend-up"));
+}
+
+function transitionBackendDown() {
+  clearPendingBackendDownConfirmation();
+  if (backendDown) return true;
+
+  backendDown = true;
+  dispatchWindowEvent(new Event("kf-backend-down"));
+  startPing();
+  return true;
+}
+
+function scheduleBackendDownConfirmation() {
+  if (backendDownConfirmTimer || typeof window === "undefined") {
+    startPing();
+    return false;
+  }
+
+  startPing();
+  backendDownConfirmTimer = window.setTimeout(async () => {
+    backendDownConfirmTimer = null;
+    const reachable = await probeBackendConnection({
+      silent: true,
+      bypassBrowserCheck: true,
+    });
+
+    if (!reachable) {
+      transitionBackendDown();
+    }
+  }, BACKEND_DOWN_CONFIRM_DELAY_MS);
+
+  return false;
 }
 
 function markBackendDown(config) {
@@ -261,10 +306,16 @@ function markBackendDown(config) {
 
   if (backendDown) return true;
 
-  backendDown = true;
-  dispatchWindowEvent(new Event("kf-backend-down"));
-  startPing();
-  return true;
+  const now = Date.now();
+  const backendRecentlyConfirmed =
+    lastBackendConfirmedAt > 0 &&
+    now - lastBackendConfirmedAt < BACKEND_DOWN_GRACE_WINDOW_MS;
+
+  if (backendRecentlyConfirmed) {
+    return scheduleBackendDownConfirmation();
+  }
+
+  return transitionBackendDown();
 }
 
 function stopPing() {

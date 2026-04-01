@@ -48,9 +48,32 @@ export default function GlassToast({
   onClose,
 }) {
   const [mounted, setMounted] = React.useState(false);
+  const [isDark, setIsDark] = React.useState(
+    () =>
+      typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark"),
+  );
 
   React.useEffect(() => {
     setMounted(true);
+
+    if (typeof document === "undefined") return undefined;
+
+    const syncTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   React.useEffect(() => {
@@ -67,31 +90,33 @@ export default function GlassToast({
   const Icon = tone.Icon;
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[140] flex justify-center px-4 sm:top-5">
-      <div
-        role="status"
-        aria-live="polite"
-        className={`pointer-events-auto relative flex w-full max-w-md items-start gap-3 overflow-hidden rounded-[1.35rem] border px-4 py-3 shadow-[0_24px_48px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:shadow-[0_24px_52px_rgba(2,6,23,0.36)] ${tone.surface}`}
-      >
-        <div className={`pointer-events-none absolute inset-0 opacity-90 ${tone.glow}`} />
-        <span
-          className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] border ${tone.badge}`}
+    <div className={isDark ? "dark" : ""} data-theme={isDark ? "dark" : "light"}>
+      <div className="pointer-events-none fixed inset-x-0 top-4 z-[140] flex justify-center px-4 sm:top-5">
+        <div
+          role="status"
+          aria-live="polite"
+          className={`pointer-events-auto relative flex w-full max-w-md items-start gap-3 overflow-hidden rounded-[1.35rem] border px-4 py-3 shadow-[0_24px_48px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:shadow-[0_24px_52px_rgba(2,6,23,0.36)] ${tone.surface}`}
         >
-          <Icon className="h-4.5 w-4.5" />
-        </span>
-        <div className="relative min-w-0 flex-1 pt-0.5">
-          <p className={`text-sm font-medium leading-5 ${tone.text}`}>{message}</p>
-        </div>
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-900/5 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-100"
-            aria-label="Dismiss notification"
+          <div className={`pointer-events-none absolute inset-0 opacity-90 ${tone.glow}`} />
+          <span
+            className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] border ${tone.badge}`}
           >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
+            <Icon className="h-4.5 w-4.5" />
+          </span>
+          <div className="relative min-w-0 flex-1 pt-0.5">
+            <p className={`text-sm font-medium leading-5 ${tone.text}`}>{message}</p>
+          </div>
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-900/5 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-100"
+              aria-label="Dismiss notification"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>,
     document.body,
