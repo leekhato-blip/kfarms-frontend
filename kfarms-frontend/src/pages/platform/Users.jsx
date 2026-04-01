@@ -2,12 +2,15 @@ import React from "react";
 import {
   Activity,
   BellRing,
+  Copy,
+  ExternalLink,
   Mail,
   RefreshCw,
   Save,
   Search,
   Shield,
   ShieldCheck,
+  UserPlus,
   Users as UsersIcon,
 } from "lucide-react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
@@ -41,7 +44,7 @@ import {
   resolvePlatformAccessTier,
   resolvePlatformUserEnabled,
 } from "./platformInsights";
-import { buildPlatformDemoSnapshot } from "./platformWorkbench";
+import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
 import {
   ROOTS_FUNCTION_OPTIONS,
   assignRootsFunction,
@@ -52,6 +55,7 @@ import {
   writeStoredRootsUserFunctions,
 } from "../../utils/rootsUserFunctions";
 import { getPlatformRoleLabel } from "../../utils/platformRoles";
+import PlatformUserModal from "./PlatformUserModal";
 
 function UserDetailSkeleton() {
   return (
@@ -113,6 +117,16 @@ function filterDemoUsers(users, search = "") {
   });
 }
 
+function buildPlatformInviteLink(token) {
+  const normalizedToken = String(token || "").trim();
+  if (!normalizedToken) return "";
+
+  const invitePath = `/platform/setup?token=${encodeURIComponent(normalizedToken)}`;
+  if (typeof window === "undefined") return invitePath;
+
+  return `${window.location.origin.replace(/\/+$/, "")}${invitePath}`;
+}
+
 export default function PlatformUsersPage() {
   const { user: currentPlatformUser } = usePlatformAuth();
   const { notify } = useToast();
@@ -127,6 +141,7 @@ export default function PlatformUsersPage() {
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
 
   const [searchInput, setSearchInput] = React.useState(() => searchParamValue);
   const [search, setSearch] = React.useState(() => searchParamValue);
@@ -151,6 +166,9 @@ export default function PlatformUsersPage() {
     value: false,
   });
   const [mutating, setMutating] = React.useState(false);
+  const [createUserOpen, setCreateUserOpen] = React.useState(false);
+  const [creatingUser, setCreatingUser] = React.useState(false);
+  const [latestInvite, setLatestInvite] = React.useState(null);
 
   const selectUser = React.useCallback((userId) => {
     React.startTransition(() => {
@@ -190,19 +208,22 @@ export default function PlatformUsersPage() {
     );
   }, [search, searchParamValue, setSearchParams]);
 
-  const fetchUsers = React.useCallback(async () => {
+  const fetchUsers = React.useCallback(async ({ searchOverride } = {}) => {
+    const activeSearch = typeof searchOverride === "string" ? searchOverride.trim() : search;
+
     setLoading(true);
     setError("");
 
     if (platformDataMode === "demo") {
-      setUsers(filterDemoUsers(demoSnapshot.users, search));
+      const demoUsers = filterDemoUsers(demoSnapshot.users, activeSearch);
+      setUsers(demoUsers);
       setLoading(false);
-      return;
+      return demoUsers;
     }
 
     try {
       const params = cleanQueryParams({
-        search,
+        search: activeSearch,
         page: 0,
         size: PLATFORM_USERS_FETCH_SIZE,
         platformOnly: true,
@@ -213,21 +234,19 @@ export default function PlatformUsersPage() {
       const platformUsers = filterPlatformUsers(normalized.items).sort(
         comparePlatformUsersByAuthority,
       );
-
-      setUsers(
-        platformUsers.length === 0
-          ? filterDemoUsers(demoSnapshot.users, search)
-          : platformUsers,
-      );
+      setUsers(platformUsers);
+      return platformUsers;
     } catch (fetchError) {
       setError(
         platformLimitedAccess ? "" : getApiErrorMessage(fetchError, "Failed to load users"),
       );
-      setUsers(filterDemoUsers(demoSnapshot.users, search));
+      const fallbackUsers = filterPlatformUsers(liveSnapshot.users).sort(comparePlatformUsersByAuthority);
+      setUsers(fallbackUsers);
+      return fallbackUsers;
     } finally {
       setLoading(false);
     }
-  }, [demoSnapshot.users, platformDataMode, platformLimitedAccess, search]);
+  }, [demoSnapshot.users, liveSnapshot.users, platformDataMode, platformLimitedAccess, search]);
 
   React.useEffect(() => {
     fetchUsers();
@@ -292,6 +311,8 @@ export default function PlatformUsersPage() {
     () => resolvePlatformAccessTier(currentPlatformUser || {}),
     [currentPlatformUser],
   );
+  const canCreatePlatformUsers =
+    currentAccessTier === "PLATFORM_OWNER" || currentAccessTier === "PLATFORM_ADMIN";
 
   const selectedTenantCount = React.useMemo(
     () => Number(selectedUser?.tenantCount ?? selectedUser?.tenantsCount ?? 0),
@@ -479,6 +500,87 @@ export default function PlatformUsersPage() {
     }
   };
 
+  const handleCreatePlatformUser = React.useCallback(
+    async (payload) => {
+      if (platformDataMode === "demo") {
+        notify("Demo preview is read-only for platform invites.", "info");
+        return;
+      }
+
+      if (!canCreatePlatformUsers) {
+        notify("This ROOTS lane cannot invite new platform users.", "info");
+        return;
+      }
+
+      setCreatingUser(true);
+      try {
+        const response = await platformAxios.post(PLATFORM_ENDPOINTS.userInvites, payload);
+        const invitePayload = unwrapApiResponse(response.data, "Failed to send platform invite");
+        const inviteLink = buildPlatformInviteLink(invitePayload?.token);
+        const nextInvite = {
+          ...invitePayload,
+          inviteLink,
+        };
+
+        setLatestInvite(nextInvite);
+        setCreateUserOpen(false);
+
+        let copied = false;
+        if (inviteLink && typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(inviteLink);
+            copied = true;
+          } catch {
+            copied = false;
+          }
+        }
+
+        notify(
+          copied
+            ? `${invitePayload?.email || "Platform invite"} is ready and the link is copied.`
+            : `${invitePayload?.email || "Platform invite"} is ready.`,
+          "success",
+        );
+      } catch (createError) {
+        notify(getApiErrorMessage(createError, "Failed to send platform invite"), "error");
+      } finally {
+        setCreatingUser(false);
+      }
+    },
+    [canCreatePlatformUsers, notify, platformDataMode],
+  );
+
+  const handleCopyInviteLink = React.useCallback(async () => {
+    const inviteLink = String(latestInvite?.inviteLink || "").trim();
+    if (!inviteLink) {
+      notify("No invite link is ready yet.", "info");
+      return;
+    }
+
+    if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+      notify("Copy is not available in this browser right now.", "info");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      notify("Invite link copied.", "success");
+    } catch {
+      notify("Copy did not work here. Open the setup link directly instead.", "info");
+    }
+  }, [latestInvite?.inviteLink, notify]);
+
+  const handleOpenInviteLink = React.useCallback(() => {
+    const inviteLink = String(latestInvite?.inviteLink || "").trim();
+    if (!inviteLink) {
+      notify("No invite link is ready yet.", "info");
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+    window.open(inviteLink, "_blank", "noopener,noreferrer");
+  }, [latestInvite?.inviteLink, notify]);
+
   const saveRootsFunction = React.useCallback(() => {
     if (!selectedUser || !rootsFunctionDraft) return;
     if (!canAssignPlatformFunction(currentPlatformUser, selectedUser)) {
@@ -526,16 +628,29 @@ export default function PlatformUsersPage() {
               ROOTS Access
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.35rem]">
-              Steer who carries ROOTS forward.
+              ROOTS access control.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Keep roles, reach, and sign-in clean across the network.
+              Manage roles, reach, and sign-in.
             </div>
           </div>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={fetchUsers}>
-            <RefreshCw size={14} />
-            Refresh
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            {canCreatePlatformUsers ? (
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => setCreateUserOpen(true)}
+              >
+                <UserPlus size={14} />
+                Invite user
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={fetchUsers}>
+              <RefreshCw size={14} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -574,6 +689,43 @@ export default function PlatformUsersPage() {
         <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
           {error}
         </div>
+      ) : null}
+
+      {latestInvite?.inviteLink ? (
+        <Card className="atlas-data-shell border-emerald-400/25 bg-emerald-500/[0.06] p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/85">
+                Invite Ready
+              </div>
+              <div className="mt-2 text-base font-semibold text-[var(--atlas-text-strong)]">
+                {latestInvite?.username || latestInvite?.email || "Platform user"} can finish setup now.
+              </div>
+              <div className="mt-1 text-sm leading-6 text-[var(--atlas-muted)]">
+                Share this link with the teammate. The account goes live after they set a password.
+              </div>
+              <div className="mt-3 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/80 px-3 py-3 text-xs leading-6 text-[var(--atlas-text)]">
+                <div className="break-all">{latestInvite.inviteLink}</div>
+                {latestInvite?.expiresAt ? (
+                  <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+                    Expires {formatDateTime(latestInvite.expiresAt)}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row lg:w-auto lg:flex-col">
+              <Button variant="primary" size="sm" className="w-full sm:w-auto" onClick={handleCopyInviteLink}>
+                <Copy size={14} />
+                Copy link
+              </Button>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleOpenInviteLink}>
+                <ExternalLink size={14} />
+                Open setup
+              </Button>
+            </div>
+          </div>
+        </Card>
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_minmax(340px,0.98fr)]">
@@ -1172,6 +1324,15 @@ export default function PlatformUsersPage() {
           setConfirm({ open: false, title: "", message: "", userId: null, type: "", value: false })
         }
         onConfirm={executeConfirm}
+      />
+      <PlatformUserModal
+        open={createUserOpen}
+        loading={creatingUser}
+        onClose={() => {
+          if (creatingUser) return;
+          setCreateUserOpen(false);
+        }}
+        onSubmit={handleCreatePlatformUser}
       />
     </div>
   );

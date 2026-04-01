@@ -46,6 +46,7 @@ const AcceptInvite = React.lazy(() => import("../pages/AcceptInvite"));
 
 const PlatformLayout = React.lazy(() => import("../layouts/PlatformLayout"));
 const PlatformLoginPage = React.lazy(() => import("../pages/platform/Login"));
+const PlatformInviteSetupPage = React.lazy(() => import("../pages/platform/InviteSetup"));
 const PlatformDashboardPage = React.lazy(() => import("../pages/platform/Dashboard"));
 const PlatformAppsPage = React.lazy(() => import("../pages/platform/Apps"));
 const PlatformMessagesPage = React.lazy(() => import("../pages/platform/Messages"));
@@ -274,6 +275,7 @@ export default function AppRoutes() {
               </PlatformProtectedRoute>
             }
           />
+          <Route path="/platform/setup" element={<PlatformInviteSetupPage />} />
 
           <Route
             path="/platform"

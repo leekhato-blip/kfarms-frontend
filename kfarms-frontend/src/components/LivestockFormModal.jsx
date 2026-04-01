@@ -104,6 +104,11 @@ export default function LivestockFormModal({
 
   async function submit(event) {
     event.preventDefault();
+    if (step < LIVESTOCK_STEPS.length - 1) {
+      if (!stepOneComplete) return;
+      setStep((current) => Math.min(current + 1, LIVESTOCK_STEPS.length - 1));
+      return;
+    }
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);

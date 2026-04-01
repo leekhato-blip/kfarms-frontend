@@ -4,6 +4,7 @@ import {
   enrichPlatformRequestConfig,
   getAlternatePlatformPath,
   getApiErrorMessage,
+  resolvePlatformAlternateRequestUrl,
   shouldAttachPlatformTenantHeader,
 } from "./platformClient";
 
@@ -81,6 +82,30 @@ describe("platformClient", () => {
     expect(applyPlatformRouteMode("/api/platform/apps", "direct")).toBe("/platform/apps");
     expect(getAlternatePlatformPath("/api/platform/users")).toBe("/platform/users");
     expect(getAlternatePlatformPath("/platform/users")).toBe("/api/platform/users");
+  });
+
+  it("rewrites direct fallback requests to the backend origin on local proxy hosts", () => {
+    expect(
+      resolvePlatformAlternateRequestUrl("/platform/users", {
+        location: {
+          protocol: "http:",
+          hostname: "localhost",
+          port: "5174",
+        },
+      }),
+    ).toBe("http://localhost:8080/platform/users");
+  });
+
+  it("leaves direct fallback requests alone outside local proxy hosts", () => {
+    expect(
+      resolvePlatformAlternateRequestUrl("/platform/users", {
+        location: {
+          protocol: "https:",
+          hostname: "kfarms-app.onrender.com",
+          port: "",
+        },
+      }),
+    ).toBe("/platform/users");
   });
 
   it("falls back when the backend returns an empty error message", () => {

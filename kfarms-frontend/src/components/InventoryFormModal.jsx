@@ -120,6 +120,14 @@ export default function InventoryFormModal({
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (step < INVENTORY_STEPS.length - 1) {
+      const canAdvance =
+        (step === 0 && stepOneComplete) ||
+        (step === 1 && stepTwoComplete);
+      if (!canAdvance) return;
+      setStep((current) => Math.min(current + 1, INVENTORY_STEPS.length - 1));
+      return;
+    }
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);

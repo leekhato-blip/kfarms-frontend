@@ -38,6 +38,7 @@ import {
   WORKSPACE_PERMISSIONS,
   hasWorkspacePermission,
 } from "../utils/workspacePermissions";
+import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 import {
   getAccountContactStatus,
   getOrganizationSettings,
@@ -129,21 +130,22 @@ function createAccountContactState(user, payload = {}) {
   const source = payload && typeof payload === "object" ? payload : {};
   const phoneNumber = String(source.phoneNumber || user?.phoneNumber || "").trim();
   const email = String(source.email || user?.email || "").trim();
-  const emailVerified = source.emailVerified ?? Boolean(user?.emailVerified);
-  const phoneVerified =
-    source.phoneVerified ?? (Boolean(phoneNumber) && Boolean(user?.phoneVerified));
+  const emailVerified = Boolean(source.emailVerified);
+  const phoneVerified = Boolean(source.phoneVerified);
+  const hasPhoneNumber = source.hasPhoneNumber ?? Boolean(phoneNumber);
+  const verificationRequired =
+    source.verificationRequired ??
+    (!emailVerified || (hasPhoneNumber && !phoneVerified));
 
   return {
     email,
     phoneNumber,
-    hasPhoneNumber: source.hasPhoneNumber ?? Boolean(phoneNumber),
+    hasPhoneNumber,
     maskedEmail: String(source.maskedEmail || email).trim(),
     maskedPhoneNumber: String(source.maskedPhoneNumber || phoneNumber).trim(),
-    emailVerified: Boolean(emailVerified),
-    phoneVerified: Boolean(phoneVerified),
-    verificationRequired:
-      source.verificationRequired ??
-      !(Boolean(emailVerified) && Boolean(phoneNumber) && Boolean(phoneVerified)),
+    emailVerified,
+    phoneVerified,
+    verificationRequired,
     preview:
       source.preview && typeof source.preview === "object" ? source.preview : null,
   };
@@ -382,7 +384,7 @@ export default function SettingsPage() {
     return () => {
       active = false;
     };
-  }, [activeTenant?.name, activeTenant?.slug, activeTenantId, userId]);
+  }, [activeTenant?.name, activeTenant?.slug, activeTenantId, user, userId]);
 
   function handleOrganizationChange(field, value) {
     setOrganizationSettings((prev) => ({ ...prev, [field]: value }));
@@ -1880,7 +1882,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="mt-4">
                     <Link
-                      to="/billing"
+                      to={currentPlanId === "FREE" ? buildBillingPlanFocusPath("PRO") : "/billing"}
                       className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       Manage billing

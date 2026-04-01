@@ -81,6 +81,70 @@ export default function PageLoader({ label = "Opening your farm…" }) {
       <div className="page-loader" style={fallback} role="status" aria-live="polite">
         <style>{`
           @keyframes kf-spin { to { transform: rotate(360deg); } }
+
+          .page-loader-card {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 18px 22px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 18px;
+          }
+
+          .page-loader-mark {
+            position: relative;
+            display: grid;
+            width: 52px;
+            height: 52px;
+            place-items: center;
+            overflow: hidden;
+            border-radius: 14px;
+            background: linear-gradient(140deg, #34d399 0%, #0ea5e9 100%);
+            flex-shrink: 0;
+          }
+
+          .page-loader-mark::after {
+            content: "";
+            position: absolute;
+            inset: 6px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.2);
+          }
+
+          .page-loader-ring {
+            position: relative;
+            z-index: 1;
+          }
+
+          .page-loader-core {
+            position: absolute;
+            z-index: 2;
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+          }
+
+          .page-loader-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+
+          .page-loader-title {
+            font-family: var(--font-header);
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: ${isDark ? "#e2e8f0" : "#0f172a"};
+          }
+
+          .page-loader-subtitle {
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: ${isDark ? "rgba(226, 232, 240, 0.7)" : "rgba(51, 65, 85, 0.78)"};
+          }
         `}</style>
         <div
           className="page-loader-card"

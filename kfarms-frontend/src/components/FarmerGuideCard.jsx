@@ -144,7 +144,7 @@ export default function FarmerGuideCard({
                       className="rounded-xl border border-white/50 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.04]"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-600 text-xs font-semibold text-white dark:bg-sky-500/80">
+                        <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-full bg-sky-600 px-1.5 text-[11px] font-semibold leading-none tabular-nums text-white sm:min-h-8 sm:min-w-8 sm:px-2 sm:text-xs dark:bg-sky-500/80">
                           {index + 1}
                         </span>
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100">

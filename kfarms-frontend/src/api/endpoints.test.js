@@ -14,8 +14,11 @@ describe("platform endpoints", () => {
     expect(PLATFORM_ENDPOINTS.apps).toBe("/api/platform/apps");
     expect(PLATFORM_ENDPOINTS.tenants).toBe("/api/platform/tenants");
     expect(PLATFORM_ENDPOINTS.users).toBe("/api/platform/users");
+    expect(PLATFORM_ENDPOINTS.userInvites).toBe("/api/platform/users/invites");
     expect(PLATFORM_ENDPOINTS.tenantDetails(42)).toBe("/api/platform/tenants/42");
     expect(PLATFORM_ENDPOINTS.userEnabled(7)).toBe("/api/platform/users/7/enabled");
+    expect(PLATFORM_ENDPOINTS.platformInviteResolve).toBe("/api/auth/platform-invites/resolve");
+    expect(PLATFORM_ENDPOINTS.platformInviteAccept).toBe("/api/auth/platform-invites/accept");
   });
 
   it("normalizes login endpoints so they do not double-prefix api", () => {

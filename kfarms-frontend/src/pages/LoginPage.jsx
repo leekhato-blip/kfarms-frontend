@@ -2,7 +2,7 @@ import React from "react";
 import AuthCard from "../components/AuthCard";
 import AuthWatermark from "../components/AuthWatermark";
 import GlassToast from "../components/GlassToast";
-import { useAuth } from "../hooks/useAuth";
+import { PLATFORM_ONLY_WORKSPACE_MESSAGE, useAuth } from "../hooks/useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import PageWrapper from "../components/PageWrapper";
@@ -12,8 +12,6 @@ import { getAuthTrustText } from "../constants/authCopy";
 import { useTenant } from "../tenant/TenantContext";
 import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import {
-  DEMO_ACCOUNT_EMAIL,
-  DEMO_ACCOUNT_PASSWORD,
   isDemoAccountUser,
 } from "../auth/demoMode";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
@@ -88,6 +86,10 @@ export default function LoginPage() {
   }, []);
 
   const getLoginErrorMessage = (err) => {
+    if (err?.platformOnlyAccount || err?.code === "ERR_PLATFORM_ONLY_ACCOUNT") {
+      return PLATFORM_ONLY_WORKSPACE_MESSAGE;
+    }
+
     const status = err?.response?.status;
     const isNetwork =
       err?.message === "Network Error" ||
@@ -185,13 +187,6 @@ export default function LoginPage() {
     e.preventDefault();
     void submitLogin(identifier, password);
   }
-
-  function handleDemoLogin() {
-    setIdentifier(DEMO_ACCOUNT_EMAIL);
-    setPassword(DEMO_ACCOUNT_PASSWORD);
-    void submitLogin(DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD);
-  }
-
 
   return (
     <PageWrapper>
@@ -311,19 +306,6 @@ export default function LoginPage() {
                   >
                     Forgot password
                   </Link>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-3.5 py-2.5 text-left dark:border-emerald-400/20 dark:bg-emerald-500/10">
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-200">
-                    Need a quick walkthrough?
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleDemoLogin}
-                    className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                  >
-                    Open demo
-                  </button>
                 </div>
 
                 <div className="flex items-center gap-2 pt-1 text-xs text-slate-400">

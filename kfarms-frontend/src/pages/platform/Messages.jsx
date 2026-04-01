@@ -283,10 +283,10 @@ export default function PlatformMessagesPage() {
               Support Inbox
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.35rem]">
-              Stay close to every tenant signal.
+              ROOTS support inbox.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Spot pressure early, reply with speed, and keep the line moving.
+              Handle tenant issues fast.
             </div>
           </div>
           <Button

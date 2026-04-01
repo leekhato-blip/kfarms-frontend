@@ -5,6 +5,7 @@ import { X, Download } from "lucide-react";
 import { useTenant } from "../tenant/TenantContext";
 import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
 import { normalizeExportCategory, normalizeExportType } from "../services/reportService";
+import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 import PlanUpgradePrompt from "./PlanUpgradePrompt";
 
 const DEFAULT_CATEGORIES = [
@@ -215,7 +216,7 @@ export default function ExportModal({
                 </button>
               ) : (
                 <Link
-                  to="/billing?plan=PRO"
+                  to={buildBillingPlanFocusPath("PRO")}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white hover:opacity-90 sm:w-auto sm:min-w-[8.5rem]"
                 >
                   <Download className="w-4 h-4" />

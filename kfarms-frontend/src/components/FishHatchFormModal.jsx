@@ -95,6 +95,11 @@ export default function FishHatchFormModal({
 
   async function submit(event) {
     event.preventDefault();
+    if (step < HATCH_STEPS.length - 1) {
+      if (pondsEmpty || !stepOneComplete) return;
+      setStep((current) => Math.min(current + 1, HATCH_STEPS.length - 1));
+      return;
+    }
     if (pondsEmpty || !stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);

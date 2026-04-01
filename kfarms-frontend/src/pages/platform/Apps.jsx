@@ -24,8 +24,8 @@ import {
 import PortfolioAnalyticsSection from "./PortfolioAnalyticsSection";
 import PlatformAppModal from "./PlatformAppModal";
 import {
-  buildPlatformCatalogPortfolio,
   buildPlatformDemoSnapshot,
+  buildPlatformLiveSnapshot,
   mergeLivePlatformPortfolio,
 } from "./platformWorkbench";
 import { resolvePlatformAccessTier } from "./platformInsights";
@@ -198,6 +198,7 @@ export default function PlatformAppsPage() {
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
   const accessTier = React.useMemo(
     () => resolvePlatformAccessTier(currentUser),
     [currentUser],
@@ -246,14 +247,14 @@ export default function PlatformAppsPage() {
       const response = await platformAxios.get(PLATFORM_ENDPOINTS.apps);
       const payload = unwrapApiResponse(response.data, "Failed to load app portfolio");
       const livePortfolio = mergeLivePlatformPortfolio(normalizeAppPortfolio(payload), customApps);
-      setPortfolio(livePortfolio.apps.length > 0 ? livePortfolio : demoSnapshot.portfolio);
+      setPortfolio(livePortfolio);
     } catch (portfolioError) {
-      setPortfolio(demoSnapshot.portfolio);
+      setPortfolio(liveSnapshot.portfolio);
       setError(getApiErrorMessage(portfolioError, "Failed to load app portfolio"));
     } finally {
       setLoading(false);
     }
-  }, [customApps, demoSnapshot.portfolio, platformDataMode]);
+  }, [customApps, demoSnapshot.portfolio, liveSnapshot.portfolio, platformDataMode]);
 
   React.useEffect(() => {
     loadPortfolio();
@@ -301,6 +302,23 @@ export default function PlatformAppsPage() {
     () => splitAppsByLifecycle(visibleApps),
     [visibleApps],
   );
+  const portfolioActiveWorkspaces = React.useMemo(
+    () => portfolio.apps.reduce((sum, app) => sum + Number(app.activeTenantCount || 0), 0),
+    [portfolio.apps],
+  );
+  const portfolioRecurringRevenue = React.useMemo(
+    () => portfolio.apps.reduce((sum, app) => sum + Number(app.revenueGenerated || 0), 0),
+    [portfolio.apps],
+  );
+  const billingAppsCount = React.useMemo(
+    () => portfolio.apps.filter((app) => Number(app.revenueGenerated || 0) > 0).length,
+    [portfolio.apps],
+  );
+  const portfolioRevenueCurrency = React.useMemo(
+    () =>
+      portfolio.apps.find((app) => String(app.revenueCurrency || "").trim())?.revenueCurrency || "NGN",
+    [portfolio.apps],
+  );
 
   const openConsole = React.useCallback(
     (app) => {
@@ -320,12 +338,12 @@ export default function PlatformAppsPage() {
               App Portfolio
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.4rem]">
-              Shape what ROOTS launches next.
+              ROOTS app hub.
             </h1>
             <p className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Track live lanes, planned lanes, and the products pulling growth.
+              Track live lanes and what ships next.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {canManagePortfolio ? (
                 <Button
                   variant="primary"
@@ -336,23 +354,25 @@ export default function PlatformAppsPage() {
                   Create app
                 </Button>
               ) : null}
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={loadPortfolio}
-                disabled={loading}
-              >
-                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                Refresh
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full sm:w-auto"
-                onClick={() => navigate("/platform")}
-              >
-                <Rocket size={14} />
-                Open hub
-              </Button>
+              <div className="grid grid-cols-2 gap-3 sm:contents">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={loadPortfolio}
+                  disabled={loading}
+                >
+                  <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                  Refresh
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full sm:w-auto"
+                  onClick={() => navigate("/platform")}
+                >
+                  <Rocket size={14} />
+                  Open hub
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -366,36 +386,44 @@ export default function PlatformAppsPage() {
           <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--atlas-muted)]">
-                Portfolio Status
+                Portfolio Signal
               </div>
               <div className="mt-1 font-header text-xl font-semibold text-[var(--atlas-text-strong)]">
-                Live and planned
+                Reach and revenue
               </div>
             </div>
             <Globe2 size={18} className="shrink-0 text-violet-600 dark:text-fuchsia-300" />
           </div>
 
-          <div className="relative z-10 mt-6 space-y-4">
+          <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 xl:grid-cols-1">
             <div className="rounded-[1.25rem] border border-indigo-300/40 bg-indigo-50/75 p-4 dark:border-indigo-400/20 dark:bg-indigo-500/10">
               <div className="text-[10px] uppercase tracking-[0.2em] text-indigo-700 dark:text-indigo-200/80">
-                Live
+                Operators
               </div>
-              <div className="mt-2 text-3xl font-semibold text-[var(--atlas-text-strong)]">
-                {formatNumber(portfolio.liveApps)}
+              <div className="mt-2 text-3xl font-semibold leading-none text-[var(--atlas-text-strong)]">
+                {formatNumber(portfolio.totalOperators)}
               </div>
-              <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                Serving workspaces now.
+              <div className="mt-2 text-xs text-[var(--atlas-muted)]">
+                {formatNumber(portfolioActiveWorkspaces)} active workspace
+                {portfolioActiveWorkspaces === 1 ? "" : "s"} in play.
               </div>
             </div>
-            <div className="rounded-[1.25rem] border border-violet-300/40 bg-violet-50/75 p-4 dark:border-fuchsia-400/20 dark:bg-fuchsia-500/10">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-violet-700 dark:text-fuchsia-200/80">
-                Upcoming
+            <div className="rounded-[1.25rem] border border-emerald-300/40 bg-emerald-50/75 p-4 dark:border-emerald-400/20 dark:bg-emerald-500/10">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-200/80">
+                Recurring revenue
               </div>
-              <div className="mt-2 text-3xl font-semibold text-[var(--atlas-text-strong)]">
-                {formatNumber(portfolio.plannedApps)}
+              <div
+                className="mt-2 text-[clamp(1.35rem,4vw,2rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-[var(--atlas-text-strong)]"
+                title={formatCurrencyValue(portfolioRecurringRevenue, portfolioRevenueCurrency)}
+              >
+                {formatCompactCurrencyValue(portfolioRecurringRevenue, portfolioRevenueCurrency, {
+                  maximumFractionDigits: 1,
+                })}
               </div>
-              <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                Ready for launch.
+              <div className="mt-2 text-xs text-[var(--atlas-muted)]">
+                {billingAppsCount > 0
+                  ? `${formatNumber(billingAppsCount)} billing lane${billingAppsCount === 1 ? "" : "s"} active.`
+                  : "Billing starts when a lane goes live."}
               </div>
             </div>
           </div>
@@ -404,7 +432,7 @@ export default function PlatformAppsPage() {
 
       {error && (
         <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
-          {error}. Showing saved app data while live data catches up.
+          {error}
         </div>
       )}
 

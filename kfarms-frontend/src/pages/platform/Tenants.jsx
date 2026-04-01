@@ -39,7 +39,7 @@ import {
   getSeatUsageSummary,
   getTenantId,
 } from "./platformInsights";
-import { buildPlatformDemoSnapshot } from "./platformWorkbench";
+import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
 
 const PLAN_OPTIONS = ["", ...PLAN_IDS];
 const STATUS_OPTIONS = ["", "ACTIVE", "SUSPENDED"];
@@ -161,6 +161,7 @@ export default function PlatformTenantsPage() {
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
 
   const [searchInput, setSearchInput] = React.useState(
     () => searchParamValue,
@@ -255,39 +256,20 @@ export default function PlatformTenantsPage() {
       const payload = unwrapApiResponse(response.data, "Failed to load tenants");
       const normalized = normalizePagination(payload, { page, size });
       const nextTenants = normalized.items || [];
-      const filteredFallbackTenants = filterDemoTenants(demoSnapshot.tenants, {
-        search,
-        plan,
-        status,
-      });
-      const paginatedFallbackTenants = paginateItems(filteredFallbackTenants, page, size);
-
-      if (nextTenants.length === 0) {
-        setTenants(paginatedFallbackTenants.items);
-        setTotalItems(paginatedFallbackTenants.totalItems);
-        setTotalPages(paginatedFallbackTenants.totalPages);
-      } else {
-        setTenants(nextTenants);
-        setTotalItems(normalized.totalItems);
-        setTotalPages(normalized.totalPages);
-      }
+      setTenants(nextTenants);
+      setTotalItems(normalized.totalItems);
+      setTotalPages(normalized.totalPages);
     } catch (fetchError) {
-      const fallbackTenants = filterDemoTenants(demoSnapshot.tenants, {
-        search,
-        plan,
-        status,
-      });
-      const paginatedFallbackTenants = paginateItems(fallbackTenants, page, size);
       setError(
         platformLimitedAccess ? "" : getApiErrorMessage(fetchError, "Failed to load tenants"),
       );
-      setTenants(paginatedFallbackTenants.items);
-      setTotalItems(paginatedFallbackTenants.totalItems);
-      setTotalPages(paginatedFallbackTenants.totalPages);
+      setTenants(liveSnapshot.tenants);
+      setTotalItems(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  }, [demoSnapshot.tenants, page, plan, platformDataMode, platformLimitedAccess, search, size, status]);
+  }, [demoSnapshot.tenants, liveSnapshot.tenants, page, plan, platformDataMode, platformLimitedAccess, search, size, status]);
 
   React.useEffect(() => {
     fetchTenants();
@@ -342,11 +324,7 @@ export default function PlatformTenantsPage() {
         setStatusDraft(String(payload?.status || "ACTIVE").toUpperCase());
       } catch (detailError) {
         const fallbackTenant =
-          (platformLimitedAccess
-            ? demoSnapshot.tenants.find((tenant) => getTenantId(tenant) === tenantId)
-            : null) ||
-          tenants.find((tenant) => getTenantId(tenant) === tenantId) ||
-          null;
+          tenants.find((tenant) => getTenantId(tenant) === tenantId) || null;
         setSelectedTenant(fallbackTenant);
         setPlanDraft(String(fallbackTenant?.plan || "FREE").toUpperCase());
         setStatusDraft(String(fallbackTenant?.status || "ACTIVE").toUpperCase());
@@ -436,7 +414,10 @@ export default function PlatformTenantsPage() {
     [selectedTenant, selectedTenantSummary],
   );
 
-  const memberRows = Array.isArray(selectedTenant?.members) ? selectedTenant.members : [];
+  const memberRows = React.useMemo(
+    () => (Array.isArray(selectedTenant?.members) ? selectedTenant.members : []),
+    [selectedTenant?.members],
+  );
   const filteredMemberRows = React.useMemo(() => {
     const query = deferredMemberSearch.toLowerCase();
     if (!query) return memberRows;
@@ -499,10 +480,10 @@ export default function PlatformTenantsPage() {
               Tenant Workspaces
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.35rem]">
-              Watch every ROOTS workspace take shape.
+              ROOTS workspace network.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Plans, team limits, and live posture stay in one lane.
+              Track plans, team limits, and live status.
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={fetchTenants}>

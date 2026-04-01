@@ -20,7 +20,10 @@ import Button from "../components/Button";
 import rootsLogo from "../assets/roots-logo.png";
 import { PLATFORM_ENDPOINTS } from "../api/endpoints";
 import { platformAxios, unwrapApiResponse } from "../api/platformClient";
-import { buildPlatformDemoSnapshot } from "../pages/platform/platformWorkbench";
+import {
+  buildPlatformDemoSnapshot,
+  buildPlatformLiveSnapshot,
+} from "../pages/platform/platformWorkbench";
 import { formatNumber } from "../utils/formatters";
 
 const ATLAS_NAV_ITEMS = [
@@ -95,9 +98,16 @@ function clampPulseHeight(value, minimum = 22, maximum = 82) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
+function normalizePlatformPathname(pathname = "") {
+  const normalized = String(pathname || "").replace(/\/+$/, "");
+  return normalized || "/";
+}
+
 function isPulseRouteActive(pathname, targetPath) {
-  if (!targetPath) return false;
-  return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
+  const currentPath = normalizePlatformPathname(pathname);
+  const normalizedTargetPath = normalizePlatformPathname(targetPath);
+  if (!normalizedTargetPath) return false;
+  return currentPath === normalizedTargetPath || currentPath.startsWith(`${normalizedTargetPath}/`);
 }
 
 function buildSidebarPulseSignals(metrics = {}, pathname = "") {
@@ -471,8 +481,11 @@ export default function Sidebar({
   const navigate = useNavigate();
   const location = useLocation();
   const demoSnapshot = React.useMemo(() => buildPlatformDemoSnapshot(customApps), [customApps]);
-  const [pulseMetrics, setPulseMetrics] = React.useState(() => demoSnapshot.metrics);
-  const [pulseSource, setPulseSource] = React.useState(() => (platformDataMode === "demo" ? "demo" : "fallback"));
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
+  const [pulseMetrics, setPulseMetrics] = React.useState(
+    () => (platformDataMode === "demo" ? demoSnapshot.metrics : liveSnapshot.metrics),
+  );
+  const [pulseSource, setPulseSource] = React.useState(() => (platformDataMode === "demo" ? "demo" : "live"));
   const [hoveredPulseId, setHoveredPulseId] = React.useState("");
 
   React.useEffect(() => {
@@ -489,13 +502,13 @@ export default function Sidebar({
         const response = await platformAxios.get(PLATFORM_ENDPOINTS.overview);
         const payload = unwrapApiResponse(response.data, "Failed to load platform overview");
         if (!cancelled) {
-          setPulseMetrics({ ...demoSnapshot.metrics, ...(payload || {}) });
+          setPulseMetrics({ ...liveSnapshot.metrics, ...(payload || {}) });
           setPulseSource("live");
         }
       } catch {
         if (!cancelled) {
-          setPulseMetrics(demoSnapshot.metrics);
-          setPulseSource("fallback");
+          setPulseMetrics(liveSnapshot.metrics);
+          setPulseSource("live");
         }
       }
     }
@@ -505,7 +518,7 @@ export default function Sidebar({
     return () => {
       cancelled = true;
     };
-  }, [demoSnapshot.metrics, platformDataMode]);
+  }, [demoSnapshot.metrics, liveSnapshot.metrics, platformDataMode]);
 
   const pulseSignals = React.useMemo(
     () => buildSidebarPulseSignals(pulseMetrics, location.pathname),

@@ -35,8 +35,11 @@ export const PLATFORM_ENDPOINTS = {
   tenantPlan: (tenantId) => `/api/platform/tenants/${tenantId}/plan`,
   tenantStatus: (tenantId) => `/api/platform/tenants/${tenantId}/status`,
   users: "/api/platform/users",
+  userInvites: "/api/platform/users/invites",
   userPlatformAdmin: (userId) => `/api/platform/users/${userId}/platform-admin`,
   userEnabled: (userId) => `/api/platform/users/${userId}/enabled`,
+  platformInviteResolve: "/api/auth/platform-invites/resolve",
+  platformInviteAccept: "/api/auth/platform-invites/accept",
 };
 
 export function cleanQueryParams(params = {}) {

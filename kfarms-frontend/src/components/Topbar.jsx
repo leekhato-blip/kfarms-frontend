@@ -1189,7 +1189,7 @@ export default function Topbar() {
           </div>
 
           {/* Quick Add */}
-          <div className="relative">
+          <div className="relative hidden md:block">
             <button
               onClick={() => {
                 setNotifOpen(false);

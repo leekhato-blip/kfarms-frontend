@@ -32,6 +32,7 @@ import {
   isFeatureIncluded,
   normalizePlanId,
 } from "../constants/plans";
+import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 
 const PLAN_TONE = {
   FREE: {
@@ -760,7 +761,7 @@ export default function ProductProfilePage() {
                     actionPath = activeTenantId ? "/billing" : workspacePath;
                     actionLabel = activeTenantId ? "Manage Free Plan" : "Start Free";
                   } else if (plan.id === "PRO") {
-                    actionPath = "/billing?plan=PRO";
+                    actionPath = buildBillingPlanFocusPath("PRO");
                     actionLabel =
                       currentTenantPlanId === "PRO"
                         ? "Manage Pro Plan"

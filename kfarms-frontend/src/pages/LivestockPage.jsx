@@ -414,6 +414,7 @@ export default function LivestockPage() {
       { HEALTHY: 0, WATCHLIST: 0, CRITICAL: 0, UNKNOWN: 0 },
     );
   }, [batchCards]);
+  const atRiskGroups = healthCounts.WATCHLIST + healthCounts.CRITICAL;
 
   const filteredGroupCards = useMemo(() => {
     return batchCards.filter((batch) => {
@@ -528,6 +529,55 @@ export default function LivestockPage() {
       percent: ((b.count / total) * 100).toFixed(1),
     }));
   }, [items]);
+
+  const mobileOverviewCards = useMemo(
+    () => [
+      {
+        id: "alive",
+        label: "Birds in care",
+        value: formatNumber(totalAlive),
+        detail: "Across all flocks",
+        icon: Feather,
+        iconClass: "text-emerald-500 dark:text-emerald-300",
+      },
+      {
+        id: "losses",
+        label: "Losses",
+        value: formatNumber(totalLosses),
+        detail: `Rate ${formatPercent(mortalityRate)}`,
+        icon: AlertTriangle,
+        iconClass: "text-amber-500 dark:text-yellow-300",
+      },
+      {
+        id: "groups",
+        label: "Active flocks",
+        value: formatNumber(totalGroupes),
+        detail: metaRangeDays ? `Last ${metaRangeDays} days` : "All time",
+        icon: Calendar,
+        iconClass: "text-cyan-500 dark:text-cyan-300",
+      },
+      {
+        id: "health",
+        label: "At risk",
+        value: formatNumber(atRiskGroups),
+        detail: `Healthy ${healthCounts.HEALTHY}`,
+        icon: ShieldCheck,
+        iconClass:
+          atRiskGroups > 0
+            ? "text-amber-500 dark:text-amber-300"
+            : "text-emerald-500 dark:text-emerald-300",
+      },
+    ],
+    [
+      atRiskGroups,
+      healthCounts.HEALTHY,
+      metaRangeDays,
+      mortalityRate,
+      totalAlive,
+      totalGroupes,
+      totalLosses,
+    ],
+  );
 
 
 
@@ -663,7 +713,51 @@ export default function LivestockPage() {
 
         
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:hidden">
+          {overviewLoading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div
+                key={`mobile-overview-skeleton-${idx}`}
+                className="min-h-[108px] rounded-2xl bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark"
+                aria-hidden="true"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="skeleton-glass h-3.5 w-20 rounded" />
+                  <div className="skeleton-glass h-8 w-8 rounded-full" />
+                </div>
+                <div className="skeleton-glass mt-4 h-8 w-20 rounded" />
+                <div className="skeleton-glass mt-3 h-3 w-16 rounded" />
+              </div>
+            ))
+          ) : (
+            mobileOverviewCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article
+                  key={card.id}
+                  className="min-h-[108px] rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-lightMuted dark:text-darkMuted">
+                        {card.label}
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-lightText dark:text-darkText">
+                        {card.value}
+                      </div>
+                    </div>
+                    <Icon className={`h-5 w-5 shrink-0 ${card.iconClass}`} />
+                  </div>
+                  <div className="mt-3 text-xs text-lightMuted dark:text-darkMuted">
+                    {card.detail}
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 sm:grid sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {overviewLoading ? (
             Array.from({ length: 4 }).map((_, idx) => (
               <div

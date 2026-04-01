@@ -92,6 +92,11 @@ export default function SalesFormModal({
 
   async function submit(event) {
     event.preventDefault();
+    if (step < SALE_STEPS.length - 1) {
+      if (!stepOneComplete) return;
+      setStep((current) => Math.min(current + 1, SALE_STEPS.length - 1));
+      return;
+    }
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);

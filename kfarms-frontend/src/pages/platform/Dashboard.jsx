@@ -11,7 +11,6 @@ import { getApiErrorMessage, platformAxios, unwrapApiResponse } from "../../api/
 import { PLATFORM_ENDPOINTS } from "../../api/endpoints";
 import {
   formatCompactCurrencyValue,
-  formatCurrencyValue,
   formatDateTime,
   formatNumber,
   normalizePagination,
@@ -25,8 +24,8 @@ import {
 } from "./appHub";
 import PortfolioAnalyticsSection from "./PortfolioAnalyticsSection";
 import {
-  buildPlatformCatalogPortfolio,
   buildPlatformDemoSnapshot,
+  buildPlatformLiveSnapshot,
   mergeLivePlatformPortfolio,
 } from "./platformWorkbench";
 import { filterPlatformUsers, resolvePlatformAccessTier } from "./platformInsights";
@@ -406,6 +405,7 @@ export default function PlatformDashboardPage() {
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
 
   const [metrics, setMetrics] = React.useState(FALLBACK);
   const [overviewLoading, setOverviewLoading] = React.useState(true);
@@ -440,21 +440,16 @@ export default function PlatformDashboardPage() {
       const response = await platformAxios.get(PLATFORM_ENDPOINTS.overview);
       const data = unwrapApiResponse(response.data, "Failed to load platform overview");
       const nextMetrics = { ...FALLBACK, ...(data || {}) };
-      const hasLiveOverviewData = Boolean(
-        Number(nextMetrics.totalTenants || 0) ||
-          Number(nextMetrics.totalUsers || 0) ||
-          Number(nextMetrics.platformAdmins || 0),
-      );
-      setMetrics(hasLiveOverviewData ? nextMetrics : demoSnapshot.metrics);
+      setMetrics(nextMetrics);
     } catch (error) {
-      setMetrics(demoSnapshot.metrics);
+      setMetrics(liveSnapshot.metrics);
       setOverviewError(
         platformLimitedAccess ? "" : getApiErrorMessage(error, "Overview unavailable"),
       );
     } finally {
       setOverviewLoading(false);
     }
-  }, [demoSnapshot.metrics, platformDataMode, platformLimitedAccess]);
+  }, [demoSnapshot.metrics, liveSnapshot.metrics, platformDataMode, platformLimitedAccess]);
 
   const loadPortfolio = React.useCallback(async () => {
     setPortfolioLoading(true);
@@ -470,16 +465,16 @@ export default function PlatformDashboardPage() {
       const response = await platformAxios.get(PLATFORM_ENDPOINTS.apps);
       const data = unwrapApiResponse(response.data, "Failed to load app portfolio");
       const livePortfolio = mergeLivePlatformPortfolio(normalizeAppPortfolio(data), customApps);
-      setPortfolio(livePortfolio.apps.length > 0 ? livePortfolio : demoSnapshot.portfolio);
+      setPortfolio(livePortfolio);
     } catch (error) {
-      setPortfolio(demoSnapshot.portfolio);
+      setPortfolio(liveSnapshot.portfolio);
       setPortfolioError(
         platformLimitedAccess ? "" : getApiErrorMessage(error, "App portfolio unavailable"),
       );
     } finally {
       setPortfolioLoading(false);
     }
-  }, [customApps, demoSnapshot.portfolio, platformDataMode, platformLimitedAccess]);
+  }, [customApps, demoSnapshot.portfolio, liveSnapshot.portfolio, platformDataMode, platformLimitedAccess]);
 
   const loadRecentTenants = React.useCallback(async () => {
     setTenantsLoading(true);
@@ -498,16 +493,16 @@ export default function PlatformDashboardPage() {
       const payload = unwrapApiResponse(response.data, "Failed to load tenants");
       const normalized = normalizePagination(payload, { page: 0, size: 5 });
       const nextTenants = normalized.items || [];
-      setRecentTenants(nextTenants.length === 0 ? demoSnapshot.tenants : nextTenants);
+      setRecentTenants(nextTenants);
     } catch (error) {
-      setRecentTenants(demoSnapshot.tenants);
+      setRecentTenants(liveSnapshot.tenants);
       setTenantsError(
         platformLimitedAccess ? "" : getApiErrorMessage(error, "Failed to load tenants"),
       );
     } finally {
       setTenantsLoading(false);
     }
-  }, [demoSnapshot.tenants, platformDataMode, platformLimitedAccess]);
+  }, [demoSnapshot.tenants, liveSnapshot.tenants, platformDataMode, platformLimitedAccess]);
 
   const loadRecentUsers = React.useCallback(async () => {
     setUsersLoading(true);
@@ -526,16 +521,16 @@ export default function PlatformDashboardPage() {
       const payload = unwrapApiResponse(response.data, "Failed to load users");
       const normalized = normalizePagination(payload, { page: 0, size: 5 });
       const nextUsers = filterPlatformUsers(normalized.items);
-      setRecentUsers(nextUsers.length === 0 ? filterPlatformUsers(demoSnapshot.users) : nextUsers);
+      setRecentUsers(nextUsers);
     } catch (error) {
-      setRecentUsers(filterPlatformUsers(demoSnapshot.users));
+      setRecentUsers(filterPlatformUsers(liveSnapshot.users));
       setUsersError(
         platformLimitedAccess ? "" : getApiErrorMessage(error, "Failed to load users"),
       );
     } finally {
       setUsersLoading(false);
     }
-  }, [demoSnapshot.users, platformDataMode, platformLimitedAccess]);
+  }, [demoSnapshot.users, liveSnapshot.users, platformDataMode, platformLimitedAccess]);
 
   const loadAll = React.useCallback(async () => {
     await Promise.all([loadOverview(), loadPortfolio(), loadRecentTenants(), loadRecentUsers()]);
@@ -688,7 +683,7 @@ export default function PlatformDashboardPage() {
                 Platform Snapshot
               </div>
               <h1 className="mt-5 max-w-xl font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.6rem]">
-                See the ROOTS network move from one control room.
+                ROOTS network control room.
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--atlas-muted)] md:text-[15px]">
                 Track growth, risk, access, and uptime in one live pulse.

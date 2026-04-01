@@ -28,7 +28,7 @@ import {
   resolvePlatformUserEnabled,
   resolvePlatformUserRole,
 } from "./platformInsights";
-import { buildPlatformDemoSnapshot } from "./platformWorkbench";
+import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
 
 const FALLBACK_OVERVIEW = {
   totalTenants: 0,
@@ -131,6 +131,7 @@ export default function PlatformHealthPage() {
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
 
   const [overview, setOverview] = React.useState(FALLBACK_OVERVIEW);
   const [tenants, setTenants] = React.useState([]);
@@ -172,25 +173,13 @@ export default function PlatformHealthPage() {
       const nextUsers = filterPlatformUsers(
         normalizePagination(userPayload, { page: 0, size: 100 }).items,
       );
-      const hasLiveOverviewData = Boolean(
-        Number(nextOverview.totalTenants || 0) ||
-          Number(nextOverview.totalUsers || 0) ||
-          Number(nextOverview.platformAdmins || 0),
-      );
-
-      if (!hasLiveOverviewData && nextTenants.length === 0 && nextUsers.length === 0) {
-        setOverview(demoSnapshot.metrics);
-        setTenants(demoSnapshot.tenants);
-        setUsers(filterPlatformUsers(demoSnapshot.users));
-      } else {
-        setOverview(nextOverview);
-        setTenants(nextTenants);
-        setUsers(nextUsers);
-      }
+      setOverview(nextOverview);
+      setTenants(nextTenants);
+      setUsers(nextUsers);
     } catch (snapshotError) {
-      setOverview(demoSnapshot.metrics);
-      setTenants(demoSnapshot.tenants);
-      setUsers(filterPlatformUsers(demoSnapshot.users));
+      setOverview(liveSnapshot.metrics);
+      setTenants(liveSnapshot.tenants);
+      setUsers(filterPlatformUsers(liveSnapshot.users));
       setError(
         platformLimitedAccess
           ? ""
@@ -199,7 +188,7 @@ export default function PlatformHealthPage() {
     } finally {
       setLoading(false);
     }
-  }, [demoSnapshot, platformDataMode, platformLimitedAccess]);
+  }, [demoSnapshot, liveSnapshot, platformDataMode, platformLimitedAccess]);
 
   React.useEffect(() => {
     loadSnapshot();
@@ -327,10 +316,10 @@ export default function PlatformHealthPage() {
               ROOTS Health
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.4rem]">
-              Read the ROOTS pulse before risk lands.
+              ROOTS system health.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Capacity, access, and tenant strain in one live feed.
+              Track uptime, load, and workspace risk.
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2.5">

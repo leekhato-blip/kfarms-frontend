@@ -39,8 +39,8 @@ import {
 import { normalizePagination } from "../utils/formatters";
 import { normalizeAppPortfolio } from "../pages/platform/appHub";
 import {
-  buildPlatformCatalogPortfolio,
   buildPlatformDemoSnapshot,
+  buildPlatformLiveSnapshot,
   mergeLivePlatformPortfolio,
 } from "../pages/platform/platformWorkbench";
 import { resolvePlatformAccessTier } from "../pages/platform/platformInsights";
@@ -67,6 +67,20 @@ const COMPACT_NAV_ITEMS = [
 
 function cn(...values) {
   return values.filter(Boolean).join(" ");
+}
+
+function normalizePlatformPathname(pathname = "") {
+  const normalized = String(pathname || "").replace(/\/+$/, "");
+  return normalized || "/";
+}
+
+function isCompactNavItemActive(pathname, item) {
+  const currentPath = normalizePlatformPathname(pathname);
+  const targetPath = normalizePlatformPathname(item?.to);
+
+  if (!targetPath) return false;
+  if (item?.end) return currentPath === targetPath;
+  return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 }
 
 function quickActionToneClasses(tone) {
@@ -199,6 +213,10 @@ export default function Topbar({
   const [profileOpen, setProfileOpen] = React.useState(false);
   const deferredSearchQuery = React.useDeferredValue(searchQuery.trim());
   const isDark = theme === "dark";
+  const normalizedPathname = React.useMemo(
+    () => normalizePlatformPathname(location.pathname),
+    [location.pathname],
+  );
   const accessTier = React.useMemo(
     () => resolvePlatformAccessTier(currentUser),
     [currentUser],
@@ -223,6 +241,7 @@ export default function Topbar({
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
 
   const closeInlinePanels = React.useCallback(() => {
     setSearchOpen(false);
@@ -391,33 +410,25 @@ export default function Topbar({
         });
       } else {
         nextNotifications = await loadLiveNotifications(customApps);
-        if (nextNotifications.length === 0) {
-          nextNotifications = buildPlatformNotifications({
-            overview: demoSnapshot.metrics,
-            portfolio: demoSnapshot.portfolio,
-            tenants: demoSnapshot.tenants,
-            users: demoSnapshot.users,
-          });
-        }
       }
 
       setNotifications(nextNotifications);
-      } catch (error) {
+    } catch (error) {
       setNotificationsError(
         limitedLiveAccess ? "" : getApiErrorMessage(error, "Unable to load notifications"),
       );
       setNotifications(
         buildPlatformNotifications({
-          overview: demoSnapshot.metrics,
-          portfolio: demoSnapshot.portfolio,
-          tenants: demoSnapshot.tenants,
-          users: demoSnapshot.users,
+          overview: liveSnapshot.metrics,
+          portfolio: liveSnapshot.portfolio,
+          tenants: liveSnapshot.tenants,
+          users: liveSnapshot.users,
         }),
       );
     } finally {
       setNotificationsLoading(false);
     }
-  }, [customApps, dataMode, demoSnapshot, limitedLiveAccess]);
+  }, [customApps, dataMode, demoSnapshot, limitedLiveAccess, liveSnapshot]);
 
   React.useEffect(() => {
     loadNotifications();
@@ -449,15 +460,6 @@ export default function Topbar({
           });
         } else {
           nextResults = await loadLiveSearchResults(deferredSearchQuery, customApps);
-          if (nextResults.length === 0) {
-            nextResults = buildPlatformSearchResults({
-              query: deferredSearchQuery,
-              apps: demoSnapshot.portfolio.apps,
-              tenants: demoSnapshot.tenants,
-              users: demoSnapshot.users,
-              limit: 10,
-            });
-          }
         }
 
         if (cancelled) return;
@@ -467,12 +469,11 @@ export default function Topbar({
       } catch {
         if (cancelled) return;
 
-        const fallbackPortfolio = demoSnapshot.portfolio;
         const nextResults = buildPlatformSearchResults({
           query: deferredSearchQuery,
-          apps: fallbackPortfolio.apps,
-          tenants: demoSnapshot.tenants,
-          users: demoSnapshot.users,
+          apps: liveSnapshot.portfolio.apps,
+          tenants: liveSnapshot.tenants,
+          users: liveSnapshot.users,
           limit: 10,
         });
 
@@ -490,7 +491,7 @@ export default function Topbar({
     return () => {
       cancelled = true;
     };
-  }, [customApps, dataMode, deferredSearchQuery, demoSnapshot, limitedLiveAccess]);
+  }, [customApps, dataMode, deferredSearchQuery, demoSnapshot, limitedLiveAccess, liveSnapshot]);
 
   React.useEffect(() => {
     if (!(searchOpen || notificationsOpen || profileOpen)) return undefined;
@@ -1369,9 +1370,7 @@ export default function Topbar({
           <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
             {COMPACT_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = item.end
-                ? location.pathname === item.to
-                : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+              const isActive = isCompactNavItemActive(normalizedPathname, item);
               const showUnread = item.to === "/platform/messages" && messageMenuHasNew;
 
               return (
@@ -1382,7 +1381,7 @@ export default function Topbar({
                   className={cn(
                     "relative inline-flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition",
                     isActive
-                      ? "border-violet-400/30 bg-violet-500/12 text-violet-700 dark:border-violet-400/25 dark:bg-violet-400/14 dark:text-violet-100"
+                      ? "border-violet-400/45 bg-violet-500/15 text-violet-800 shadow-[0_10px_26px_rgba(124,58,237,0.18)] ring-1 ring-violet-300/15 dark:border-violet-300/30 dark:bg-violet-400/16 dark:text-violet-50"
                       : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]",
                   )}
                   aria-current={isActive ? "page" : undefined}

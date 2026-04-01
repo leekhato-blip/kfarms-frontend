@@ -39,6 +39,10 @@ import {
   getOrganizationSettings,
 } from "../services/settingsService";
 import {
+  BILLING_PLAN_FOCUS_PARAM,
+  getBillingPlanCardAnchor,
+} from "../utils/billingNavigation";
+import {
   WORKSPACE_PERMISSIONS,
   hasWorkspacePermission,
 } from "../utils/workspacePermissions";
@@ -154,6 +158,7 @@ export default function BillingPage() {
   const [toast, setToast] = React.useState({ message: "", type: "info" });
   const processedReferencesRef = React.useRef(new Set());
   const processedIntentRef = React.useRef(new Set());
+  const planCardRefs = React.useRef({});
 
   const canManageBilling = hasWorkspacePermission(
     activeTenant,
@@ -167,6 +172,14 @@ export default function BillingPage() {
   const contactEmail = organizationProfile?.contactEmail || "";
   const contactPhone = organizationProfile?.contactPhone || "";
   const contactAddress = organizationProfile?.address || "";
+  const focusPlanId = React.useMemo(
+    () =>
+      normalizePlanId(
+        new URLSearchParams(location.search).get(BILLING_PLAN_FOCUS_PARAM),
+        "",
+      ),
+    [location.search],
+  );
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -267,6 +280,23 @@ export default function BillingPage() {
   React.useEffect(() => {
     loadBillingData({ page: invoicePage });
   }, [invoicePage, loadBillingData]);
+
+  React.useEffect(() => {
+    if (!focusPlanId || loading || typeof window === "undefined") return undefined;
+
+    const targetCard = planCardRefs.current[focusPlanId];
+    if (!targetCard) return undefined;
+
+    const timerId = window.setTimeout(() => {
+      targetCard.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      targetCard.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(timerId);
+  }, [focusPlanId, loading]);
 
   const clearPaymentQuery = React.useCallback(() => {
     const nextParams = new URLSearchParams(location.search);
@@ -672,7 +702,6 @@ export default function BillingPage() {
     "rounded-xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark";
   const insetPanelClass =
     "rounded-lg border border-white/10 bg-white/5 dark:bg-darkCard/60";
-
   return (
     <DashboardLayout>
       <div className="space-y-4 font-body">
@@ -797,7 +826,7 @@ export default function BillingPage() {
                     Add billing email
                   </Link>
                   <Link
-                    to="/support?tab=tickets&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace."
+                    to="/support?tab=tickets&compose=1&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace."
                     className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary transition hover:bg-accent-primary/15 dark:text-blue-200"
                   >
                     Ask for setup help
@@ -843,7 +872,7 @@ export default function BillingPage() {
                       {currentPlan.name}
                     </p>
                   </div>
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-accent-primary/15 text-accent-primary dark:bg-accent-primary/20 dark:text-blue-200">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-accent-primary/20 bg-accent-primary/12 text-accent-primary shadow-[0_10px_18px_rgba(37,99,235,0.08)] dark:border-accent-primary/20 dark:bg-accent-primary/18 dark:text-blue-200 dark:shadow-none">
                     <ShieldCheck className="h-4 w-4" />
                   </span>
                 </div>
@@ -870,7 +899,7 @@ export default function BillingPage() {
                       {nextBillingDateLabel}
                     </p>
                   </div>
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-300">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/70 bg-cyan-500/12 text-cyan-600 shadow-[0_10px_18px_rgba(8,145,178,0.08)] dark:border-cyan-400/20 dark:bg-cyan-500/18 dark:text-cyan-200 dark:shadow-none">
                     <Receipt className="h-4 w-4" />
                   </span>
                 </div>
@@ -887,7 +916,7 @@ export default function BillingPage() {
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{billingIntervalLabel}</p>
                   </div>
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200/70 bg-emerald-500/12 text-emerald-600 shadow-[0_10px_18px_rgba(16,185,129,0.08)] dark:border-emerald-400/20 dark:bg-emerald-500/18 dark:text-emerald-300 dark:shadow-none">
                     <CircleDollarSign className="h-4 w-4" />
                   </span>
                 </div>
@@ -906,6 +935,7 @@ export default function BillingPage() {
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                   {PLAN_TIER_CONFIG.map((plan) => {
                     const isCurrent = plan.id === effectivePlanId;
+                    const isFocused = focusPlanId === plan.id;
                     const billingInfo = getPlanBillingInfo(plan.id);
                     const isEnterprise = plan.id === "ENTERPRISE";
                     const isFreeDowngrade = plan.id === "FREE" && effectivePlanId !== "FREE";
@@ -914,10 +944,23 @@ export default function BillingPage() {
                     return (
                       <article
                         key={plan.id}
-                        className={`relative overflow-hidden rounded-2xl border p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition dark:shadow-[0_14px_34px_rgba(2,6,23,0.42)] ${
+                        id={getBillingPlanCardAnchor(plan.id)}
+                        ref={(node) => {
+                          if (node) {
+                            planCardRefs.current[plan.id] = node;
+                            return;
+                          }
+                          delete planCardRefs.current[plan.id];
+                        }}
+                        tabIndex={-1}
+                        className={`relative overflow-hidden rounded-2xl border p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition focus:outline-none dark:shadow-[0_14px_34px_rgba(2,6,23,0.42)] ${
                           isCurrent
                             ? "border-accent-primary/45 bg-gradient-to-br from-accent-primary/15 via-cyan-500/10 to-emerald-500/10 dark:from-accent-primary/24 dark:via-cyan-500/12 dark:to-emerald-500/12"
                             : "border-slate-200/80 bg-white/72 dark:border-slate-800/80 dark:bg-slate-900/64"
+                        } ${
+                          isFocused
+                            ? "ring-2 ring-cyan-400/70 ring-offset-2 ring-offset-slate-50 dark:ring-cyan-300/60 dark:ring-offset-slate-950"
+                            : ""
                         }`}
                       >
                         {plan.recommended && !isCurrent && (

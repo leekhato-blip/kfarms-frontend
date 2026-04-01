@@ -141,7 +141,7 @@ export default function TrashModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/50 text-slate-700 transition hover:bg-white/70 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                className="inline-flex aspect-square h-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:shadow-none dark:hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>

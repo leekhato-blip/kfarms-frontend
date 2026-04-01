@@ -1055,13 +1055,13 @@ export default function InventoryPage() {
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="space-y-4 xl:col-span-8">
-            <div className="rounded-xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+            <div className="rounded-xl border border-slate-200/80 bg-white/70 p-4 shadow-neo dark:border-white/10 dark:bg-darkCard/70 dark:shadow-dark">
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
                 Search only when you want to narrow the list. Leave filters clear to
                 see everything in stock.
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <label className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2">
+                <label className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white/85 px-3 py-2 dark:border-white/15 dark:bg-white/10">
                   <Search className="h-4 w-4 text-slate-500" />
                   <input
                     value={query}
@@ -1074,7 +1074,7 @@ export default function InventoryPage() {
                 <select
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
-                  className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm outline-none"
+                  className="rounded-lg border border-slate-200/80 bg-white/85 px-3 py-2 text-sm outline-none dark:border-white/15 dark:bg-white/10"
                 >
                   <option value="all">All Categories</option>
                   {INVENTORY_CATEGORIES.map((entry) => (
@@ -1087,7 +1087,7 @@ export default function InventoryPage() {
                 <select
                   value={status}
                   onChange={(event) => setStatus(event.target.value)}
-                  className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm outline-none"
+                  className="rounded-lg border border-slate-200/80 bg-white/85 px-3 py-2 text-sm outline-none dark:border-white/15 dark:bg-white/10"
                 >
                   <option value="all">All Status</option>
                   <option value="healthy">Healthy</option>

@@ -43,8 +43,13 @@ const COMMAND_NAV_ITEMS = [
 const PLATFORM_SIDEBAR_PREF_KEY = "kf_platform_sidebar_collapsed";
 const PLATFORM_MESSAGES_VIEWED_AT_KEY = "kf_platform_messages_viewed_at";
 
+function normalizePlatformPathname(pathname = "") {
+  const normalized = String(pathname || "").replace(/\/+$/, "");
+  return normalized || "/";
+}
+
 function resolveTitle(pathname) {
-  return PAGE_TITLES[pathname] || "Platform";
+  return PAGE_TITLES[normalizePlatformPathname(pathname)] || "Platform";
 }
 
 function canUseBrowserStorage() {
@@ -109,6 +114,7 @@ function PlatformShell() {
   const effectivePlatformDataMode = canManagePortfolio ? platformDataMode : "live";
   const isMessagesRoute = location.pathname.startsWith("/platform/messages");
   const limitedLiveNoticeShownRef = React.useRef(false);
+  const demoModeLockNoticeShownRef = React.useRef(false);
 
   const requestLogout = React.useCallback(() => {
     setMobileOpen(false);
@@ -135,6 +141,20 @@ function PlatformShell() {
   React.useEffect(() => {
     writePlatformDataMode(platformDataMode);
   }, [platformDataMode]);
+
+  React.useEffect(() => {
+    if (!devPlatformSession || platformDataMode !== "live") return;
+
+    setPlatformDataMode("demo");
+    writePlatformDataMode("demo");
+
+    if (demoModeLockNoticeShownRef.current) return;
+    demoModeLockNoticeShownRef.current = true;
+    notify(
+      "Demo sessions stay in demo mode. Sign in with a real platform account to use live data.",
+      "info",
+    );
+  }, [devPlatformSession, notify, platformDataMode]);
 
   React.useEffect(() => {
     if (!limitedLiveAccess || limitedLiveNoticeShownRef.current) return;
@@ -217,10 +237,11 @@ function PlatformShell() {
 
   const handleDataModeChange = React.useCallback((nextMode) => {
     if (devPlatformSession) {
-      setPlatformDataMode(nextMode === "demo" ? "demo" : "live");
+      setPlatformDataMode("demo");
+      writePlatformDataMode("demo");
       if (nextMode === "live") {
         notify(
-          "Live mode is enabled for local development. Some areas may still depend on backend auth.",
+          "Demo sessions stay in demo mode. Sign in with a real platform account to use live data.",
           "info",
         );
       }

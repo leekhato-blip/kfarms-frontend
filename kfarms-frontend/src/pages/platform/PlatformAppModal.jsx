@@ -65,25 +65,39 @@ export default function PlatformAppModal({ open, onClose, onSubmit }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[130] overflow-y-auto bg-[color:var(--atlas-overlay)] px-4 py-6 md:px-6 md:py-8"
-      onClick={onClose}
+      className="atlas-theme fixed inset-0 z-[140] overflow-y-auto"
       role="presentation"
     >
-      <div className="flex min-h-full items-start justify-center">
+      <div
+        className="atlas-modal-backdrop absolute inset-0"
+        onClick={onClose}
+      />
+      <div className="relative flex min-h-full items-start justify-center px-4 py-6 md:items-center md:px-6 md:py-8">
         <Card
-          className="atlas-stage-card my-auto w-full max-w-3xl p-5 md:p-6"
+          className="atlas-modal-card my-auto w-full max-w-3xl rounded-[1.6rem] p-5 md:p-6"
           interactive
+          glowRail={false}
           onClick={(event) => event.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="platform-app-modal-title"
+          aria-describedby="platform-app-modal-description"
         >
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="max-w-2xl">
               <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--atlas-muted)]">
                 New App Plan
               </div>
-              <h2 className="mt-1 font-header text-2xl font-semibold text-[var(--atlas-text-strong)]">
+              <h2
+                id="platform-app-modal-title"
+                className="mt-1 font-header text-2xl font-semibold text-[var(--atlas-text-strong)]"
+              >
                 Create a planned app
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+              <p
+                id="platform-app-modal-description"
+                className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]"
+              >
                 Add the next app to ROOTS before it goes live.
               </p>
             </div>

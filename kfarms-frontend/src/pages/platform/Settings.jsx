@@ -38,7 +38,7 @@ import {
   resolvePlatformAccessTier,
   resolvePlatformUserEnabled,
 } from "./platformInsights";
-import { buildPlatformDemoSnapshot } from "./platformWorkbench";
+import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
 
 const FALLBACK_OVERVIEW = {
   totalTenants: 0,
@@ -257,6 +257,7 @@ export default function PlatformSettingsPage() {
     () => buildPlatformDemoSnapshot(customApps),
     [customApps],
   );
+  const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
 
   const [overview, setOverview] = React.useState(FALLBACK_OVERVIEW);
   const [loading, setLoading] = React.useState(true);
@@ -303,14 +304,9 @@ export default function PlatformSettingsPage() {
         "Failed to load platform overview",
       );
       const nextOverview = { ...FALLBACK_OVERVIEW, ...(payload || {}) };
-      const hasLiveOverviewData = Boolean(
-        Number(nextOverview.totalTenants || 0) ||
-          Number(nextOverview.totalUsers || 0) ||
-          Number(nextOverview.platformAdmins || 0),
-      );
-      setOverview(hasLiveOverviewData ? nextOverview : demoSnapshot.metrics);
+      setOverview(nextOverview);
     } catch (loadError) {
-      setOverview(demoSnapshot.metrics);
+      setOverview(liveSnapshot.metrics);
       setError(
         platformLimitedAccess
           ? ""
@@ -319,7 +315,7 @@ export default function PlatformSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [demoSnapshot.metrics, platformDataMode, platformLimitedAccess]);
+  }, [demoSnapshot.metrics, liveSnapshot.metrics, platformDataMode, platformLimitedAccess]);
 
   React.useEffect(() => {
     loadOverview();
@@ -483,10 +479,10 @@ export default function PlatformSettingsPage() {
               Platform Settings
             </div>
             <h1 className="mt-5 font-header text-3xl font-semibold leading-tight text-[var(--atlas-text-strong)] md:text-[2.3rem]">
-              Tune the ROOTS control plane.
+              ROOTS platform settings.
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
-              Shape defaults, safety rails, and your admin rhythm.
+              Set defaults, controls, and admin flow.
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={loadOverview} disabled={loading}>

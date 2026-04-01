@@ -20,6 +20,7 @@ import {
   WORKSPACE_PERMISSIONS,
   hasAnyWorkspacePermission,
 } from "../utils/workspacePermissions";
+import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 import {
   Archive,
   Settings,
@@ -402,7 +403,10 @@ export default function Sidebar() {
       ? {
           id: "upgrade-plan",
           label: billingLabel,
-          to: KFARMS_ROUTE_REGISTRY.billing.appPath,
+          to:
+            currentPlan === "FREE"
+              ? buildBillingPlanFocusPath("PRO")
+              : KFARMS_ROUTE_REGISTRY.billing.appPath,
           icon: CreditCard,
           meta: `${currentPlanMeta?.name || "Free"} workspace plan`,
           active: location.pathname === KFARMS_ROUTE_REGISTRY.billing.appPath,
@@ -428,7 +432,7 @@ export default function Sidebar() {
     const settingsItem = canViewWorkspaceSettings
       ? {
           id: "settings",
-          label: "Workspace",
+          label: "Settings",
           to: `${KFARMS_ROUTE_REGISTRY.settings.appPath}?section=workspace`,
           icon: Settings,
           active:
@@ -746,7 +750,11 @@ export default function Sidebar() {
         <div className="mt-3">
           <UpgradeSidebarCard
             currentPlan={currentPlan}
-            billingPath={KFARMS_ROUTE_REGISTRY.billing.appPath}
+            billingPath={
+              currentPlan === "FREE"
+                ? buildBillingPlanFocusPath("PRO")
+                : KFARMS_ROUTE_REGISTRY.billing.appPath
+            }
             onDismiss={dismissUpgradePrompt}
             compact={isMobile}
           />

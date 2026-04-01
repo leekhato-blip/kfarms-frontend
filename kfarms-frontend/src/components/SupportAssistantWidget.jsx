@@ -14,10 +14,11 @@ import {
   normalizeKfarmsLegacyPath,
   toKfarmsAppPath,
 } from "../apps/kfarms/paths";
-import { getPlanById } from "../constants/plans";
+import { getPlanById, normalizePlanId } from "../constants/plans";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
 import { getUserDisplayName } from "../services/userProfileService";
+import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 import {
   askSupportAssistant,
   getSupportAssistantConversation,
@@ -155,6 +156,10 @@ export default function SupportAssistantWidget() {
   const bottomRef = React.useRef(null);
 
   const tenantName = activeTenant?.name || "your farm";
+  const billingPath =
+    normalizePlanId(activeTenant?.plan, "FREE") === "FREE"
+      ? buildBillingPlanFocusPath("PRO")
+      : toKfarmsAppPath("/billing");
   const userName = getUserDisplayName(user, "Farmer");
   const assistantPlan = React.useMemo(
     () => getPlanById(activeTenant?.plan || "FREE"),
@@ -326,9 +331,9 @@ export default function SupportAssistantWidget() {
   }
 
   return (
-    <div className="fixed bottom-24 right-3 z-[75] md:bottom-20 md:right-5">
+    <div className="fixed bottom-32 right-3 z-[75] md:bottom-20 md:right-5">
       {open && (
-        <div className="fixed inset-x-3 top-3 bottom-24 flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/80 shadow-neo backdrop-blur-xl dark:border-white/10 dark:bg-darkCard/85 dark:shadow-dark md:absolute md:inset-auto md:bottom-full md:right-0 md:mb-3 md:w-[min(92vw,390px)] md:max-h-[min(80vh,720px)]">
+        <div className="fixed inset-x-3 top-3 bottom-32 flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/80 shadow-neo backdrop-blur-xl dark:border-white/10 dark:bg-darkCard/85 dark:shadow-dark md:absolute md:inset-auto md:bottom-full md:right-0 md:mb-3 md:w-[min(92vw,390px)] md:max-h-[min(80vh,720px)]">
           <div className="relative shrink-0 bg-gradient-to-r from-indigo-500/90 via-sky-500/85 to-emerald-500/90 px-4 py-3 pr-12 text-white">
             <button
               type="button"
@@ -504,7 +509,7 @@ export default function SupportAssistantWidget() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate(toKfarmsAppPath("/billing"))}
+                    onClick={() => navigate(billingPath)}
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/20 dark:text-slate-200"
                   >
                     Billing

@@ -26,6 +26,15 @@ const ACTION_BUTTON_CLASS =
 const PANEL_CLASS =
   "rounded-[1.75rem] border border-slate-200/80 bg-white/82 p-5 shadow-[0_24px_48px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/55 dark:shadow-[0_24px_48px_rgba(2,6,23,0.34)] sm:p-6";
 
+const SECTION_BADGE_BASE_CLASS =
+  "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur-sm";
+
+const QUICK_SETUP_BADGE_CLASS =
+  `${SECTION_BADGE_BASE_CLASS} border-emerald-200/90 bg-emerald-100/95 text-emerald-900 dark:border-emerald-300/25 dark:bg-emerald-400/18 dark:text-emerald-50`;
+
+const SETUP_GUIDE_BADGE_CLASS =
+  `${SECTION_BADGE_BASE_CLASS} border-violet-200/90 bg-violet-100/95 text-violet-900 dark:border-violet-300/25 dark:bg-violet-400/18 dark:text-violet-50`;
+
 const SETUP_GUIDE = [
   "Name the farm and confirm the workspace link.",
   "Choose the modules you want active from day one.",
@@ -191,7 +200,7 @@ export default function CreateTenant() {
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
             <section className={PANEL_CLASS}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/12 dark:text-emerald-200">
+              <div className={QUICK_SETUP_BADGE_CLASS}>
                 <Building2 className="h-4 w-4" />
                 Quick setup
               </div>
@@ -388,7 +397,7 @@ export default function CreateTenant() {
               </section>
 
               <section className={PANEL_CLASS}>
-                <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-200">
+                <div className={SETUP_GUIDE_BADGE_CLASS}>
                   <Sparkles className="h-4 w-4" />
                   Setup guide
                 </div>

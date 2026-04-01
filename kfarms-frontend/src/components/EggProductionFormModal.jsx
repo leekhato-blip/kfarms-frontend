@@ -73,6 +73,11 @@ export default function EggProductionFormModal({
 
   async function submit(event) {
     event.preventDefault();
+    if (step < PRODUCTION_STEPS.length - 1) {
+      if (!hasBatches || !stepOneComplete) return;
+      setStep((current) => Math.min(current + 1, PRODUCTION_STEPS.length - 1));
+      return;
+    }
     if (!hasBatches || !stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);

@@ -95,6 +95,11 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
 
   async function submit(event) {
     event.preventDefault();
+    if (step < FEED_STEPS.length - 1) {
+      if (!stepOneComplete) return;
+      setStep((current) => Math.min(current + 1, FEED_STEPS.length - 1));
+      return;
+    }
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);

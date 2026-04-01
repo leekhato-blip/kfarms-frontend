@@ -88,6 +88,25 @@ function isDirectPlatformPath(pathname) {
   return pathname === "/platform" || pathname.startsWith("/platform/");
 }
 
+function isLocalDevProxyHost(windowLike = globalThis?.window) {
+  const hostname = String(windowLike?.location?.hostname || "").trim().toLowerCase();
+  const port = String(windowLike?.location?.port || "").trim();
+  return (
+    ["localhost", "127.0.0.1", "::1"].includes(hostname) &&
+    ["5173", "5174"].includes(port)
+  );
+}
+
+export function resolvePlatformAlternateRequestUrl(pathname, windowLike = globalThis?.window) {
+  if (!pathname || /^https?:\/\//i.test(pathname)) return pathname;
+  if (!isDirectPlatformPath(pathname)) return pathname;
+  if (!isLocalDevProxyHost(windowLike)) return pathname;
+
+  const protocol = windowLike?.location?.protocol === "https:" ? "https:" : "http:";
+  const hostname = String(windowLike?.location?.hostname || "localhost").trim() || "localhost";
+  return `${protocol}//${hostname}:8080${pathname}`;
+}
+
 export function getPlatformRouteMode() {
   return preferredPlatformRouteMode;
 }
@@ -239,10 +258,11 @@ platformAxios.interceptors.response.use(
       [400, 403, 404, 405].includes(Number(status))
     ) {
       setPlatformRouteMode(isApiPlatformPath(alternatePath) ? "api" : "direct");
+      const retriedUrl = resolvePlatformAlternateRequestUrl(alternatePath);
 
       return platformAxios({
         ...error.config,
-        url: alternatePath,
+        url: retriedUrl,
         _platformRouteRetried: true,
       });
     }

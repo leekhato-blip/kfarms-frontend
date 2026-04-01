@@ -17,6 +17,7 @@ import {
 } from "../offline/offlineStore";
 
 const AUTO_PROBE_INTERVAL_MS = 5000;
+const BACKEND_DOWN_DEBOUNCE_MS = 900;
 const RECOVERY_HIDE_DELAY_MS = 3200;
 
 export default function BackendRecoveryPrompt() {
@@ -32,12 +33,29 @@ export default function BackendRecoveryPrompt() {
   const [queueSnapshot, setQueueSnapshot] = React.useState(() => getOfflineQueueSnapshot());
   const [syncSnapshot, setSyncSnapshot] = React.useState(() => getOfflineSyncSnapshot());
   const hideRecoveredTimerRef = React.useRef(null);
+  const backendDownTimerRef = React.useRef(null);
   const probingConnectionRef = React.useRef(false);
+  const backendDownRef = React.useRef(backendDown);
+  const browserOfflineRef = React.useRef(browserOffline);
+
+  React.useEffect(() => {
+    backendDownRef.current = backendDown;
+  }, [backendDown]);
+
+  React.useEffect(() => {
+    browserOfflineRef.current = browserOffline;
+  }, [browserOffline]);
 
   const clearRecoveredTimer = React.useCallback(() => {
     if (!hideRecoveredTimerRef.current) return;
     clearTimeout(hideRecoveredTimerRef.current);
     hideRecoveredTimerRef.current = null;
+  }, []);
+
+  const clearBackendDownTimer = React.useCallback(() => {
+    if (!backendDownTimerRef.current) return;
+    clearTimeout(backendDownTimerRef.current);
+    backendDownTimerRef.current = null;
   }, []);
 
   const showRecoveredBanner = React.useCallback(() => {
@@ -74,7 +92,8 @@ export default function BackendRecoveryPrompt() {
         bypassBrowserCheck,
       });
       if (reachable) {
-        const recoveredFromIssue = browserOffline || backendDown;
+        const recoveredFromIssue = browserOfflineRef.current || backendDownRef.current;
+        clearBackendDownTimer();
         setBrowserOffline(false);
         setBackendDown(false);
         if (recoveredFromIssue) {
@@ -89,7 +108,7 @@ export default function BackendRecoveryPrompt() {
       probingConnectionRef.current = false;
       setProbingConnection(false);
     }
-  }, [backendDown, browserOffline, showRecoveredBanner]);
+  }, [clearBackendDownTimer, showRecoveredBanner]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -97,20 +116,37 @@ export default function BackendRecoveryPrompt() {
     const handleDown = () => {
       clearRecoveredTimer();
       setShowRecovered(false);
-      setBackendDown(true);
       setDismissed(false);
+      if (
+        browserOfflineRef.current ||
+        backendDownRef.current ||
+        backendDownTimerRef.current
+      ) {
+        return;
+      }
+
+      backendDownTimerRef.current = setTimeout(() => {
+        backendDownTimerRef.current = null;
+        setBackendDown(true);
+      }, BACKEND_DOWN_DEBOUNCE_MS);
     };
 
     const handleUp = () => {
+      const recoveredFromIssue = browserOfflineRef.current || backendDownRef.current;
+      clearBackendDownTimer();
       setBrowserOffline(false);
       setBackendDown(false);
-      showRecoveredBanner();
+      if (recoveredFromIssue) {
+        showRecoveredBanner();
+      }
     };
 
     const handleBrowserOffline = () => {
       clearRecoveredTimer();
+      clearBackendDownTimer();
       setShowRecovered(false);
       setBrowserOffline(true);
+      setBackendDown(false);
       setDismissed(false);
     };
     const handleBrowserOnline = () => {
@@ -135,6 +171,7 @@ export default function BackendRecoveryPrompt() {
     window.addEventListener("kf-offline-sync-state", handleSyncUpdated);
 
     if (!window.navigator.onLine) {
+      clearBackendDownTimer();
       setBrowserOffline(true);
       setShowRecovered(false);
       setDismissed(false);
@@ -142,6 +179,7 @@ export default function BackendRecoveryPrompt() {
 
     return () => {
       clearRecoveredTimer();
+      clearBackendDownTimer();
       window.removeEventListener("kf-backend-down", handleDown);
       window.removeEventListener("kf-backend-up", handleUp);
       window.removeEventListener("online", handleBrowserOnline);
@@ -149,7 +187,7 @@ export default function BackendRecoveryPrompt() {
       window.removeEventListener("kf-offline-queue-updated", handleQueueUpdated);
       window.removeEventListener("kf-offline-sync-state", handleSyncUpdated);
     };
-  }, [clearRecoveredTimer, requestBackendProbe, showRecoveredBanner]);
+  }, [clearBackendDownTimer, clearRecoveredTimer, requestBackendProbe, showRecoveredBanner]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;

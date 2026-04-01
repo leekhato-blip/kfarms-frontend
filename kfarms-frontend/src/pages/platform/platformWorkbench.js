@@ -1,4 +1,4 @@
-import { normalizeAppPortfolio, normalizeAppSummary } from "./appHub";
+import { APP_PORTFOLIO_FALLBACK, normalizeAppPortfolio, normalizeAppSummary } from "./appHub";
 import { toKfarmsAppPath } from "../../apps/kfarms/paths";
 
 export const PLATFORM_DATA_MODE_STORAGE_KEY = "kf-platform-data-mode";
@@ -248,6 +248,17 @@ const PLATFORM_DEMO_SUMMARY = Object.freeze({
   platformAdmins: 1,
 });
 
+const PLATFORM_LIVE_EMPTY_SUMMARY = Object.freeze({
+  totalApps: 0,
+  liveApps: 0,
+  plannedApps: 0,
+  totalTenants: 0,
+  activeTenants: 0,
+  suspendedTenants: 0,
+  totalUsers: 0,
+  platformAdmins: 0,
+});
+
 function canUseStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
 }
@@ -479,6 +490,17 @@ export function mergeLivePlatformPortfolio(payload = {}, customApps = []) {
     ...buildPortfolioTotals(apps),
     apps,
   });
+}
+
+export function buildPlatformLiveSnapshot() {
+  return {
+    portfolio: APP_PORTFOLIO_FALLBACK,
+    tenants: [],
+    users: [],
+    metrics: {
+      ...PLATFORM_LIVE_EMPTY_SUMMARY,
+    },
+  };
 }
 
 function applyDemoMetrics(app) {

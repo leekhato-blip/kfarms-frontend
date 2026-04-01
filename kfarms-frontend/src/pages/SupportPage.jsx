@@ -132,8 +132,16 @@ export default function SupportPage() {
   const [sendingReply, setSendingReply] = React.useState(false);
   const [updatingTicketStatus, setUpdatingTicketStatus] = React.useState(false);
   const [toast, setToast] = React.useState({ message: "", type: "info" });
+  const [composeFocusSignal, setComposeFocusSignal] = React.useState(0);
+  const ticketFormRef = React.useRef(null);
+  const ticketSubjectInputRef = React.useRef(null);
 
   const displayName = getUserDisplayName(user, "Farmer");
+
+  const openTicketComposer = React.useCallback(() => {
+    setActiveTab("tickets");
+    setComposeFocusSignal((current) => current + 1);
+  }, []);
 
   const loadSupport = React.useCallback(async (options = {}) => {
     if (options.silent) {
@@ -291,12 +299,13 @@ export default function SupportPage() {
       setActiveTab(tab);
     }
 
+    const shouldCompose = params.get("compose") === "1";
     const subject = String(params.get("subject") || "").trim();
     const category = String(params.get("category") || "").trim();
     const priority = String(params.get("priority") || "").trim().toUpperCase();
     const description = String(params.get("description") || "").trim();
 
-    if (!subject && !category && !priority && !description) return;
+    if (!subject && !category && !priority && !description && !shouldCompose) return;
 
     setActiveTab("tickets");
     setTicketForm((prev) => ({
@@ -305,7 +314,27 @@ export default function SupportPage() {
       priority: ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(priority) ? priority : prev.priority,
       description: description || prev.description,
     }));
+    setComposeFocusSignal((current) => current + 1);
   }, [searchParamsKey]);
+
+  React.useEffect(() => {
+    if (activeTab !== "tickets" || composeFocusSignal === 0 || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const animationId = window.requestAnimationFrame(() => {
+      ticketFormRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      window.setTimeout(() => {
+        ticketSubjectInputRef.current?.focus({ preventScroll: true });
+      }, 120);
+    });
+
+    return () => window.cancelAnimationFrame(animationId);
+  }, [activeTab, composeFocusSignal]);
 
   async function handleCreateTicket(event) {
     event.preventDefault();
@@ -419,9 +448,11 @@ export default function SupportPage() {
   const panelClass = "rounded-2xl border border-white/10 bg-white/10 shadow-neo dark:bg-darkCard/70 dark:shadow-dark";
   const panelSoftClass = "rounded-xl border border-white/10 bg-white/5";
   const fieldClass =
-    "w-full rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-sm text-lightText outline-none transition focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:text-darkText";
+    "w-full rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-500 focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:border-white/10 dark:bg-white/10 dark:text-darkText dark:placeholder:text-slate-400";
   const searchFieldClass =
-    "w-full rounded-lg border border-white/10 bg-white/10 py-2 pl-9 pr-3 text-sm text-lightText outline-none transition focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:text-darkText";
+    "w-full rounded-lg border border-slate-200/80 bg-white/80 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-500 focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:border-white/10 dark:bg-white/10 dark:text-darkText dark:placeholder:text-slate-400";
+  const statIconCircleClass =
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border shadow-[0_10px_18px_rgba(15,23,42,0.06)] dark:shadow-none";
   const supportStats = [
     {
       id: "total",
@@ -429,7 +460,8 @@ export default function SupportPage() {
       value: ticketStats.total,
       icon: MessageCircle,
       valueClass: "text-lightText dark:text-darkText",
-      iconClass: "bg-sky-500/15 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200",
+      iconClass:
+        "border-sky-300/55 bg-sky-500/12 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/18 dark:text-sky-200",
     },
     {
       id: "open",
@@ -437,7 +469,8 @@ export default function SupportPage() {
       value: ticketStats.open,
       icon: LifeBuoy,
       valueClass: "text-sky-600 dark:text-sky-200",
-      iconClass: "bg-accent-primary/15 text-accent-primary dark:bg-accent-primary/20 dark:text-blue-200",
+      iconClass:
+        "border-accent-primary/20 bg-accent-primary/15 text-accent-primary dark:border-accent-primary/20 dark:bg-accent-primary/20 dark:text-blue-200",
     },
     {
       id: "pending",
@@ -445,7 +478,8 @@ export default function SupportPage() {
       value: ticketStats.pending,
       icon: TriangleAlert,
       valueClass: "text-amber-600 dark:text-amber-200",
-      iconClass: "bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200",
+      iconClass:
+        "border-amber-300/55 bg-amber-500/15 text-amber-600 dark:border-amber-400/20 dark:bg-amber-500/20 dark:text-amber-200",
     },
     {
       id: "resolved",
@@ -453,7 +487,8 @@ export default function SupportPage() {
       value: ticketStats.resolved,
       icon: CheckCircle2,
       valueClass: "text-emerald-600 dark:text-emerald-200",
-      iconClass: "bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200",
+      iconClass:
+        "border-emerald-300/55 bg-emerald-500/15 text-emerald-600 dark:border-emerald-400/20 dark:bg-emerald-500/20 dark:text-emerald-200",
     },
   ];
 
@@ -483,7 +518,7 @@ export default function SupportPage() {
             <div className="grid w-full grid-cols-2 auto-rows-fr items-center gap-2 md:flex md:w-auto md:flex-wrap md:justify-start">
               <button
                 type="button"
-                onClick={() => setActiveTab("tickets")}
+                onClick={openTicketComposer}
                 className="order-1 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-primary via-blue-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:brightness-105 md:h-auto md:min-h-0 md:w-auto"
               >
                 <PlusCircle className="h-4 w-4" />
@@ -533,9 +568,7 @@ export default function SupportPage() {
                     </div>
                     <div className={`mt-2 text-xl font-semibold ${item.valueClass}`}>{item.value}</div>
                   </div>
-                  <span
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${item.iconClass}`}
-                  >
+                  <span className={`${statIconCircleClass} ${item.iconClass}`}>
                     <Icon className="h-4 w-4" />
                   </span>
                 </div>
@@ -632,7 +665,7 @@ export default function SupportPage() {
                             key={`${selectedGuide.id}-step-${index + 1}`}
                             className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 transition hover:border-accent-primary/35"
                           >
-                            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 text-[11px] font-semibold text-accent-primary">
+                            <span className="mt-0.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 px-1.5 text-[10px] font-semibold leading-none tabular-nums text-accent-primary sm:min-h-7 sm:min-w-7 sm:text-[11px]">
                               {index + 1}
                             </span>
                             <p className="text-sm text-lightText dark:text-darkText">{step}</p>
@@ -658,8 +691,9 @@ export default function SupportPage() {
             {activeTab === "tickets" && (
               <div className="space-y-4">
                 <form
+                  ref={ticketFormRef}
                   onSubmit={handleCreateTicket}
-                  className={`${panelClass} p-5`}
+                  className={`${panelClass} scroll-mt-24 p-5`}
                 >
                   <div className="flex items-center gap-2">
                     <PlusCircle className="h-4 w-4 text-accent-primary" />
@@ -673,6 +707,7 @@ export default function SupportPage() {
                     <div className="md:col-span-3">
                       <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Short title</label>
                       <input
+                        ref={ticketSubjectInputRef}
                         type="text"
                         value={ticketForm.subject}
                         onChange={(event) =>
