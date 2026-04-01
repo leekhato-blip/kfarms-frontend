@@ -8,6 +8,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
 import ExportModal from "../components/ExportModal";
+import MobileAccordionCard from "../components/MobileAccordionCard";
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Download, RefreshCw } from "lucide-react";
 
 import {
@@ -571,41 +572,97 @@ export default function SuppliesPage() {
         )}
 
         {/* CHART */}
+        <div className="mt-4 md:hidden">
+          <MobileAccordionCard
+            title="Purchase trend"
+            description="Open this chart when you want to review supply spending over time."
+            icon={<Wallet className="h-4 w-4" />}
+          >
+            <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
+              {loading ? (
+                <div className="skeleton-glass h-[220px] w-full rounded-xl" />
+              ) : (
+                <>
+                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
+                    This chart uses the purchases that have been recorded on this page.
+                  </p>
+                  <div className="h-[220px]">
+                    {!hasSuppliesData ? (
+                      <div
+                        className="flex h-full w-full items-center justify-center p-4 font-body"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
+                          <div
+                            className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 shadow-sm dark:bg-amber-900/30"
+                            aria-hidden="true"
+                          >
+                            <Wallet className="h-9 w-9 text-amber-600 dark:text-amber-200" />
+                          </div>
+                          <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
+                            {hasActiveFilters
+                              ? "No supplies match what you selected"
+                              : "No supply purchases recorded yet"}
+                          </h4>
+                          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                            {hasActiveFilters
+                              ? "Show everything to see more results."
+                              : "Record your first supply purchase to see the trend here."}
+                          </p>
+                          <button
+                            className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
+                            onClick={hasActiveFilters ? clearFilters : openCreate}
+                          >
+                            {hasActiveFilters ? "Show everything" : "Record Supply"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Line data={chartData} options={chartOptions} />
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </MobileAccordionCard>
+        </div>
+
         <div
-          className="mt-4 rounded-xl bg-white/6 dark:bg-darkCard/60 p-4 dark:shadow-dark shadow-neo"
+          className="mt-4 hidden rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark md:block"
           style={{ minHeight: 260 }}
         >
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
             This chart uses the purchases that have been recorded on this page.
           </p>
           <div className="h-[220px] sm:h-[260px] md:h-[300px]">
             {loading ? (
-              <div className="skeleton-glass w-full h-full rounded-xl" />
+              <div className="skeleton-glass h-full w-full rounded-xl" />
             ) : !hasSuppliesData ? (
               <div
-                className="w-full h-full flex items-center justify-center p-4 font-body"
+                className="flex h-full w-full items-center justify-center p-4 font-body"
                 role="status"
                 aria-live="polite"
               >
-                <div className="flex flex-col items-center text-center gap-3 w-full max-w-sm">
+                <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
                   <div
-                    className="flex items-center justify-center w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 shadow-sm"
+                    className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 shadow-sm dark:bg-amber-900/30"
                     aria-hidden="true"
                   >
-                    <Wallet className="w-9 h-9 text-amber-600 dark:text-amber-200" />
+                    <Wallet className="h-9 w-9 text-amber-600 dark:text-amber-200" />
                   </div>
                   <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
                     {hasActiveFilters
                       ? "No supplies match what you selected"
                       : "No supply purchases recorded yet"}
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                     {hasActiveFilters
                       ? "Show everything to see more results."
                       : "Record your first supply purchase to see the trend here."}
                   </p>
                   <button
-                    className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
+                    className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98] sm:w-auto"
                     onClick={hasActiveFilters ? clearFilters : openCreate}
                   >
                     {hasActiveFilters ? "Show everything" : "Record Supply"}

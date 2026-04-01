@@ -17,6 +17,7 @@ import {
 
 const AUTO_PROBE_INTERVAL_MS = 8000;
 const BACKEND_DOWN_DEBOUNCE_MS = 2200;
+const RECOVERY_SETTLE_MS = 2800;
 
 export default function BackendRecoveryPrompt() {
   const [backendDown, setBackendDown] = React.useState(
@@ -29,10 +30,13 @@ export default function BackendRecoveryPrompt() {
   const [probingConnection, setProbingConnection] = React.useState(false);
   const [queueSnapshot, setQueueSnapshot] = React.useState(() => getOfflineQueueSnapshot());
   const [syncSnapshot, setSyncSnapshot] = React.useState(() => getOfflineSyncSnapshot());
+  const [suppressSettledStatuses, setSuppressSettledStatuses] = React.useState(false);
   const backendDownTimerRef = React.useRef(null);
+  const recoveryTimerRef = React.useRef(null);
   const probingConnectionRef = React.useRef(false);
   const backendDownRef = React.useRef(backendDown);
   const browserOfflineRef = React.useRef(browserOffline);
+  const previousConnectionIssueRef = React.useRef(backendDown || browserOffline);
 
   React.useEffect(() => {
     backendDownRef.current = backendDown;
@@ -46,6 +50,12 @@ export default function BackendRecoveryPrompt() {
     if (!backendDownTimerRef.current) return;
     clearTimeout(backendDownTimerRef.current);
     backendDownTimerRef.current = null;
+  }, []);
+
+  const clearRecoveryTimer = React.useCallback(() => {
+    if (!recoveryTimerRef.current) return;
+    clearTimeout(recoveryTimerRef.current);
+    recoveryTimerRef.current = null;
   }, []);
 
   const requestBackendProbe = React.useCallback(async ({
@@ -147,6 +157,7 @@ export default function BackendRecoveryPrompt() {
 
     return () => {
       clearBackendDownTimer();
+      clearRecoveryTimer();
       window.removeEventListener("kf-backend-down", handleDown);
       window.removeEventListener("kf-backend-up", handleUp);
       window.removeEventListener("online", handleBrowserOnline);
@@ -154,17 +165,44 @@ export default function BackendRecoveryPrompt() {
       window.removeEventListener("kf-offline-queue-updated", handleQueueUpdated);
       window.removeEventListener("kf-offline-sync-state", handleSyncUpdated);
     };
-  }, [clearBackendDownTimer, requestBackendProbe]);
+  }, [clearBackendDownTimer, clearRecoveryTimer, requestBackendProbe]);
 
   const queuedChanges = Number(queueSnapshot.total || 0);
   const failedChanges = Number(queueSnapshot.failed || 0);
   const syncingChanges = syncSnapshot.status === "syncing";
   const pausedSync = syncSnapshot.status === "paused";
   const hasConnectionIssue = browserOffline || backendDown;
-  const shouldShowQueuedStatus = !hasConnectionIssue && queuedChanges > 0;
+
+  React.useEffect(() => {
+    const previousConnectionIssue = previousConnectionIssueRef.current;
+    previousConnectionIssueRef.current = hasConnectionIssue;
+
+    if (hasConnectionIssue) {
+      clearRecoveryTimer();
+      setSuppressSettledStatuses(false);
+      return;
+    }
+
+    if (previousConnectionIssue) {
+      clearRecoveryTimer();
+      setSuppressSettledStatuses(true);
+      recoveryTimerRef.current = window.setTimeout(() => {
+        setSuppressSettledStatuses(false);
+        recoveryTimerRef.current = null;
+      }, RECOVERY_SETTLE_MS);
+    }
+  }, [clearRecoveryTimer, hasConnectionIssue]);
+
+  const shouldShowQueuedStatus =
+    !hasConnectionIssue && !suppressSettledStatuses && queuedChanges > 0;
   const shouldShowFailedStatus = !hasConnectionIssue && failedChanges > 0;
-  const shouldShowSyncingStatus = !hasConnectionIssue && syncingChanges;
-  const shouldShowPausedStatus = !hasConnectionIssue && pausedSync && queuedChanges > 0;
+  const shouldShowSyncingStatus =
+    !hasConnectionIssue && !suppressSettledStatuses && syncingChanges;
+  const shouldShowPausedStatus =
+    !hasConnectionIssue &&
+    !suppressSettledStatuses &&
+    pausedSync &&
+    queuedChanges > 0;
   const onLoginPage =
     typeof window !== "undefined" && window.location.pathname === "/auth/login";
 
@@ -259,7 +297,7 @@ export default function BackendRecoveryPrompt() {
               label: shouldShowPausedStatus ? "Saved changes waiting" : "Ready to sync",
               detail: `${queuedChanges} ${queuedChanges === 1 ? "change" : "changes"} queued locally`,
               tone:
-                "border-slate-300/80 bg-white/95 text-slate-900 ring-1 ring-slate-200/80 dark:border-white/12 dark:bg-[#07111f]/92 dark:text-slate-100 dark:ring-white/10",
+                "border-slate-300/80 bg-slate-50/92 text-slate-900 ring-1 ring-slate-200/80 dark:border-white/12 dark:bg-[#0b1322]/94 dark:text-slate-100 dark:ring-white/10",
               iconTone:
                 "bg-slate-500/10 text-slate-700 dark:bg-white/10 dark:text-slate-200",
               Icon: RefreshCw,

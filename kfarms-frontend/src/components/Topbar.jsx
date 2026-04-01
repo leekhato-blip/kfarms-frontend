@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
 import {
@@ -46,6 +46,7 @@ import {
 import { WORKSPACE_QUICK_ACTION_EVENT } from "../constants/workspaceQuickActions";
 import { getUserDisplayName } from "../services/userProfileService";
 import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
+import { resolveWorkspaceTopbarMeta } from "../utils/pageMeta";
 
 async function fetchNotifications() {
   try {
@@ -361,6 +362,7 @@ export default function Topbar() {
   const { user } = useAuth();
   const { activeTenant, activeTenantId } = useTenant();
   const navigate = useNavigate();
+  const location = useLocation();
   const { goBack, showBackButton } = useSmartBackNavigation({
     fallbackPath: KFARMS_ROUTE_REGISTRY.dashboard.appPath,
     hiddenPaths: [KFARMS_ROUTE_REGISTRY.dashboard.appPath],
@@ -370,6 +372,14 @@ export default function Topbar() {
   const greet =
     hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
   const name = getUserDisplayName(user, "Farmer");
+  const workspaceName = activeTenant?.name || "your farm";
+  const topbarMeta = React.useMemo(
+    () =>
+      resolveWorkspaceTopbarMeta(location.pathname, {
+        workspaceName,
+      }),
+    [location.pathname, workspaceName],
+  );
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
 
   const rootRef = React.useRef(null);
@@ -792,15 +802,19 @@ export default function Topbar() {
             Back
           </button>
         )}
-        <h1 className="text-2xl md:text-3xl font-bold font-header flex flex-wrap items-center gap-2">
-          {greet},{" "}
-          <span className="text-status-success max-w-[12rem] truncate whitespace-nowrap">
-            {name}!
-          </span>
-        </h1>
-        <p className="text-sm font-body text-slate-400">
-          Check today, record something, or open alerts.
-        </p>
+        {!topbarMeta.hideGreeting ? (
+          <>
+            <h1 className="text-2xl md:text-3xl font-bold font-header flex flex-wrap items-center gap-2">
+              {greet},{" "}
+              <span className="text-status-success max-w-[12rem] truncate whitespace-nowrap">
+                {name}!
+              </span>
+            </h1>
+            <p className="text-sm font-body text-slate-400">
+              {topbarMeta.subtitle}
+            </p>
+          </>
+        ) : null}
       </div>
 
       <div className="w-full sm:w-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">

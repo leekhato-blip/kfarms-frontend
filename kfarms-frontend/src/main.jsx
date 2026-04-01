@@ -7,10 +7,18 @@ import { AuthProvider } from "./hooks/useAuth.jsx";
 import { TenantProvider } from "./tenant/TenantContext.jsx";
 import { PlatformAuthProvider } from "./auth/AuthProvider.jsx";
 import { initializeOfflineSync } from "./offline/offlineSync.js";
+import { getStoredThemeMode } from "./constants/settings.js";
 
 const SPA_REDIRECT_STORAGE_KEY = "kf_spa_redirect";
 const LEGACY_CACHE_PREFIXES = ["kfarms-app-shell-", "kfarms-runtime-"];
 const root = document.getElementById("root");
+
+if (typeof document !== "undefined") {
+  const initialThemeMode = getStoredThemeMode();
+  document.documentElement.classList.toggle("dark", initialThemeMode === "dark");
+  document.body?.classList.toggle("dark", initialThemeMode === "dark");
+  document.documentElement.style.colorScheme = initialThemeMode;
+}
 
 async function clearLegacyAppCaches() {
   if (typeof window === "undefined" || !("caches" in window)) return;

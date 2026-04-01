@@ -6,13 +6,13 @@ import {
   MapPin,
   Save,
   StickyNote,
-  Tag,
   Truck,
   Wallet,
 } from "lucide-react";
 import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
 import {
   INVENTORY_CATEGORIES,
+  INVENTORY_UNITS,
   formatInventoryCategoryLabel,
 } from "../constants/inventory";
 import { createInventory, updateInventory } from "../services/inventoryService";
@@ -55,7 +55,7 @@ const Required = () => <span className="ml-0.5 text-red-500">*</span>;
 const INVENTORY_STEPS = [
   {
     title: "What item is this?",
-    description: "Add the item name, category, stock code, and unit.",
+    description: "Add the item name, category, and unit.",
   },
   {
     title: "How much is in stock?",
@@ -112,6 +112,27 @@ export default function InventoryFormModal({
     () => parseNumber(form.quantity, 0) * parseNumber(form.unitCost, 0),
     [form.quantity, form.unitCost],
   );
+  const unitOptions = useMemo(() => {
+    const normalizedCurrentUnit = String(form.unit || "")
+      .trim()
+      .toLowerCase();
+    if (!normalizedCurrentUnit) {
+      return INVENTORY_UNITS;
+    }
+    const hasCurrentUnit = INVENTORY_UNITS.some(
+      (option) => option.value === normalizedCurrentUnit,
+    );
+    if (hasCurrentUnit) {
+      return INVENTORY_UNITS;
+    }
+    return [
+      ...INVENTORY_UNITS,
+      {
+        value: normalizedCurrentUnit,
+        label: `${String(form.unit).trim()} (Current)`,
+      },
+    ];
+  }, [form.unit]);
 
   const stepOneComplete = Boolean(
     String(form.itemName || "").trim() && form.category && String(form.unit || "").trim(),
@@ -240,7 +261,7 @@ export default function InventoryFormModal({
       {step === 0 ? (
         <GuidedFormSection
           title="Item basics"
-          description="Add the item name, category, stock code, and unit."
+          description="Add the item name, category, and unit."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
@@ -282,35 +303,28 @@ export default function InventoryFormModal({
               </div>
             </div>
 
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Tag className="h-4 w-4 text-slate-500" />
-                Stock code
-              </label>
-              <input
-                value={form.sku}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, sku: event.target.value }))
-                }
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                placeholder="Optional stock code"
-              />
-            </div>
-
-            <div>
+            <div className="md:col-span-2">
               <label className="mb-1 flex items-center gap-2 text-xs">
                 <Boxes className="h-4 w-4 text-slate-500" />
                 Unit <Required />
               </label>
-              <input
+              <select
                 value={form.unit}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, unit: event.target.value }))
                 }
                 className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                placeholder="kg, bags, litres"
                 required
-              />
+              >
+                {unitOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Pick the closest stock unit so reports stay consistent.
+              </p>
             </div>
           </div>
         </GuidedFormSection>

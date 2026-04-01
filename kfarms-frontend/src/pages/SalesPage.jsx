@@ -8,6 +8,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
 import ExportModal from "../components/ExportModal";
+import MobileAccordionCard from "../components/MobileAccordionCard";
 import { Plus } from "lucide-react";
 
 import {
@@ -625,57 +626,118 @@ export default function SalesPage() {
         )}
 
         {/* CHART */}
-        {loading ? (
-          <div className="mt-4 rounded-xl bg-white/6 dark:bg-darkCard/60 p-4 dark:shadow-dark shadow-neo">
-            <div className="skeleton-glass h-3 w-56 rounded mb-3" />
-            <div className="skeleton-glass w-full h-[220px] sm:h-[260px] md:h-[300px] rounded-xl" />
-          </div>
-        ) : (
-          <div
-            className="mt-4 rounded-xl bg-white/6 dark:bg-darkCard/60  p-4 dark:shadow-dark shadow-neo"
-            style={{ minHeight: 260 }}
+        <div className="mt-4 md:hidden">
+          <MobileAccordionCard
+            title="Sales trend"
+            description="Open this chart when you want to review how revenue is moving."
+            icon={<Wallet className="h-4 w-4" />}
           >
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-              This chart uses the sales that have been recorded on this page.
-            </p>
-            <div className="h-[220px] sm:h-[260px] md:h-[300px]">
-              {hasSalesData ? (
-                isDark !== null && <Line data={chartData} options={chartOptions} />
+            <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
+              {loading ? (
+                <>
+                  <div className="skeleton-glass mb-3 h-3 w-56 rounded" />
+                  <div className="skeleton-glass h-[220px] w-full rounded-xl" />
+                </>
               ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center p-4 font-body"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <div className="flex flex-col items-center text-center gap-3 w-full max-w-sm">
-                    <div
-                      className="flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 shadow-sm"
-                      aria-hidden="true"
-                    >
-                      <Wallet className="w-9 h-9 text-emerald-600 dark:text-emerald-200" />
-                    </div>
-                    <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
-                      {hasActiveFilters
-                        ? "No sales match what you selected"
-                        : "No sales recorded yet"}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      {hasActiveFilters
-                        ? "Show everything to see more results."
-                        : "Record your first sale to see the revenue trend here."}
-                    </p>
-                    <button
-                      className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
-                      onClick={hasActiveFilters ? clearFilters : openCreate}
-                    >
-                      {hasActiveFilters ? "Show everything" : "Record Sale"}
-                    </button>
+                <>
+                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
+                    This chart uses the sales that have been recorded on this page.
+                  </p>
+                  <div className="h-[220px]">
+                    {hasSalesData ? (
+                      isDark !== null && <Line data={chartData} options={chartOptions} />
+                    ) : (
+                      <div
+                        className="flex h-full w-full items-center justify-center p-4 font-body"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
+                          <div
+                            className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-sm dark:bg-emerald-900/30"
+                            aria-hidden="true"
+                          >
+                            <Wallet className="h-9 w-9 text-emerald-600 dark:text-emerald-200" />
+                          </div>
+                          <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
+                            {hasActiveFilters
+                              ? "No sales match what you selected"
+                              : "No sales recorded yet"}
+                          </h4>
+                          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                            {hasActiveFilters
+                              ? "Show everything to see more results."
+                              : "Record your first sale to see the revenue trend here."}
+                          </p>
+                          <button
+                            className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
+                            onClick={hasActiveFilters ? clearFilters : openCreate}
+                          >
+                            {hasActiveFilters ? "Show everything" : "Record Sale"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                </>
               )}
             </div>
-          </div>
-        )}
+          </MobileAccordionCard>
+        </div>
+
+        <div className="mt-4 hidden md:block">
+          {loading ? (
+            <div className="rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark">
+              <div className="skeleton-glass mb-3 h-3 w-56 rounded" />
+              <div className="skeleton-glass h-[220px] w-full rounded-xl sm:h-[260px] md:h-[300px]" />
+            </div>
+          ) : (
+            <div
+              className="rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark"
+              style={{ minHeight: 260 }}
+            >
+              <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
+                This chart uses the sales that have been recorded on this page.
+              </p>
+              <div className="h-[220px] sm:h-[260px] md:h-[300px]">
+                {hasSalesData ? (
+                  isDark !== null && <Line data={chartData} options={chartOptions} />
+                ) : (
+                  <div
+                    className="flex h-full w-full items-center justify-center p-4 font-body"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
+                      <div
+                        className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-sm dark:bg-emerald-900/30"
+                        aria-hidden="true"
+                      >
+                        <Wallet className="h-9 w-9 text-emerald-600 dark:text-emerald-200" />
+                      </div>
+                      <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
+                        {hasActiveFilters
+                          ? "No sales match what you selected"
+                          : "No sales recorded yet"}
+                      </h4>
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        {hasActiveFilters
+                          ? "Show everything to see more results."
+                          : "Record your first sale to see the revenue trend here."}
+                      </p>
+                      <button
+                        className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98] sm:w-auto"
+                        onClick={hasActiveFilters ? clearFilters : openCreate}
+                      >
+                        {hasActiveFilters ? "Show everything" : "Record Sale"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* FILTERS */}
         {loading ? (

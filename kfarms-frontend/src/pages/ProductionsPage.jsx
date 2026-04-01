@@ -16,6 +16,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import SummaryCard from "../components/SummaryCard";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import FilteredResultsHint from "../components/FilteredResultsHint";
+import MobileAccordionCard from "../components/MobileAccordionCard";
 import ProductionChart from "../components/ProductionChart";
 import EggProductionFormModal from "../components/EggProductionFormModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
@@ -605,8 +606,163 @@ export default function ProductionsPage() {
           </div>
         )}
 
+        <div className="md:hidden">
+          <MobileAccordionCard
+            title="Egg output over time"
+            description="Open this chart when you want to review monthly production movement."
+            icon={<Egg className="h-4 w-4" />}
+          >
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+              <div className="mb-4 flex flex-col gap-3">
+                <div>
+                  <h3 className="text-lg font-header text-slate-900 dark:text-slate-100">
+                    Egg output over time
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Monthly egg output for {activeProductionYear} based on recorded collections.
+                  </p>
+                </div>
+                <div className="flex flex-col items-stretch gap-2">
+                  <label className="inline-flex w-full items-center justify-between gap-2 rounded-full border border-slate-200/80 bg-white/70 px-3 py-2 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-200">
+                    <span className="uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Year
+                    </span>
+                    <select
+                      value={activeProductionYear}
+                      onChange={(event) => setSelectedProductionYear(Number(event.target.value))}
+                      className="min-w-[88px] bg-transparent pr-5 text-right text-sm font-semibold text-slate-700 outline-none dark:text-slate-100"
+                      title="Select production year"
+                      aria-label="Select production year"
+                    >
+                      {productionYears.length === 0 ? (
+                        <option value={activeProductionYear}>{activeProductionYear}</option>
+                      ) : (
+                        productionYears.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </label>
+
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/70 px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-200">
+                    {productionOverview.totalMonths > 0
+                      ? `${productionOverview.totalMonths} months in ${activeProductionYear}`
+                      : `No monthly trail for ${activeProductionYear}`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/55 p-3 dark:border-white/10 dark:bg-white/5">
+                  <div className="h-[260px]">
+                    <ProductionChart
+                      loading={summaryLoading}
+                      productionData={chartProductionSeries}
+                      onCreate={canCreate && hasLayerBatches ? openCreate : undefined}
+                      actionHref={null}
+                      actionLabel="Record Production"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      Peak Month
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                      {productionOverview.peakMonth
+                        ? formatMonthLabel(productionOverview.peakMonth.date)
+                        : "No peak yet"}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {productionOverview.peakMonth
+                        ? `${formatCount(productionOverview.peakMonth.quantity)} eggs in the strongest month`
+                        : "Monthly performance appears here once records exist"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      Latest Logged
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                      {productionOverview.latestMonth
+                        ? formatMonthLabel(productionOverview.latestMonth.date)
+                        : "No month logged"}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {productionOverview.latestMonth
+                        ? `${formatCount(productionOverview.latestMonth.quantity)} eggs in the most recent month`
+                        : "Add records to build a fresh production trail"}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                      <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Avg / Month
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                        {formatCount(productionOverview.averageMonthlyEggs)} eggs
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Across months recorded in {activeProductionYear}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                      <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Peak Share
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                        {productionOverview.peakShare}%
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Of {activeProductionYear} egg total
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      <span>Production Span</span>
+                      <span>
+                        {productionOverview.totalMonths > 0
+                          ? `${productionOverview.totalMonths} months`
+                          : "Waiting"}
+                      </span>
+                    </div>
+                    <div className="mt-3 h-2 rounded-full bg-slate-100 dark:bg-slate-800">
+                      <div
+                        className="h-2 rounded-full bg-gradient-to-r from-accent-primary via-sky-400 to-emerald-400 transition-all duration-500"
+                        style={{
+                          width: `${Math.max(
+                            productionOverview.totalMonths > 0 ? productionOverview.peakShare : 0,
+                            productionOverview.totalMonths > 0 ? 14 : 0,
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center rounded-full border border-white/50 bg-white/45 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-white/15 dark:bg-white/10 dark:text-slate-200">
+                        Total {formatCount(productionOverview.totalEggs)} eggs in {activeProductionYear}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-white/50 bg-white/45 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-white/15 dark:bg-white/10 dark:text-slate-200">
+                        Viewing January to December
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </MobileAccordionCard>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.95fr)]">
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+          <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark md:block">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-lg font-header text-slate-900 dark:text-slate-100">

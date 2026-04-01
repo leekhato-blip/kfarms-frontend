@@ -15,6 +15,7 @@ import {
   KFARMS_ROUTE_REGISTRY,
   toKfarmsAppPath,
 } from "../apps/kfarms/paths";
+import { resolveDocumentTitle } from "../utils/pageMeta";
 import {
   getCachedUserPreferences,
   getUserPreferences,
@@ -260,6 +261,11 @@ export default function AppRoutes() {
   const suspenseFallback = location.pathname.startsWith("/platform")
     ? <PlatformLoader />
     : <PageLoader />;
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.title = resolveDocumentTitle(location.pathname);
+  }, [location.pathname]);
 
   return (
     <>

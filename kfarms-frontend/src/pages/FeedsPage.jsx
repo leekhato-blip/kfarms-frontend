@@ -4,6 +4,7 @@ import SummaryCard from "../components/SummaryCard";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import FilteredResultsHint from "../components/FilteredResultsHint";
 import FeedPie from "../components/FeedPie";
+import MobileAccordionCard from "../components/MobileAccordionCard";
 import FeedFormModal from "../components/FeedFormModal";
 import ConfirmModal from "../components/ConfirmModal";
 import GlassToast from "../components/GlassToast";
@@ -729,8 +730,116 @@ export default function FeedsPage() {
         </div>
 
         {/* Charts Row */}
+        <div className="sm:hidden">
+          <MobileAccordionCard
+            title="Feed breakdown"
+            description="Open this chart when you want to review the current feed mix."
+            icon={<Wheat className="h-4 w-4" />}
+          >
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold font-header">
+                    Feed Breakdown
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Share of feed usage by poultry category.
+                  </p>
+                </div>
+                <div className="text-xs text-slate-400">
+                  {hasFeedBreakdown ? "" : "No data yet"}
+                </div>
+              </div>
+              {loading ? (
+                <div className="skeleton-glass h-[260px] rounded-xl" />
+              ) : hasFeedBreakdown ? (
+                <div className="grid grid-cols-1 gap-4">
+                  <FeedPie breakdown={data?.feedBreakdown || []} />
+
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                      <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                        Usage Snapshot
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Quick highlights from the current feed mix.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Lead Category
+                        </div>
+                        <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                          {feedBreakdownSummary.lead?.label || "—"}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {feedBreakdownSummary.lead ? `${feedBreakdownSummary.lead.share}% of usage` : "No usage yet"}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                        <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Top Two Mix
+                        </div>
+                        <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+                          {feedBreakdownSummary.topTwoShare}%
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Combined share of the two strongest categories
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-white/5">
+                      <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Top Mix
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {feedBreakdownSummary.featured.map((item) => (
+                          <span
+                            key={`mobile-breakdown-chip-${item.label}`}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-white/10 dark:bg-white/10 dark:text-slate-100"
+                          >
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                            />
+                            {item.label}
+                            <span className="text-slate-500 dark:text-slate-300">
+                              {item.share}%
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                      {feedBreakdownSummary.remainingCount > 0 ? (
+                        <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                          +{feedBreakdownSummary.remainingCount} other categories in the mix
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <FeedPie
+                  breakdown={data?.feedBreakdown || []}
+                  emptyTitle="No feed mix yet"
+                  emptyMessage={
+                    canCreateOrEdit
+                      ? "Record feed usage to unlock category mix insights and usage snapshots."
+                      : "Feed usage mix will appear here after someone on the farm logs activity."
+                  }
+                  emptyActionLabel={firstFeedCtaLabel}
+                  onEmptyAction={canCreateOrEdit ? openCreate : undefined}
+                />
+              )}
+            </div>
+          </MobileAccordionCard>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+          <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark sm:block lg:col-span-2">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="text-lg font-semibold font-header">

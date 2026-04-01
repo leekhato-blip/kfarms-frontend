@@ -495,6 +495,7 @@ export default function PlatformTenantsPage() {
 
       <div className="atlas-platform-metric-grid-compact">
         <PlatformMetricCard
+          className="platform-tenant-summary-card"
           icon={Building2}
           label="Filtered Tenants"
           value={formatNumber(totalItems)}
@@ -502,6 +503,7 @@ export default function PlatformTenantsPage() {
           tone="purple"
         />
         <PlatformMetricCard
+          className="platform-tenant-summary-card"
           icon={Radar}
           label="Active On Page"
           value={formatNumber(activeTenantsOnPage)}
@@ -509,6 +511,7 @@ export default function PlatformTenantsPage() {
           tone="blue"
         />
         <PlatformMetricCard
+          className="platform-tenant-summary-card"
           icon={Users}
           label="Team Limit Watch"
           value={formatNumber(pressuredTenantsOnPage)}
@@ -516,6 +519,7 @@ export default function PlatformTenantsPage() {
           tone="green"
         />
         <PlatformMetricCard
+          className="platform-tenant-summary-card"
           icon={ShieldAlert}
           label="Selected Scope"
           value={selectedSeatUsage.label}

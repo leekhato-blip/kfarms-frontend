@@ -8,6 +8,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import FilteredResultsHint from "../components/FilteredResultsHint";
 import GlassToast from "../components/GlassToast";
+import MobileAccordionCard from "../components/MobileAccordionCard";
 import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
 import LivestockFormModal from "../components/LivestockFormModal";
@@ -1099,7 +1100,58 @@ export default function LivestockPage() {
                 )}
               </div>
 
-              <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-4">
+              <div className="sm:hidden">
+                <MobileAccordionCard
+                  title="Stock by type"
+                  description="Open this chart when you want to compare live poultry counts by type."
+                  icon={<Feather className="h-4 w-4" />}
+                >
+                  <div className="rounded-xl bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="font-header font-semibold">Stock by type</h2>
+                        <p className="text-xs text-lightMuted dark:text-darkMuted">
+                          Live count by animal type.
+                        </p>
+                      </div>
+                      <span className="text-xs text-right leading-tight text-lightMuted dark:text-darkMuted">
+                        Updated {formatDateTime(metaLastUpdated)}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 gap-3 items-center">
+                      <div className="h-[180px] w-full">
+                        {typeBreakdown.length === 0 ? (
+                          <div className="flex h-full w-full items-center justify-center text-sm text-lightMuted dark:text-darkMuted">
+                            No type breakdown data yet.
+                          </div>
+                        ) : (
+                          <Doughnut data={typeDonutData} options={typeDonutOptions} />
+                        )}
+                      </div>
+                      <div className="flex min-w-0 flex-nowrap gap-3 overflow-x-auto pb-1 hide-scrollbar">
+                        {typeBreakdown.map((entry) => (
+                          <div
+                            key={`mobile-type-${entry.type}`}
+                            className="flex min-w-[160px] max-w-[200px] shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3.5 py-2.5 shadow-soft dark:bg-darkCard/70"
+                          >
+                            <span className="text-lg">{typeEmoji(entry.type)}</span>
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold leading-tight text-lightText dark:text-darkText">
+                                {entry.label}
+                              </div>
+                              <div className="text-xs leading-tight text-lightMuted dark:text-darkMuted">
+                                {formatNumber(entry.count)} birds
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </MobileAccordionCard>
+              </div>
+
+              <div className="hidden rounded-xl bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark sm:block">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="font-header font-semibold">Stock by type</h2>

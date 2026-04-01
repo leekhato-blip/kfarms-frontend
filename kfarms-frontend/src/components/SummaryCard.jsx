@@ -53,7 +53,7 @@ export default function SummaryCard({
           {/* Value */}
           <div className="flex-shrink-0 text-right">
             <div
-              className={`text-sm sm:text-2xl lg:text-3xl xl:text-3xl font-extrabold font-header text-gray-900 dark:text-white truncate ${valueClass}`}
+              className={`text-[2.1rem] sm:text-[2.25rem] lg:text-3xl xl:text-3xl font-extrabold font-header tabular-nums leading-none tracking-[-0.045em] text-gray-900 dark:text-white truncate ${valueClass}`}
             >
               {displayValue}
             </div>

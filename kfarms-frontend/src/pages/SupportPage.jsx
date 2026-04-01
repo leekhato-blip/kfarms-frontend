@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   BookOpenText,
   CheckCircle2,
+  ChevronDown,
   CircleHelp,
   ExternalLink,
   LifeBuoy,
@@ -604,8 +605,8 @@ export default function SupportPage() {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <section className="space-y-4 xl:col-span-8">
             {activeTab === "guides" && (
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <div className={`${panelClass} p-4 xl:col-span-5`}>
+              <>
+                <div className={`${panelClass} p-4 xl:hidden`}>
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <input
@@ -616,76 +617,174 @@ export default function SupportPage() {
                     />
                   </div>
 
-                  <div className="mt-4 space-y-2">
+                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                    Tap a guide to open the steps right inside the same card.
+                  </p>
+
+                  <div className="mt-4 space-y-3">
                     {filteredGuides.length === 0 ? (
                       <div className={`${panelSoftClass} px-3 py-2 text-sm text-slate-500 dark:text-slate-400`}>
                         Nothing matches that search yet.
                       </div>
                     ) : (
-                      filteredGuides.map((guide) => (
-                        <button
-                          key={guide.id}
-                          type="button"
-                          onClick={() => setSelectedGuideId(guide.id)}
-                          className={`w-full rounded-lg border px-3 py-3 text-left transition ${
-                            selectedGuide?.id === guide.id
-                              ? "border-accent-primary/45 bg-gradient-to-r from-accent-primary/18 to-cyan-500/12"
-                              : "border-white/10 bg-white/5 hover:bg-white/10"
-                          }`}
-                        >
-                          <div className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                            {guide.category || "General"}
-                          </div>
-                          <div className="mt-1 text-sm font-semibold text-lightText dark:text-darkText">
-                            {guide.title}
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{guide.summary}</p>
-                        </button>
-                      ))
+                      filteredGuides.map((guide) => {
+                        const expanded = selectedGuide?.id === guide.id;
+
+                        return (
+                          <article
+                            key={guide.id}
+                            className={`overflow-hidden rounded-xl border transition ${
+                              expanded
+                                ? "border-accent-primary/45 bg-gradient-to-r from-accent-primary/18 to-cyan-500/12"
+                                : "border-white/10 bg-white/5"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setSelectedGuideId(guide.id)}
+                              className="flex w-full items-start justify-between gap-3 px-3 py-3 text-left"
+                              aria-expanded={expanded}
+                            >
+                              <div className="min-w-0">
+                                <div className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                                  {guide.category || "General"}
+                                </div>
+                                <div className="mt-1 text-sm font-semibold text-lightText dark:text-darkText">
+                                  {guide.title}
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                  {guide.summary}
+                                </p>
+                              </div>
+                              <ChevronDown
+                                className={`mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                                  expanded ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+
+                            {expanded ? (
+                              <div className="border-t border-white/10 px-3 py-3">
+                                <div className="space-y-2">
+                                  {(Array.isArray(guide.steps) ? guide.steps : []).map((step, index) => (
+                                    <div
+                                      key={`${guide.id}-mobile-step-${index + 1}`}
+                                      className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                                    >
+                                      <span className="mt-0.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 px-1.5 text-[10px] font-semibold leading-none tabular-nums text-accent-primary">
+                                        {index + 1}
+                                      </span>
+                                      <p className="text-sm text-lightText dark:text-darkText">{step}</p>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {guide.tip ? (
+                                  <div className="mt-3 rounded-lg border border-emerald-300/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
+                                    <span className="font-semibold">Farmer Tip:</span> {guide.tip}
+                                  </div>
+                                ) : null}
+
+                                <button
+                                  type="button"
+                                  onClick={openTicketComposer}
+                                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/20 dark:text-slate-100"
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                  Still need help? Send a message
+                                </button>
+                              </div>
+                            ) : null}
+                          </article>
+                        );
+                      })
                     )}
                   </div>
                 </div>
 
-                <div className={`${panelClass} p-5 xl:col-span-7`}>
-                  {selectedGuide ? (
-                    <>
-                      <div className="inline-flex rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold text-accent-primary dark:text-blue-200">
-                        {selectedGuide.category || "General"}
-                      </div>
-                      <h2 className="mt-3 text-lg font-header font-semibold text-lightText dark:text-darkText">
-                        {selectedGuide.title}
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {selectedGuide.summary}
-                      </p>
-
-                      <div className="mt-4 space-y-2">
-                        {(Array.isArray(selectedGuide.steps) ? selectedGuide.steps : []).map((step, index) => (
-                          <div
-                            key={`${selectedGuide.id}-step-${index + 1}`}
-                            className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 transition hover:border-accent-primary/35"
-                          >
-                            <span className="mt-0.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 px-1.5 text-[10px] font-semibold leading-none tabular-nums text-accent-primary sm:min-h-7 sm:min-w-7 sm:text-[11px]">
-                              {index + 1}
-                            </span>
-                            <p className="text-sm text-lightText dark:text-darkText">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedGuide.tip && (
-                        <div className="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
-                          <span className="font-semibold">Farmer Tip:</span> {selectedGuide.tip}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className={`${panelSoftClass} px-4 py-3 text-sm text-slate-500 dark:text-slate-400`}>
-                      Choose a guide on the left to read the steps here.
+                <div className="hidden xl:grid xl:grid-cols-12 xl:gap-4">
+                  <div className={`${panelClass} p-4 xl:col-span-5`}>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        value={guideQuery}
+                        onChange={(event) => setGuideQuery(event.target.value)}
+                        placeholder="Search help guides..."
+                        className={searchFieldClass}
+                      />
                     </div>
-                  )}
+
+                    <div className="mt-4 space-y-2">
+                      {filteredGuides.length === 0 ? (
+                        <div className={`${panelSoftClass} px-3 py-2 text-sm text-slate-500 dark:text-slate-400`}>
+                          Nothing matches that search yet.
+                        </div>
+                      ) : (
+                        filteredGuides.map((guide) => (
+                          <button
+                            key={guide.id}
+                            type="button"
+                            onClick={() => setSelectedGuideId(guide.id)}
+                            className={`w-full rounded-lg border px-3 py-3 text-left transition ${
+                              selectedGuide?.id === guide.id
+                                ? "border-accent-primary/45 bg-gradient-to-r from-accent-primary/18 to-cyan-500/12"
+                                : "border-white/10 bg-white/5 hover:bg-white/10"
+                            }`}
+                          >
+                            <div className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                              {guide.category || "General"}
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-lightText dark:text-darkText">
+                              {guide.title}
+                            </div>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{guide.summary}</p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={`${panelClass} p-5 xl:col-span-7`}>
+                    {selectedGuide ? (
+                      <>
+                        <div className="inline-flex rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold text-accent-primary dark:text-blue-200">
+                          {selectedGuide.category || "General"}
+                        </div>
+                        <h2 className="mt-3 text-lg font-header font-semibold text-lightText dark:text-darkText">
+                          {selectedGuide.title}
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                          {selectedGuide.summary}
+                        </p>
+
+                        <div className="mt-4 space-y-2">
+                          {(Array.isArray(selectedGuide.steps) ? selectedGuide.steps : []).map((step, index) => (
+                            <div
+                              key={`${selectedGuide.id}-step-${index + 1}`}
+                              className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 transition hover:border-accent-primary/35"
+                            >
+                              <span className="mt-0.5 inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 px-1.5 text-[10px] font-semibold leading-none tabular-nums text-accent-primary sm:min-h-7 sm:min-w-7 sm:text-[11px]">
+                                {index + 1}
+                              </span>
+                              <p className="text-sm text-lightText dark:text-darkText">{step}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {selectedGuide.tip && (
+                          <div className="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
+                            <span className="font-semibold">Farmer Tip:</span> {selectedGuide.tip}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className={`${panelSoftClass} px-4 py-3 text-sm text-slate-500 dark:text-slate-400`}>
+                        Choose a guide on the left to read the steps here.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
             {activeTab === "tickets" && (
