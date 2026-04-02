@@ -16,6 +16,10 @@ export default function SummaryCard({
   const displayValue = replaceCurrencyCodeWithSymbol(value);
   const displaySubtitle = replaceCurrencyCodeWithSymbol(subtitle);
   const displayDelta = replaceCurrencyCodeWithSymbol(deltaText);
+  const compactValueClass =
+    String(displayValue || "").length > 10
+      ? "text-[1.25rem] sm:text-[1.65rem] lg:text-3xl xl:text-3xl"
+      : "text-[1.45rem] sm:text-[1.9rem] lg:text-3xl xl:text-3xl";
 
   return (
     <article
@@ -36,9 +40,9 @@ export default function SummaryCard({
 
         {/* Content */}
         <div className="flex-1 min-w-0 w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-4">
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div
-              className={`text-sm sm:text-base lg:text-lg xl:text-xl font-semibold tracking-tight text-gray-700 dark:text-gray-100 leading-tight whitespace-normal break-words ${titleClass}`}
+              className={`text-sm sm:text-base lg:text-lg xl:text-xl font-semibold tracking-tight leading-tight text-gray-700 dark:text-gray-100 ${titleClass}`}
             >
               {title}
             </div>
@@ -51,9 +55,9 @@ export default function SummaryCard({
           </div>
 
           {/* Value */}
-          <div className="flex-shrink-0 text-right">
+          <div className="w-full flex-shrink-0 text-left sm:text-right lg:w-auto">
             <div
-              className={`text-[2.1rem] sm:text-[2.25rem] lg:text-3xl xl:text-3xl font-extrabold font-header tabular-nums leading-none tracking-[-0.045em] text-gray-900 dark:text-white truncate ${valueClass}`}
+              className={`${compactValueClass} font-header font-extrabold tabular-nums leading-[1.02] tracking-[-0.02em] text-gray-900 dark:text-white sm:tracking-[-0.04em] whitespace-normal break-words sm:whitespace-nowrap ${valueClass}`}
             >
               {displayValue}
             </div>

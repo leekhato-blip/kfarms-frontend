@@ -777,7 +777,7 @@ export default function Topbar() {
   }
 
   const topActionIconClass =
-    "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
+    "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
   const topActionButtonClass =
     "inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
   const topActionDropdownClass =
@@ -1034,7 +1034,7 @@ export default function Topbar() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
+        <div className="flex flex-nowrap items-center justify-end gap-2 sm:gap-3">
           {/* Search icon (mobile) */}
           <button
             type="button"
@@ -1048,7 +1048,7 @@ export default function Topbar() {
           </button>
 
           {/* Notifications */}
-          <div className="relative hidden md:block">
+          <div className="relative shrink-0">
             <button
               onClick={() => {
                 setQuickOpen(false);
@@ -1072,7 +1072,7 @@ export default function Topbar() {
             </button>
 
             <div
-              className={`fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-72 sm:w-80 max-w-[calc(100vw-2rem)] transform origin-top-right z-50
+              className={`fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 mt-3 sm:mt-2 w-auto sm:w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] sm:max-w-[calc(100vw-2rem)] transform origin-top-right z-50
               ${
                 notifOpen
                   ? "translate-y-0 scale-100 opacity-100"
@@ -1081,53 +1081,59 @@ export default function Topbar() {
               transition-all duration-200 ease-out`}
             >
               <div className={`${topActionDropdownClass} overflow-hidden`}>
-                <div className="border-b border-slate-200/70 px-4 py-3.5 dark:border-slate-800/90">
+                <div className="border-b border-slate-200/70 px-3 py-3 sm:px-4 sm:py-3.5 dark:border-slate-800/90">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           Notifications
                         </p>
-                        <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-100">
+                        <span className="hidden sm:inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-100">
                           Live
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
                         {unreadCount > 0
                           ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"} waiting`
                           : "You are all caught up for now."}
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 sm:hidden">
+                        {unreadCount > 0
+                          ? `${unreadCount} unread`
+                          : "All caught up"}
                       </p>
                     </div>
                     {unreadCount > 0 && (
                       <button
                         type="button"
                         onClick={handleMarkAllRead}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-accent-primary/30 hover:text-accent-primary dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-accent-primary/35 dark:hover:text-white"
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200/80 bg-white/85 px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-accent-primary/30 hover:text-accent-primary sm:gap-1.5 sm:rounded-full sm:px-2.5 sm:text-[11px] dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-accent-primary/35 dark:hover:text-white"
                       >
                         <CheckCheck className="h-3.5 w-3.5" />
-                        Mark all
+                        <span className="sm:hidden">Clear</span>
+                        <span className="hidden sm:inline">Mark all</span>
                       </button>
                     )}
                   </div>
                 </div>
                 {notificationsLoading ? (
-                  <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                  <div className="px-3 py-6 text-center text-sm text-slate-500 sm:px-4 sm:py-8 dark:text-slate-400">
                     Pulling in your latest alerts...
                   </div>
                 ) : visibleNotifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center">
-                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                  <div className="px-3 py-6 text-center sm:px-4 sm:py-8">
+                    <div className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-slate-500 sm:h-12 sm:w-12 sm:rounded-2xl dark:bg-slate-800 dark:text-slate-300">
                       <Bell className="h-5 w-5" />
                     </div>
                     <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
                       No fresh notifications
                     </p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                       New farm alerts will land here without repeating the same noise.
                     </p>
                   </div>
                 ) : (
-                  <ul className="max-h-[26rem] overflow-y-auto px-2 py-2">
+                  <ul className="max-h-[17rem] overflow-y-auto px-1.5 py-1.5 sm:max-h-[26rem] sm:px-2 sm:py-2">
                     {visibleNotifications.map((notification) => {
                       const meta = getNotificationMeta(notification.type);
                       const NotificationIcon = meta.icon;
@@ -1138,33 +1144,26 @@ export default function Topbar() {
 
                       return (
                         <li key={`${notificationSignature(notification)}::${notification.id ?? "live"}`}>
-                          <div className="group my-1 rounded-2xl border border-transparent px-3 py-3 transition-all duration-200 hover:border-slate-200/80 hover:bg-slate-50/90 dark:hover:border-slate-700/80 dark:hover:bg-slate-900/65">
-                            <div className="flex items-start gap-3">
-                              <div className={`mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${meta.iconClass}`}>
-                                <NotificationIcon className="h-[18px] w-[18px]" />
+                          <div className="sm:hidden">
+                            <button
+                              type="button"
+                              onClick={() => handleNotificationOpen(notification)}
+                              className="group my-1 flex w-full items-start gap-3 rounded-xl border border-transparent px-2.5 py-2.5 text-left transition-all duration-200 hover:border-slate-200/80 hover:bg-slate-50/90 dark:hover:border-slate-700/80 dark:hover:bg-slate-900/65"
+                            >
+                              <div className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full ${meta.iconClass}`}>
+                                <NotificationIcon className="h-4 w-4" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="flex flex-col gap-2">
-                                  <p className="text-sm font-semibold leading-5 text-slate-900 break-words dark:text-slate-100">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-[13px] font-semibold leading-5 text-slate-900 break-words dark:text-slate-100">
                                     {notification.title || "Workspace update"}
                                   </p>
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${meta.chipClass}`}>
-                                      {meta.label}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleMarkRead(notification.id)}
-                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:border-emerald-500/30 hover:text-emerald-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-emerald-400/30 dark:hover:text-emerald-200"
-                                      aria-label={`Mark ${notification.title || "notification"} as read`}
-                                    >
-                                      <Check className="h-3.5 w-3.5" />
-                                      Mark
-                                    </button>
-                                  </div>
+                                  <span className="shrink-0 text-[10px] text-slate-500 dark:text-slate-400">
+                                    {formatNotificationAge(notification.createdAt)}
+                                  </span>
                                 </div>
                                 <p
-                                  className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300"
+                                  className="mt-0.5 text-[12px] leading-5 text-slate-600 dark:text-slate-300"
                                   style={{
                                     display: "-webkit-box",
                                     WebkitBoxOrient: "vertical",
@@ -1174,16 +1173,57 @@ export default function Topbar() {
                                 >
                                   {description}
                                 </p>
-                                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-                                  <span>{formatNotificationAge(notification.createdAt)}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleNotificationOpen(notification)}
-                                    className="inline-flex items-center gap-1 font-medium text-accent-primary transition-transform duration-200 hover:translate-x-0.5"
+                              </div>
+                            </button>
+                          </div>
+                          <div className="hidden sm:block">
+                            <div className="group my-1 rounded-2xl border border-transparent px-3 py-3 transition-all duration-200 hover:border-slate-200/80 hover:bg-slate-50/90 dark:hover:border-slate-700/80 dark:hover:bg-slate-900/65">
+                              <div className="flex items-start gap-3">
+                                <div className={`mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${meta.iconClass}`}>
+                                  <NotificationIcon className="h-[18px] w-[18px]" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-col gap-2">
+                                    <p className="text-sm font-semibold leading-5 text-slate-900 break-words dark:text-slate-100">
+                                      {notification.title || "Workspace update"}
+                                    </p>
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${meta.chipClass}`}>
+                                        {meta.label}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMarkRead(notification.id)}
+                                        className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:border-emerald-500/30 hover:text-emerald-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-emerald-400/30 dark:hover:text-emerald-200"
+                                        aria-label={`Mark ${notification.title || "notification"} as read`}
+                                      >
+                                        <Check className="h-3.5 w-3.5" />
+                                        Mark
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p
+                                    className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300"
+                                    style={{
+                                      display: "-webkit-box",
+                                      WebkitBoxOrient: "vertical",
+                                      WebkitLineClamp: 2,
+                                      overflow: "hidden",
+                                    }}
                                   >
-                                    Open
-                                    <ArrowUpRight className="h-3.5 w-3.5" />
-                                  </button>
+                                    {description}
+                                  </p>
+                                  <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                    <span>{formatNotificationAge(notification.createdAt)}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleNotificationOpen(notification)}
+                                      className="inline-flex items-center gap-1 font-medium text-accent-primary transition-transform duration-200 hover:translate-x-0.5"
+                                    >
+                                      Open
+                                      <ArrowUpRight className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1194,7 +1234,7 @@ export default function Topbar() {
                   </ul>
                 )}
                 {notifications.length > NOTIFICATION_DROPDOWN_LIMIT && (
-                  <div className="border-t border-slate-200/70 px-4 py-2.5 text-[11px] text-slate-500 dark:border-slate-800/90 dark:text-slate-400">
+                  <div className="border-t border-slate-200/70 px-3 py-2 text-[10px] text-slate-500 sm:px-4 sm:py-2.5 sm:text-[11px] dark:border-slate-800/90 dark:text-slate-400">
                     Showing the latest {NOTIFICATION_DROPDOWN_LIMIT} unread alerts first.
                   </div>
                 )}

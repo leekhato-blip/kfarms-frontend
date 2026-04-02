@@ -16,7 +16,8 @@ import {
 } from "../offline/offlineStore";
 
 const AUTO_PROBE_INTERVAL_MS = 8000;
-const BACKEND_DOWN_DEBOUNCE_MS = 2200;
+const BACKEND_DOWN_DEBOUNCE_MS = 4200;
+const BACKEND_RECOVERY_CONFIRM_MS = 3200;
 const RECOVERY_SETTLE_MS = 2800;
 
 export default function BackendRecoveryPrompt() {
@@ -32,6 +33,7 @@ export default function BackendRecoveryPrompt() {
   const [syncSnapshot, setSyncSnapshot] = React.useState(() => getOfflineSyncSnapshot());
   const [suppressSettledStatuses, setSuppressSettledStatuses] = React.useState(false);
   const backendDownTimerRef = React.useRef(null);
+  const backendRecoveryTimerRef = React.useRef(null);
   const recoveryTimerRef = React.useRef(null);
   const probingConnectionRef = React.useRef(false);
   const backendDownRef = React.useRef(backendDown);
@@ -58,6 +60,21 @@ export default function BackendRecoveryPrompt() {
     recoveryTimerRef.current = null;
   }, []);
 
+  const clearBackendRecoveryTimer = React.useCallback(() => {
+    if (!backendRecoveryTimerRef.current) return;
+    clearTimeout(backendRecoveryTimerRef.current);
+    backendRecoveryTimerRef.current = null;
+  }, []);
+
+  const scheduleBackendRecovery = React.useCallback(() => {
+    clearBackendRecoveryTimer();
+    backendRecoveryTimerRef.current = window.setTimeout(() => {
+      setBrowserOffline(false);
+      setBackendDown(false);
+      backendRecoveryTimerRef.current = null;
+    }, BACKEND_RECOVERY_CONFIRM_MS);
+  }, [clearBackendRecoveryTimer]);
+
   const requestBackendProbe = React.useCallback(async ({
     triggerSync = false,
     bypassBrowserCheck = false,
@@ -73,8 +90,7 @@ export default function BackendRecoveryPrompt() {
 
       if (reachable) {
         clearBackendDownTimer();
-        setBrowserOffline(false);
-        setBackendDown(false);
+        scheduleBackendRecovery();
       }
 
       if (reachable && triggerSync) {
@@ -86,13 +102,14 @@ export default function BackendRecoveryPrompt() {
       probingConnectionRef.current = false;
       setProbingConnection(false);
     }
-  }, [clearBackendDownTimer]);
+  }, [clearBackendDownTimer, scheduleBackendRecovery]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const handleDown = () => {
       setDismissed(false);
+      clearBackendRecoveryTimer();
       if (
         browserOfflineRef.current ||
         backendDownRef.current ||
@@ -115,12 +132,12 @@ export default function BackendRecoveryPrompt() {
 
     const handleUp = () => {
       clearBackendDownTimer();
-      setBrowserOffline(false);
-      setBackendDown(false);
+      scheduleBackendRecovery();
     };
 
     const handleBrowserOffline = () => {
       clearBackendDownTimer();
+      clearBackendRecoveryTimer();
       setBrowserOffline(true);
       setBackendDown(false);
       setDismissed(false);
@@ -157,6 +174,7 @@ export default function BackendRecoveryPrompt() {
 
     return () => {
       clearBackendDownTimer();
+      clearBackendRecoveryTimer();
       clearRecoveryTimer();
       window.removeEventListener("kf-backend-down", handleDown);
       window.removeEventListener("kf-backend-up", handleUp);
@@ -165,7 +183,13 @@ export default function BackendRecoveryPrompt() {
       window.removeEventListener("kf-offline-queue-updated", handleQueueUpdated);
       window.removeEventListener("kf-offline-sync-state", handleSyncUpdated);
     };
-  }, [clearBackendDownTimer, clearRecoveryTimer, requestBackendProbe]);
+  }, [
+    clearBackendDownTimer,
+    clearBackendRecoveryTimer,
+    clearRecoveryTimer,
+    requestBackendProbe,
+    scheduleBackendRecovery,
+  ]);
 
   const queuedChanges = Number(queueSnapshot.total || 0);
   const failedChanges = Number(queueSnapshot.failed || 0);
@@ -179,6 +203,7 @@ export default function BackendRecoveryPrompt() {
 
     if (hasConnectionIssue) {
       clearRecoveryTimer();
+      clearBackendRecoveryTimer();
       setSuppressSettledStatuses(false);
       return;
     }
@@ -191,7 +216,7 @@ export default function BackendRecoveryPrompt() {
         recoveryTimerRef.current = null;
       }, RECOVERY_SETTLE_MS);
     }
-  }, [clearRecoveryTimer, hasConnectionIssue]);
+  }, [clearBackendRecoveryTimer, clearRecoveryTimer, hasConnectionIssue]);
 
   const shouldShowQueuedStatus =
     !hasConnectionIssue && !suppressSettledStatuses && queuedChanges > 0;

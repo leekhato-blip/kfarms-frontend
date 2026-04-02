@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
@@ -10,7 +11,7 @@ export const GUIDED_FORM_LABEL_CLASS =
   "mb-1 flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-200";
 export const GUIDED_FORM_ICON_CLASS = "h-4 w-4 text-slate-500 dark:text-slate-400";
 export const GUIDED_FORM_FIELD_CLASS =
-  "w-full rounded-lg border border-slate-200/80 bg-white/88 px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-500/10 dark:border-white/10 dark:bg-slate-950/80 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus:border-sky-400/50 dark:focus:ring-sky-500/20 dark:[color-scheme:dark]";
+  "w-full rounded-lg border border-white/20 bg-white/80 px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-500/10 dark:border-white/10 dark:bg-black/60 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus:border-sky-400/50 dark:focus:ring-sky-500/20 dark:[color-scheme:dark]";
 export const GUIDED_FORM_READONLY_FIELD_CLASS =
   "w-full rounded-lg border border-slate-200/70 bg-slate-100/90 px-3 py-3 text-sm text-slate-700 outline-none dark:border-white/10 dark:bg-slate-950/65 dark:text-slate-200 dark:[color-scheme:dark]";
 export const GUIDED_FORM_SECONDARY_BUTTON_CLASS =
@@ -19,6 +20,22 @@ export const GUIDED_FORM_PRIMARY_BUTTON_CLASS =
   "rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-accent-primary/55 disabled:text-white/75 disabled:shadow-none";
 export const GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-accent-primary/55 disabled:text-white/75 disabled:shadow-none";
+
+export function handleGuidedFormAdvanceClick(event, onAdvance) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (typeof onAdvance !== "function") return;
+
+  if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+    window.requestAnimationFrame(() => {
+      onAdvance();
+    });
+    return;
+  }
+
+  onAdvance();
+}
 
 export function GuidedFormSection({
   title,

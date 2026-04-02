@@ -1,11 +1,7 @@
-const LEGACY_CACHE_PREFIXES = ["kfarms-app-shell-", "kfarms-runtime-"];
-
 async function clearLegacyCaches() {
   const cacheKeys = await caches.keys();
   await Promise.all(
-    cacheKeys
-      .filter((key) => LEGACY_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)))
-      .map((key) => caches.delete(key)),
+    cacheKeys.map((key) => caches.delete(key)),
   );
 }
 

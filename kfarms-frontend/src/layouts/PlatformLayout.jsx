@@ -6,7 +6,6 @@ import { ToastProvider, useToast } from "../components/ToastProvider";
 import CommandPalette from "../components/CommandPalette";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { usePlatformAuth } from "../auth/AuthProvider";
-import { isPlatformDevToken } from "../auth/platformDevSession";
 import { useTheme } from "../hooks/useTheme";
 import PlatformAppModal from "../pages/platform/PlatformAppModal";
 import { PLATFORM_ENDPOINTS } from "../api/endpoints";
@@ -91,7 +90,7 @@ function getInboundMessageTimestamp(ticket) {
 function PlatformShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, token, user } = usePlatformAuth();
+  const { logout, user } = usePlatformAuth();
   const { notify } = useToast();
   const { theme, toggleTheme } = useTheme();
 
@@ -106,15 +105,13 @@ function PlatformShell() {
   const [platformDataMode, setPlatformDataMode] = React.useState(() => readPlatformDataMode());
   const [customApps, setCustomApps] = React.useState(() => readStoredPlatformApps());
   const [messageMenuHasNew, setMessageMenuHasNew] = React.useState(false);
-  const devPlatformSession = isPlatformDevToken(token);
   const currentAccessTier = React.useMemo(() => resolvePlatformAccessTier(user), [user]);
   const canManagePortfolio =
     currentAccessTier === "PLATFORM_OWNER" || currentAccessTier === "PLATFORM_ADMIN";
   const limitedLiveAccess = Boolean(user) && !canManagePortfolio;
-  const effectivePlatformDataMode = canManagePortfolio ? platformDataMode : "live";
+  const effectivePlatformDataMode = platformDataMode;
   const isMessagesRoute = location.pathname.startsWith("/platform/messages");
   const limitedLiveNoticeShownRef = React.useRef(false);
-  const demoModeLockNoticeShownRef = React.useRef(false);
 
   const requestLogout = React.useCallback(() => {
     setMobileOpen(false);
@@ -143,24 +140,10 @@ function PlatformShell() {
   }, [platformDataMode]);
 
   React.useEffect(() => {
-    if (!devPlatformSession || platformDataMode !== "live") return;
-
-    setPlatformDataMode("demo");
-    writePlatformDataMode("demo");
-
-    if (demoModeLockNoticeShownRef.current) return;
-    demoModeLockNoticeShownRef.current = true;
-    notify(
-      "Demo sessions stay in demo mode. Sign in with a real platform account to use live data.",
-      "info",
-    );
-  }, [devPlatformSession, notify, platformDataMode]);
-
-  React.useEffect(() => {
     if (!limitedLiveAccess || limitedLiveNoticeShownRef.current) return;
     limitedLiveNoticeShownRef.current = true;
     notify(
-      "Live access is active for this ROOTS lane. Some admin-only sections may stay unavailable.",
+      "Some admin-only ROOTS sections may stay unavailable for this account.",
       "info",
     );
   }, [limitedLiveAccess, notify]);
@@ -236,26 +219,8 @@ function PlatformShell() {
   }, []);
 
   const handleDataModeChange = React.useCallback((nextMode) => {
-    if (devPlatformSession) {
-      setPlatformDataMode("demo");
-      writePlatformDataMode("demo");
-      if (nextMode === "live") {
-        notify(
-          "Demo sessions stay in demo mode. Sign in with a real platform account to use live data.",
-          "info",
-        );
-      }
-      return;
-    }
-
-    if (!canManagePortfolio) {
-      setPlatformDataMode("live");
-      notify("Live access is active for this ROOTS lane.", "info");
-      return;
-    }
-
     setPlatformDataMode(nextMode === "demo" ? "demo" : "live");
-  }, [canManagePortfolio, devPlatformSession, notify]);
+  }, []);
 
   const createCustomApp = React.useCallback((draft) => {
     if (!canManagePortfolio) {

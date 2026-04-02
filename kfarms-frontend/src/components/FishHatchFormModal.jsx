@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Calendar, Egg, Fish, Hash, Save, StickyNote } from "lucide-react";
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
+import GuidedFormModal, {
+  GUIDED_FORM_FIELD_CLASS,
+  GUIDED_FORM_ICON_CLASS,
+  GUIDED_FORM_LABEL_CLASS,
+  GUIDED_FORM_PRIMARY_BUTTON_CLASS,
+  GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS,
+  GUIDED_FORM_READONLY_FIELD_CLASS,
+  GUIDED_FORM_SECONDARY_BUTTON_CLASS,
+  GuidedFormSection,
+  handleGuidedFormAdvanceClick,
+} from "./GuidedFormModal";
 import { createFishHatch, updateFishHatch } from "../services/fishHatchService";
 
 function defaultForm() {
@@ -142,7 +152,7 @@ export default function FishHatchFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+            className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
           >
             Back
           </button>
@@ -150,7 +160,7 @@ export default function FishHatchFormModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+            className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
           >
             Cancel
           </button>
@@ -160,8 +170,12 @@ export default function FishHatchFormModal({
           <button
             type="button"
             disabled={!stepOneComplete}
-            onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={(event) =>
+              handleGuidedFormAdvanceClick(event, () => {
+                setStep(1);
+              })
+            }
+            className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
           >
             Continue
           </button>
@@ -169,7 +183,7 @@ export default function FishHatchFormModal({
           <button
             type="submit"
             disabled={saving || pondsEmpty || !stepOneComplete || !stepTwoComplete}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save hatch record"}
@@ -210,8 +224,8 @@ export default function FishHatchFormModal({
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Fish className="h-4 w-4 text-slate-500" />
+              <label className={GUIDED_FORM_LABEL_CLASS}>
+                <Fish className={GUIDED_FORM_ICON_CLASS} />
                 Pond <Required />
               </label>
               <select
@@ -219,7 +233,7 @@ export default function FishHatchFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, pondId: event.target.value }))
                 }
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                className={GUIDED_FORM_FIELD_CLASS}
                 required
               >
                 <option value="">Select pond</option>
@@ -232,8 +246,8 @@ export default function FishHatchFormModal({
             </div>
 
             <div>
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Calendar className="h-4 w-4 text-slate-500" />
+              <label className={GUIDED_FORM_LABEL_CLASS}>
+                <Calendar className={GUIDED_FORM_ICON_CLASS} />
                 Hatch date <Required />
               </label>
               <input
@@ -242,7 +256,7 @@ export default function FishHatchFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, hatchDate: event.target.value }))
                 }
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                className={GUIDED_FORM_FIELD_CLASS}
                 required
               />
             </div>
@@ -256,8 +270,8 @@ export default function FishHatchFormModal({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <Hash className={GUIDED_FORM_ICON_CLASS} />
                   Male count <Required />
                 </label>
                 <input
@@ -267,14 +281,14 @@ export default function FishHatchFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, maleCount: event.target.value }))
                   }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  className={GUIDED_FORM_FIELD_CLASS}
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <Hash className={GUIDED_FORM_ICON_CLASS} />
                   Female count <Required />
                 </label>
                 <input
@@ -284,14 +298,14 @@ export default function FishHatchFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, femaleCount: event.target.value }))
                   }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  className={GUIDED_FORM_FIELD_CLASS}
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <Hash className={GUIDED_FORM_ICON_CLASS} />
                   Hatched <Required />
                 </label>
                 <input
@@ -304,20 +318,20 @@ export default function FishHatchFormModal({
                       quantityHatched: event.target.value,
                     }))
                   }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+                  className={GUIDED_FORM_FIELD_CLASS}
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <Hash className={GUIDED_FORM_ICON_CLASS} />
                   Hatch rate
                 </label>
                 <input
                   type="text"
                   value={`${hatchRate.toFixed(1)}%`}
-                  className="w-full rounded-lg bg-white/70 p-3 outline-none dark:bg-black/50"
+                  className={GUIDED_FORM_READONLY_FIELD_CLASS}
                   readOnly
                 />
               </div>
@@ -328,8 +342,8 @@ export default function FishHatchFormModal({
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
+            <label className={GUIDED_FORM_LABEL_CLASS}>
+              <StickyNote className={GUIDED_FORM_ICON_CLASS} />
               Note
             </label>
             <textarea
@@ -337,7 +351,7 @@ export default function FishHatchFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-              className="min-h-[96px] w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+              className={`${GUIDED_FORM_FIELD_CLASS} min-h-[96px]`}
               placeholder="Optional note about the hatch"
             />
           </GuidedFormSection>

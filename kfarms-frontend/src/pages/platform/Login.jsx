@@ -13,12 +13,6 @@ import {
   platformAxios,
   unwrapApiResponse,
 } from "../../api/platformClient";
-import {
-  canUsePlatformDevSession,
-  createPlatformDevToken,
-  findPlatformDemoUser,
-  writePlatformDevSession,
-} from "../../auth/platformDevSession";
 import { isBackendUnavailableError, waitForBackendConnection } from "../../api/apiClient";
 import { usePlatformAuth } from "../../auth/AuthProvider";
 import { ToastProvider, useToast } from "../../components/ToastProvider";
@@ -26,7 +20,6 @@ import Card from "../../components/Card";
 import Button from "../../components/Button";
 import { readTokenFromPayload } from "../../utils/formatters";
 import { useTheme } from "../../hooks/useTheme";
-import { writePlatformDataMode } from "./platformWorkbench";
 import rootsLogo from "../../assets/roots-logo-trimmed.png";
 
 async function loginWithEndpoint(endpoint, identifier, password) {
@@ -92,7 +85,7 @@ function shouldTryFallbackEndpoint(error) {
 
 function resolveFriendlyLoginError(error) {
   if (isBackendUnavailableError(error)) {
-    return "Platform services are still waking up or temporarily unavailable. Try again shortly, or open the demo while the backend comes back online.";
+    return "Platform services are still waking up or temporarily unavailable. Try again shortly.";
   }
 
   const status = Number(error?.response?.status || 0);
@@ -125,23 +118,6 @@ function resolveFriendlyLoginError(error) {
 
   return "We could not sign you in right now. Please try again.";
 }
-
-function shouldUseDevPlatformLoginFallback(error) {
-  if (!canUsePlatformDevSession()) return false;
-  return isBackendUnavailableError(error);
-}
-
-function activatePlatformDemoAccess({ demoUser, from, login, navigate, notify }) {
-  if (!demoUser) return false;
-
-  writePlatformDevSession(demoUser);
-  writePlatformDataMode("demo");
-  login(createPlatformDevToken(demoUser));
-  notify(`Signed in as ${demoUser.username || demoUser.email}`, "success");
-  navigate(from || "/platform", { replace: true });
-  return true;
-}
-
 function PlatformLoginContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -155,11 +131,6 @@ function PlatformLoginContent() {
   const [loading, setLoading] = React.useState(false);
   const [inlineError, setInlineError] = React.useState("");
   const deniedSessionRef = React.useRef(false);
-  const demoAccessEnabled = canUsePlatformDevSession();
-  const defaultDemoUser = React.useMemo(
-    () => findPlatformDemoUser("kato") || findPlatformDemoUser("leekhato@gmail.com"),
-    [],
-  );
 
   React.useEffect(() => {
     if (isAuthenticated && !profileLoading && canAccessPlatform) {
@@ -209,51 +180,20 @@ function PlatformLoginContent() {
     return () => window.clearTimeout(timer);
   }, [inlineError]);
 
-  const handleOpenDemo = React.useCallback(() => {
-    if (!demoAccessEnabled || !defaultDemoUser) return;
-
-    setInlineError("");
-    setIdentifier(defaultDemoUser.username || defaultDemoUser.email || "kato");
-    setPassword("");
-    activatePlatformDemoAccess({
-      demoUser: defaultDemoUser,
-      from: location.state?.from,
-      login,
-      navigate,
-      notify,
-    });
-  }, [defaultDemoUser, demoAccessEnabled, location.state?.from, login, navigate, notify]);
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setInlineError("");
     setLoading(true);
 
     try {
-      const matchedDemoUser = demoAccessEnabled ? findPlatformDemoUser(identifier) : null;
       const backendReady = await waitForBackendConnection({
-        timeoutMs: matchedDemoUser ? 15000 : 90000,
+        timeoutMs: 90000,
         intervalMs: 5000,
         silent: false,
       });
 
       if (!backendReady) {
-        if (
-          matchedDemoUser &&
-          activatePlatformDemoAccess({
-            demoUser: matchedDemoUser,
-            from: location.state?.from,
-            login,
-            navigate,
-            notify,
-          })
-        ) {
-          return;
-        }
-
-        const message = demoAccessEnabled
-          ? "Platform services are still waking up. Try again shortly, or open the demo while the backend comes back online."
-          : "Platform services are still waking up. Please try again in a moment.";
+        const message = "Platform services are still waking up. Please try again in a moment.";
         setInlineError(message);
         notify(message, "error", 3000);
         return;
@@ -290,23 +230,6 @@ function PlatformLoginContent() {
       const from = location.state?.from;
       navigate(from || "/platform", { replace: true });
     } catch (error) {
-      if (shouldUseDevPlatformLoginFallback(error)) {
-        const demoUser = findPlatformDemoUser(identifier);
-
-        if (
-          activatePlatformDemoAccess({
-            demoUser,
-            from: location.state?.from,
-            login,
-            navigate,
-            notify,
-          })
-        ) {
-          setLoading(false);
-          return;
-        }
-      }
-
       const message = resolveFriendlyLoginError(error);
       setInlineError(message);
       notify(message, "error", 3000);
@@ -408,20 +331,19 @@ function PlatformLoginContent() {
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
 
-              {demoAccessEnabled && defaultDemoUser ? (
-                <div className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 px-3 py-2.5">
-                  <p className="text-xs text-[var(--atlas-muted)]">
-                    Need quick access?
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#16a34a] dark:text-[#4ade80]">
+                    Invite only
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleOpenDemo}
-                    className="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                  >
-                    Open demo
-                  </button>
+                  <p className="mt-1 text-xs text-[var(--atlas-muted)]">
+                    Live and demo switching unlocks after a real platform sign-in.
+                  </p>
                 </div>
-              ) : null}
+                <span className="shrink-0 rounded-full bg-[#16a34a] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(22,163,74,0.22)]">
+                  Secure access
+                </span>
+              </div>
             </form>
           </div>
         </Card>

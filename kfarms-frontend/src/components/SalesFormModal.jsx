@@ -8,6 +8,7 @@ import GuidedFormModal, {
   GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS,
   GUIDED_FORM_SECONDARY_BUTTON_CLASS,
   GuidedFormSection,
+  handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createSale, updateSale } from "../services/salesService";
 
@@ -153,7 +154,11 @@ export default function SalesFormModal({
           <button
             type="button"
             disabled={!stepOneComplete}
-            onClick={() => setStep(1)}
+            onClick={(event) =>
+              handleGuidedFormAdvanceClick(event, () => {
+                setStep(1);
+              })
+            }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
           >
             Continue

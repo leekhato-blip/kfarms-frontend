@@ -14,7 +14,6 @@ import {
 } from "../api/platformClient";
 import {
   isPlatformDevToken,
-  readPlatformDevSession,
 } from "./platformDevSession";
 import { normalizePlatformRole } from "../utils/platformRoles";
 import {
@@ -64,6 +63,14 @@ export function PlatformAuthProvider({ children }) {
   const [profileLoading, setProfileLoading] = React.useState(Boolean(getPlatformToken()));
 
   const login = React.useCallback((nextToken) => {
+    if (isPlatformDevToken(nextToken)) {
+      clearPlatformSession();
+      setProfileLoading(false);
+      setUser(null);
+      setToken("");
+      return;
+    }
+
     setPlatformToken(nextToken);
     setProfileLoading(Boolean(nextToken));
     setUser(null);
@@ -105,17 +112,10 @@ export function PlatformAuthProvider({ children }) {
       }
 
       if (isPlatformDevToken(token)) {
-        const devUser = applyPlatformUserProfile(readPlatformDevSession());
-
+        clearPlatformSession();
         if (active) {
-          if (devUser) {
-            setUser(devUser);
-            setPlatformTenantId(getPlatformTenantId() || "301");
-          } else {
-            clearPlatformSession();
-            setToken("");
-            setUser(null);
-          }
+          setToken("");
+          setUser(null);
           setProfileLoading(false);
         }
         return;
@@ -203,7 +203,7 @@ export function PlatformAuthProvider({ children }) {
   const value = React.useMemo(
     () => ({
       token,
-      isAuthenticated: Boolean(token),
+      isAuthenticated: Boolean(token) && !isPlatformDevToken(token),
       user,
       profileLoading,
       canAccessPlatform:

@@ -615,7 +615,11 @@ export default function Topbar({
 
     const syncPopoverPositions = () => {
       if (notificationsOpen) {
-        setNotificationPopoverStyle(measurePopoverPosition(notificationRef, 352));
+        const notificationWidth =
+          typeof window !== "undefined" && window.innerWidth < 640
+            ? Math.min(320, window.innerWidth - 24)
+            : 352;
+        setNotificationPopoverStyle(measurePopoverPosition(notificationRef, notificationWidth));
       }
 
       if (profileOpen) {
@@ -859,7 +863,7 @@ export default function Topbar({
               width: `${notificationPopoverStyle.width}px`,
             }}
           >
-            <Card className="w-full p-3 shadow-[0_24px_80px_rgba(15,23,42,0.32)]">
+            <Card className="w-full p-2.5 shadow-[0_24px_80px_rgba(15,23,42,0.32)] sm:p-3">
               <div className="relative z-10">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -902,7 +906,12 @@ export default function Topbar({
 
                 <div
                   className="mt-3 space-y-2 overflow-y-auto pr-1"
-                  style={{ maxHeight: `${Math.min(notificationPopoverStyle.maxHeight, 520)}px` }}
+                  style={{
+                    maxHeight: `${Math.min(
+                      notificationPopoverStyle.maxHeight,
+                      typeof window !== "undefined" && window.innerWidth < 640 ? 420 : 520,
+                    )}px`,
+                  }}
                 >
                   {notificationsLoading && notifications.length === 0 ? (
                     <div className="rounded-[1rem] border border-dashed border-[color:var(--atlas-border)] px-3 py-4 text-sm text-[var(--atlas-muted)]">
@@ -919,7 +928,7 @@ export default function Topbar({
                       return (
                         <div
                           key={notification.id}
-                          className={`rounded-[1rem] border border-[color:var(--atlas-border)] p-3 transition ${
+                          className={`rounded-[1rem] border border-[color:var(--atlas-border)] p-2.5 transition sm:p-3 ${
                             isUnread ? "bg-[color:var(--atlas-surface-soft)]/85" : "bg-[color:var(--atlas-surface-soft)]/55 opacity-80"
                           }`}
                         >
@@ -940,10 +949,10 @@ export default function Topbar({
                                 onClick={() => handleNotificationSelect(notification)}
                                 className="mt-2 block text-left"
                               >
-                                <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                                <div className="text-[13px] font-semibold leading-5 text-[var(--atlas-text-strong)] sm:text-sm">
                                   {notification.title}
                                 </div>
-                                <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">
+                                <div className="mt-1 text-[11px] leading-5 text-[var(--atlas-muted)] sm:text-xs">
                                   {notification.message}
                                 </div>
                               </button>
@@ -1296,7 +1305,7 @@ export default function Topbar({
               Ctrl+K
             </Button>
 
-            {canManagePortfolio ? (
+            {onChangeDataMode ? (
               <div className="hidden items-center rounded-2xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/85 p-1 md:flex">
                 <button
                   type="button"
@@ -1328,17 +1337,17 @@ export default function Topbar({
             <button
               type="button"
               onClick={onToggleTheme}
-              className="atlas-icon-button shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
+              className="atlas-icon-button hidden shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)] sm:inline-flex"
               aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDark ? <Sun size={15} /> : <Moon size={15} />}
             </button>
 
-            <div ref={notificationRef} className="relative">
+            <div ref={notificationRef} className="relative shrink-0">
               <button
                 type="button"
                 onClick={toggleNotifications}
-                className="atlas-icon-button relative rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
+                className="atlas-icon-button relative inline-flex shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
                 aria-label="Notifications"
               >
                 <Bell size={15} />
