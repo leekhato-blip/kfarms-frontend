@@ -911,6 +911,9 @@ export default function FishPondsPage() {
     try {
       if (deleteType === "pond") {
         await deleteFishPond(deleteTarget.id);
+        if (pondDetail?.id === deleteTarget.id) {
+          closePondDetails();
+        }
         await fetchPonds(pondMeta.page);
         await fetchSummaries();
         setToast({
@@ -919,6 +922,9 @@ export default function FishPondsPage() {
         });
       } else if (deleteType === "hatch") {
         await deleteFishHatch(deleteTarget.id);
+        if (hatchDetail?.id === deleteTarget.id) {
+          closeHatchDetails();
+        }
         await fetchHatches();
         await fetchSummaries();
         setToast({
@@ -2095,7 +2101,6 @@ export default function FishPondsPage() {
           onDelete={
             pondDetail
               ? () => {
-                  closePondDetails();
                   askDelete(pondDetail, "pond");
                 }
               : undefined
@@ -2120,7 +2125,6 @@ export default function FishPondsPage() {
           onDelete={
             hatchDetail
               ? () => {
-                  closeHatchDetails();
                   askDelete(hatchDetail, "hatch");
                 }
               : undefined

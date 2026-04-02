@@ -834,7 +834,6 @@ export default function InventoryPage() {
           detailItem && canDeleteOrRestore
             ? () => {
                 const target = detailItem;
-                closeDetails();
                 askDelete(target);
               }
             : undefined

@@ -14,7 +14,6 @@ import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import {
   DEMO_ACCOUNT_EMAIL,
   DEMO_ACCOUNT_INFO,
-  DEMO_ACCOUNT_LABEL,
   DEMO_ACCOUNT_PASSWORD,
   isDemoAccountUser,
 } from "../auth/demoMode";
@@ -309,19 +308,24 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">
+                      Demo workspace
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                      {DEMO_ACCOUNT_INFO}
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={handleDemoLogin}
                     disabled={loading || authLoading}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(5,150,105,0.22)] transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-emerald-500 dark:hover:bg-emerald-400"
                   >
-                    <span>{DEMO_ACCOUNT_LABEL}</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <span>Open demo</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </button>
-                  <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-300">
-                    {DEMO_ACCOUNT_INFO}
-                  </p>
                 </div>
 
                 <div className="text-xs text-slate-500 dark:text-slate-300">

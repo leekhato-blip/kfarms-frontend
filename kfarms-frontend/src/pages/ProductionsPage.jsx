@@ -416,6 +416,9 @@ export default function ProductionsPage() {
     setDeleting(true);
     try {
       await deleteEggRecord(deleteTarget.id);
+      if (detailItem?.id === deleteTarget.id) {
+        closeDetails();
+      }
       const nextPage = records.length === 1 && meta.page > 0 ? meta.page - 1 : meta.page;
       await Promise.all([fetchSummary(), fetchRecords(nextPage)]);
       setToast({
@@ -1281,7 +1284,6 @@ export default function ProductionsPage() {
             openEdit(detailItem);
           } : undefined}
           onDelete={canDelete && detailItem ? () => {
-            closeDetails();
             askDelete(detailItem);
           } : undefined}
         />

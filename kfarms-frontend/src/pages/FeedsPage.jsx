@@ -475,6 +475,9 @@ export default function FeedsPage() {
     setDeleting(true);
     try {
       await deleteFeed(item.id);
+      if (detailItem?.id === item.id) {
+        closeDetails();
+      }
       setToast({
         message: "Feed record deleted successfully",
         type: "success",
@@ -1408,7 +1411,6 @@ export default function FeedsPage() {
         onDelete={
           detailItem && canDeleteOrRestore
             ? () => {
-                closeDetails();
                 askDelete(detailItem);
               }
             : undefined

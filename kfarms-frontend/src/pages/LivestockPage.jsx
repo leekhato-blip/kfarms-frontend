@@ -359,6 +359,9 @@ export default function LivestockPage() {
     if (!deleteTarget) return;
     try {
       await deleteLivestock(deleteTarget.id);
+      if (detailItem?.id === deleteTarget.id) {
+        closeDetails();
+      }
       setToast({
         message: `"${deleteTarget.batchName}" deleted`,
         type: "success",
@@ -1680,7 +1683,6 @@ export default function LivestockPage() {
             onDelete={
               detailItem
                 ? () => {
-                    closeDetails();
                     askDelete(detailItem);
                   }
                 : undefined

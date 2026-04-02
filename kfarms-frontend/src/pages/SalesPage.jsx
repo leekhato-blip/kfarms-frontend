@@ -457,6 +457,9 @@ export default function SalesPage() {
     try {
       setDeleting(true);
       await deleteSale(deleteTarget.id);
+      if (detailItem?.id === deleteTarget.id) {
+        closeDetails();
+      }
 
       fetchSales(meta.page);
       fetchSummary();
@@ -1040,7 +1043,6 @@ export default function SalesPage() {
           onDelete={
             detailItem
               ? () => {
-                  closeDetails();
                   askDelete(detailItem);
                 }
               : undefined

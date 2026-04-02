@@ -121,6 +121,17 @@ function PlanBadge({ planId }) {
   return <Badge kind="plan" value={planId || "FREE"} />;
 }
 
+function getCompactPlanPillClasses(planId) {
+  switch (normalizePlanId(planId, "FREE")) {
+    case "ENTERPRISE":
+      return "border-amber-300/60 bg-amber-100/90 text-amber-900 dark:border-amber-300/20 dark:bg-amber-400/10 dark:text-amber-100";
+    case "PRO":
+      return "border-sky-300/60 bg-sky-100/90 text-sky-800 dark:border-sky-300/20 dark:bg-sky-400/10 dark:text-sky-100";
+    default:
+      return "border-slate-300/80 bg-slate-100/90 text-slate-700 dark:border-slate-600/60 dark:bg-slate-800/80 dark:text-slate-200";
+  }
+}
+
 function getUserHandle(user) {
   const raw =
     user?.username ||
@@ -163,6 +174,8 @@ function ProfileMenuPanel({
   const upgradeItem = items.find((item) => item.id === "upgrade-plan");
   const actionItems = items.filter((item) => item.id !== "upgrade-plan");
   const UpgradeIcon = upgradeItem?.icon;
+  const planLabel = currentPlan?.name || "Free";
+  const planClasses = getCompactPlanPillClasses(currentPlan?.id || currentPlan?.name || "FREE");
 
   return (
     <div className={`overflow-hidden rounded-[1.1rem] border border-slate-200 bg-white text-slate-900 shadow-[0_22px_44px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-[#081120] dark:text-slate-100 ${
@@ -179,12 +192,14 @@ function ProfileMenuPanel({
           <div className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
             {userHandle}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <Badge kind="role" value={displayRole} />
+          <div className="mt-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+            {displayRole}
           </div>
         </div>
         <div className="shrink-0">
-          <Badge kind="plan" value={currentPlan?.id || currentPlan?.name || "FREE"} />
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold ${planClasses}`}>
+            {planLabel}
+          </span>
         </div>
       </div>
 
@@ -406,6 +421,8 @@ export default function Sidebar() {
       : "#2563EB";
   const badge = <PlanBadge planId={currentPlan} />;
   const avatarUrl = user?.avatar || "";
+  const compactPlanClasses = getCompactPlanPillClasses(currentPlan);
+  const compactPlanLabel = currentPlanMeta?.name || "Free";
   const settingsSection = React.useMemo(
     () => new URLSearchParams(location.search).get("section") || "",
     [location.search],
@@ -797,12 +814,12 @@ export default function Sidebar() {
               <button
                 type="button"
                 onClick={() => setUserMenuOpen((state) => !state)}
-                className="group flex w-full items-center gap-3 rounded-[0.95rem] border border-slate-200/80 bg-white/95 px-3 py-3 text-left shadow-[0_10px_22px_rgba(15,23,42,0.06)] transition hover:border-slate-300/80 hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/95 dark:hover:bg-slate-900"
+                className="group flex w-full items-center gap-2.5 rounded-[0.95rem] border border-slate-200/80 bg-white/95 px-2.5 py-2.5 text-left shadow-[0_10px_22px_rgba(15,23,42,0.06)] transition hover:border-slate-300/80 hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/95 dark:hover:bg-slate-900"
                 aria-haspopup="true"
                 aria-expanded={userMenuOpen}
                 aria-label="User menu"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-xs font-semibold uppercase tracking-[0.08em] text-white shadow-[0_12px_24px_rgba(59,130,246,0.22)]">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-xs font-semibold uppercase tracking-[0.08em] text-white shadow-[0_12px_24px_rgba(59,130,246,0.22)]">
                   {avatarUrl ? (
                     <img
                       src={avatarUrl}
@@ -817,9 +834,13 @@ export default function Sidebar() {
                   <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {displayName}
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <Badge kind="plan" value={currentPlan} />
-                    <Badge kind="role" value={displayRole} />
+                  <div className="mt-1 flex items-center gap-2 text-[11px]">
+                    <span className="truncate text-slate-500 dark:text-slate-400">
+                      {displayRole}
+                    </span>
+                    <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 font-semibold ${compactPlanClasses}`}>
+                      {compactPlanLabel}
+                    </span>
                   </div>
                 </div>
                 <ChevronDown

@@ -294,6 +294,9 @@ export default function SuppliesPage() {
       const id = typeof target.id === "string" ? Number(target.id) : target.id;
 
       await deleteSupply(id);
+      if (detailItem?.id === target.id) {
+        closeDetails();
+      }
 
       // Optimistic UI remove
       setItems((prev) => prev.filter((i) => i.id !== target.id));
@@ -952,7 +955,6 @@ export default function SuppliesPage() {
           onDelete={
             detailItem
               ? () => {
-                  closeDetails();
                   askDelete(detailItem);
                 }
               : undefined

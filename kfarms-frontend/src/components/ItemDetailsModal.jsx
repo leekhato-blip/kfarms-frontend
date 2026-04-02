@@ -31,6 +31,7 @@ export default function ItemDetailsModal({
   if (typeof document === "undefined") return null;
 
   const safeFields = Array.isArray(fields) ? fields : [];
+  const hasBothActions = Boolean(onEdit && onDelete);
   const getDisplayValue = (rawValue) =>
     rawValue === null || rawValue === undefined || rawValue === "" ? "—" : rawValue;
   const shouldUseWideCard = (field, displayValue) => {
@@ -41,20 +42,21 @@ export default function ItemDetailsModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9998] flex items-end justify-center px-0 py-0 sm:items-center sm:px-4 sm:py-5">
+    <div className="fixed inset-0 z-[9998] overflow-y-auto">
       <div
         className="absolute inset-0 bg-black/45 backdrop-blur-md"
         onClick={onClose}
       />
 
-      <div
-        className="relative w-full animate-fadeIn sm:max-w-2xl"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="rounded-t-[1.75rem] bg-darkCard/60 p-px shadow-neo sm:rounded-[1.75rem]">
-          <div className="flex max-h-[88vh] flex-col overflow-hidden rounded-t-[1.75rem] border border-white/20 bg-white/88 backdrop-blur-xl dark:bg-black/78 sm:max-h-[92vh] sm:rounded-[1.75rem]">
-            <div className="px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:pb-0 sm:pt-6">
+      <div className="relative flex min-h-full items-center justify-center px-3 py-[max(1rem,env(safe-area-inset-top))] sm:px-4 sm:py-6">
+        <div
+          className="relative w-full max-w-[29rem] animate-fadeIn sm:max-w-2xl"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="rounded-[1.75rem] bg-darkCard/60 p-px shadow-neo">
+            <div className="flex max-h-[min(82dvh,44rem)] flex-col overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/88 backdrop-blur-xl dark:bg-black/78 sm:max-h-[88vh]">
+              <div className="px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:pb-1 sm:pt-6">
               <div className="mx-auto mb-3 h-1 w-12 rounded-full bg-slate-300/80 dark:bg-white/15 sm:hidden" />
 
               <div className="relative overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-[linear-gradient(120deg,rgba(255,255,255,0.9),rgba(238,242,255,0.82),rgba(236,253,245,0.8))] px-4 py-3.5 dark:border-white/10 dark:bg-[linear-gradient(120deg,rgba(15,23,42,0.96),rgba(20,33,61,0.92),rgba(7,58,55,0.82))] sm:px-5 sm:py-4">
@@ -100,7 +102,7 @@ export default function ItemDetailsModal({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 sm:px-6 sm:pb-6">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 sm:px-6 sm:pb-6 sm:pt-4">
               {safeFields.length ? (
                 <>
                   <div className="grid grid-cols-2 gap-2.5 sm:hidden">
@@ -157,14 +159,14 @@ export default function ItemDetailsModal({
               )}
             </div>
 
-            {(onEdit || onDelete) ? (
-              <div className="border-t border-slate-200/70 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl dark:border-white/10 dark:bg-black/84 sm:bg-transparent sm:px-6 sm:pb-6 sm:pt-4 dark:sm:bg-transparent">
-                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              {(onEdit || onDelete) ? (
+                <div className="border-t border-slate-200/70 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur-xl dark:border-white/10 dark:bg-black/84 sm:bg-transparent sm:px-6 sm:pb-6 sm:pt-4 dark:sm:bg-transparent">
+                  <div className={`grid gap-2 ${hasBothActions ? "grid-cols-2" : "grid-cols-1"} sm:flex sm:justify-end`}>
                   {onEdit ? (
                     <button
                       type="button"
                       onClick={onEdit}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-primary/20 bg-accent-primary/10 px-4 py-3 text-sm font-semibold text-accent-primary transition hover:bg-accent-primary/15 sm:w-auto sm:py-2.5"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-primary/20 bg-accent-primary/10 px-4 py-3 text-sm font-semibold text-accent-primary transition hover:bg-accent-primary/15 sm:min-w-[9.5rem] sm:w-auto sm:py-2.5"
                     >
                       <Edit className="h-4 w-4" />
                       <span>{editLabel}</span>
@@ -175,15 +177,16 @@ export default function ItemDetailsModal({
                     <button
                       type="button"
                       onClick={onDelete}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-500/15 dark:text-rose-200 sm:w-auto sm:py-2.5"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-500/15 dark:text-rose-200 sm:min-w-[9.5rem] sm:w-auto sm:py-2.5"
                     >
                       <Trash2 className="h-4 w-4" />
                       <span>{deleteLabel}</span>
                     </button>
                   ) : null}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
