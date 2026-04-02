@@ -119,7 +119,7 @@ export default function ConfirmModal({
                 onClick={onCancel}
                 disabled={loading}
                 aria-label="Close modal"
-                className="p-2 rounded-md hover:bg-white/10 disabled:opacity-60"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
                 title="Close"
               >
                 <X className="w-5 h-5" />

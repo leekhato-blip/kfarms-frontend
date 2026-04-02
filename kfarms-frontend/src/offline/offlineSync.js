@@ -1,4 +1,7 @@
-import apiClient, { isBackendUnavailableError } from "../api/apiClient";
+import apiClient, {
+  getWorkspaceToken,
+  isBackendUnavailableError,
+} from "../api/apiClient";
 import { hasDemoAccountHint } from "../auth/demoMode";
 import {
   getOfflineQueueSnapshot,
@@ -64,8 +67,36 @@ function isRetriableSyncFailure(error) {
   return isRetriableSyncMessage(message);
 }
 
-function isRetriableQueuedFailure(mutation) {
-  return mutation?.status === "failed" && isRetriableSyncMessage(mutation?.lastError);
+function isSessionBootstrapSyncMessage(message = "") {
+  const normalized = String(message || "").trim().toLowerCase();
+  if (!normalized) return false;
+
+  return (
+    normalized.includes("not authenticated") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("invalid token") ||
+    normalized.includes("jwt") ||
+    normalized.includes("x-tenant-id") ||
+    normalized.includes("tenant") ||
+    normalized.includes("forbidden")
+  );
+}
+
+function isSessionBootstrapFailure(error) {
+  const status = Number(error?.response?.status || 0);
+  const message = extractErrorMessage(error);
+
+  if (status === 401) return true;
+  if (status === 403 && isSessionBootstrapSyncMessage(message)) return true;
+
+  return isSessionBootstrapSyncMessage(message);
+}
+
+function isRetriableQueuedFailure(mutation, { allowSessionBootstrapRetry = false } = {}) {
+  return mutation?.status === "failed" && (
+    isRetriableSyncMessage(mutation?.lastError) ||
+    (allowSessionBootstrapRetry && isSessionBootstrapSyncMessage(mutation?.lastError))
+  );
 }
 
 async function replayMutation(mutation) {
@@ -87,6 +118,7 @@ async function replayMutation(mutation) {
 
 export async function flushOfflineQueue(options = {}) {
   const source = String(options.source || "system");
+  const allowSessionBootstrapRetry = source === "manual" || source === "session-ready";
 
   if (flushPromise) return flushPromise;
   if (typeof window !== "undefined" && !window.navigator.onLine) {
@@ -102,11 +134,22 @@ export async function flushOfflineQueue(options = {}) {
     });
     return false;
   }
+  if (!getWorkspaceToken()) {
+    setOfflineSyncSnapshot({
+      status: "idle",
+      total: 0,
+      remaining: 0,
+      failedCount: getOfflineQueueSnapshot().failed,
+      lastSyncedAt: "",
+    });
+    return false;
+  }
 
   if (
     source !== "manual" &&
     source !== "online" &&
     source !== "backend-up" &&
+    source !== "session-ready" &&
     autoRetryBlockedUntil > Date.now()
   ) {
     return false;
@@ -115,7 +158,7 @@ export async function flushOfflineQueue(options = {}) {
   flushPromise = (async () => {
     const existingMutations = listQueuedMutations();
     existingMutations
-      .filter((mutation) => isRetriableQueuedFailure(mutation))
+      .filter((mutation) => isRetriableQueuedFailure(mutation, { allowSessionBootstrapRetry }))
       .forEach((mutation) => {
         markQueuedMutationQueued(mutation.requestId);
       });
@@ -153,7 +196,7 @@ export async function flushOfflineQueue(options = {}) {
         await replayMutation(mutation);
         removeQueuedMutation(mutation.requestId);
       } catch (error) {
-        if (isRetriableSyncFailure(error)) {
+        if (isRetriableSyncFailure(error) || isSessionBootstrapFailure(error)) {
           pausedForNetworkFailure = true;
           autoRetryBlockedUntil = Date.now() + AUTO_RETRY_COOLDOWN_MS;
           markQueuedMutationQueued(mutation.requestId);
@@ -213,6 +256,8 @@ export function initializeOfflineSync() {
           ? "online"
           : event?.type === "kf-backend-up"
             ? "backend-up"
+            : event?.type === "kf-workspace-session-ready"
+              ? "session-ready"
             : "system";
 
     void flushOfflineQueue({ source });
@@ -221,8 +266,9 @@ export function initializeOfflineSync() {
   window.addEventListener("online", triggerFlush);
   window.addEventListener("kf-backend-up", triggerFlush);
   window.addEventListener("kf-offline-sync-requested", triggerFlush);
+  window.addEventListener("kf-workspace-session-ready", triggerFlush);
 
-  if (window.navigator.onLine) {
+  if (window.navigator.onLine && getWorkspaceToken()) {
     void flushOfflineQueue({ source: "startup" });
   }
 }

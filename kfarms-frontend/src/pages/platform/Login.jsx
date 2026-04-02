@@ -180,6 +180,14 @@ function PlatformLoginContent() {
     return () => window.clearTimeout(timer);
   }, [inlineError]);
 
+  React.useEffect(() => {
+    void waitForBackendConnection({
+      timeoutMs: 90000,
+      intervalMs: 2500,
+      silent: true,
+    });
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setInlineError("");
@@ -188,7 +196,7 @@ function PlatformLoginContent() {
     try {
       const backendReady = await waitForBackendConnection({
         timeoutMs: 90000,
-        intervalMs: 5000,
+        intervalMs: 2500,
         silent: false,
       });
 

@@ -913,6 +913,9 @@ export default function SuppliesPage() {
                 ? `"${supply.itemName}" saved offline. It will sync automatically.`
                 : `"${supply.itemName}" ${editing ? "updated" : "created"} successfully`,
               type: pendingOffline ? "info" : "success",
+              actionLabel: pendingOffline ? "" : "View item",
+              onAction: pendingOffline ? undefined : () => openDetails(supply),
+              duration: pendingOffline ? 3000 : 5200,
             });
 
             if (editing) {
@@ -1039,6 +1042,9 @@ export default function SuppliesPage() {
       <GlassToast
         message={toast.message}
         type={toast.type}
+        duration={toast.duration}
+        actionLabel={toast.actionLabel}
+        onAction={toast.onAction}
         onClose={() => setToast({ message: "", type: "info" })}
       />
     </DashboardLayout>

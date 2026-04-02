@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   hasDemoAccountHintMock: vi.fn(() => false),
   requestMock: vi.fn(),
   isBackendUnavailableErrorMock: vi.fn((error) => !error?.response),
+  getWorkspaceTokenMock: vi.fn(() => "workspace-token"),
   getOfflineQueueSnapshotMock: vi.fn(() => ({ failed: 0 })),
   listQueuedMutationsMock: vi.fn(),
   markQueuedMutationFailedMock: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("../api/apiClient", () => ({
   default: {
     request: mocks.requestMock,
   },
+  getWorkspaceToken: mocks.getWorkspaceTokenMock,
   isBackendUnavailableError: mocks.isBackendUnavailableErrorMock,
 }));
 
@@ -42,6 +44,8 @@ describe("offlineSync", () => {
     mocks.requestMock.mockReset();
     mocks.isBackendUnavailableErrorMock.mockReset();
     mocks.isBackendUnavailableErrorMock.mockImplementation((error) => !error?.response);
+    mocks.getWorkspaceTokenMock.mockReset();
+    mocks.getWorkspaceTokenMock.mockReturnValue("workspace-token");
     mocks.hasDemoAccountHintMock.mockReset();
     mocks.hasDemoAccountHintMock.mockReturnValue(false);
     mocks.getOfflineQueueSnapshotMock.mockReturnValue({ failed: 0 });
@@ -180,6 +184,64 @@ describe("offlineSync", () => {
       remaining: 0,
       failedCount: 0,
       lastSyncedAt: "",
+    });
+  });
+
+  it("waits for a workspace session before replaying queued changes", async () => {
+    mocks.getWorkspaceTokenMock.mockReturnValue("");
+    mocks.listQueuedMutationsMock.mockReturnValue([
+      {
+        requestId: "req-auth",
+        status: "queued",
+        method: "POST",
+        path: "/api/inventory",
+        payload: { itemName: "Fish feed" },
+        tenantId: 7,
+      },
+    ]);
+
+    const result = await flushOfflineQueue({ source: "startup" });
+
+    expect(result).toBe(false);
+    expect(mocks.requestMock).not.toHaveBeenCalled();
+    expect(mocks.setOfflineSyncSnapshotMock).toHaveBeenCalledWith({
+      status: "idle",
+      total: 0,
+      remaining: 0,
+      failedCount: 0,
+      lastSyncedAt: "",
+    });
+  });
+
+  it("treats auth bootstrap failures as temporary pauses instead of permanent failures", async () => {
+    mocks.listQueuedMutationsMock.mockReturnValue([
+      {
+        requestId: "req-auth-pause",
+        status: "queued",
+        method: "POST",
+        path: "/api/sales",
+        payload: { itemName: "Egg trays", quantity: 2 },
+        tenantId: 7,
+      },
+    ]);
+    mocks.requestMock.mockRejectedValueOnce({
+      response: {
+        status: 401,
+        data: {
+          message: "Not authenticated",
+        },
+      },
+    });
+
+    const result = await flushOfflineQueue({ source: "manual" });
+
+    expect(result).toBe(false);
+    expect(mocks.markQueuedMutationQueuedMock).toHaveBeenCalledWith("req-auth-pause");
+    expect(mocks.markQueuedMutationFailedMock).not.toHaveBeenCalled();
+    expect(mocks.setOfflineSyncSnapshotMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "paused",
+      remaining: 1,
+      failedCount: 0,
     });
   });
 });

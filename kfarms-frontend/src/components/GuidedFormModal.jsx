@@ -134,7 +134,7 @@ export default function GuidedFormModal({
                   onClick={onClose}
                   disabled={saving}
                   aria-label="Close form"
-                  className="rounded-lg p-2 text-slate-500 transition hover:bg-white/10 disabled:opacity-60"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
                   title="Close"
                 >
                   <X className="h-5 w-5" />

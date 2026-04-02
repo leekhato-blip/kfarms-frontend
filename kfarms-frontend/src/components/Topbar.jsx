@@ -261,6 +261,62 @@ function isEmptyWorkspaceLowLivestockNotification(notification, livestockContext
   return livestockContext.totalBatches <= 0 && livestockContext.totalAlive <= 0;
 }
 
+function isLowSignalWorkspaceNotification(notification) {
+  const title = toLowerText(notification?.title);
+  const message = toLowerText(notification?.message || notification?.body);
+  const type = toLowerText(notification?.type);
+  const content = `${title} ${message}`.trim();
+
+  if (!content) {
+    return true;
+  }
+
+  if (
+    title.includes("no sales activity")
+    || title.includes("no recent supply")
+    || title.includes("farm ready")
+    || title.includes("workspace seeded")
+    || title.includes("cashflow pulse")
+    || title.includes("integrated revenue mix")
+    || title.includes("feed warehouse stocked")
+  ) {
+    return true;
+  }
+
+  if (
+    message.includes("no sales have been recorded in the last 7 days")
+    || message.includes("no new supplies have been recorded since")
+    || message.includes("seeded with")
+    || message.includes("available for verification")
+    || message.includes("available for tenant-scoping checks")
+    || message.includes("available for cross-module validation")
+  ) {
+    return true;
+  }
+
+  if (
+    title.includes("low supply stock")
+    && /\bcurrent total quantity:\s*0\b/.test(message)
+  ) {
+    return true;
+  }
+
+  if (
+    type === "general"
+    && !title.includes("low stock alert")
+    && !content.includes("failed")
+    && !content.includes("error")
+    && !content.includes("warning")
+    && !content.includes("expired")
+    && !content.includes("overdue")
+    && !content.includes("attention")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function filterWorkspaceNotifications(notifications = [], livestockContext = null) {
   if (!Array.isArray(notifications) || notifications.length === 0) {
     return [];
@@ -268,7 +324,8 @@ function filterWorkspaceNotifications(notifications = [], livestockContext = nul
 
   return notifications.filter(
     (notification) =>
-      !isEmptyWorkspaceLowLivestockNotification(notification, livestockContext),
+      !isEmptyWorkspaceLowLivestockNotification(notification, livestockContext)
+      && !isLowSignalWorkspaceNotification(notification),
   );
 }
 

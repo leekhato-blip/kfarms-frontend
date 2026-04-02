@@ -12,6 +12,8 @@ const TOAST_TONES = {
     badge:
       "border-emerald-200/75 bg-emerald-500/12 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/14 dark:text-emerald-200",
     text: "text-slate-800 dark:text-emerald-50",
+    action:
+      "border-emerald-200/80 bg-white/82 text-emerald-700 hover:bg-white dark:border-emerald-400/20 dark:bg-emerald-400/12 dark:text-emerald-100 dark:hover:bg-emerald-400/18",
   },
   error: {
     Icon: TriangleAlert,
@@ -22,6 +24,8 @@ const TOAST_TONES = {
     badge:
       "border-rose-200/75 bg-rose-500/12 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/14 dark:text-rose-200",
     text: "text-slate-800 dark:text-rose-50",
+    action:
+      "border-rose-200/80 bg-white/82 text-rose-700 hover:bg-white dark:border-rose-400/20 dark:bg-rose-400/12 dark:text-rose-100 dark:hover:bg-rose-400/18",
   },
   info: {
     Icon: Info,
@@ -32,6 +36,8 @@ const TOAST_TONES = {
     badge:
       "border-sky-200/75 bg-sky-500/12 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/14 dark:text-sky-200",
     text: "text-slate-800 dark:text-slate-100",
+    action:
+      "border-sky-200/80 bg-white/82 text-sky-700 hover:bg-white dark:border-sky-400/20 dark:bg-sky-400/12 dark:text-sky-100 dark:hover:bg-sky-400/18",
   },
 };
 
@@ -46,6 +52,8 @@ export default function GlassToast({
   type = "info",
   duration = 3000,
   onClose,
+  actionLabel = "",
+  onAction,
 }) {
   const [mounted, setMounted] = React.useState(false);
   const [isDark, setIsDark] = React.useState(
@@ -88,6 +96,7 @@ export default function GlassToast({
 
   const tone = TOAST_TONES[type] || TOAST_TONES.info;
   const Icon = tone.Icon;
+  const showAction = Boolean(actionLabel) && typeof onAction === "function";
 
   return createPortal(
     <div className={isDark ? "dark" : ""} data-theme={isDark ? "dark" : "light"}>
@@ -105,6 +114,18 @@ export default function GlassToast({
           </span>
           <div className="relative min-w-0 flex-1 pt-0.5">
             <p className={`text-sm font-medium leading-5 ${tone.text}`}>{message}</p>
+            {showAction ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onAction();
+                  onClose?.();
+                }}
+                className={`mt-2 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition ${tone.action}`}
+              >
+                {actionLabel}
+              </button>
+            ) : null}
           </div>
           {onClose ? (
             <button

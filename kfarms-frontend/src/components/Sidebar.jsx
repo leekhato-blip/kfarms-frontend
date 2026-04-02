@@ -277,26 +277,55 @@ function UpgradeSidebarCard({
       : "Unlock branding, stronger controls, and bigger teams.");
   const actionLabel = isFreePlan ? "Go Pro" : "Go Enterprise";
 
+  if (compact) {
+    return (
+      <div className="rounded-[1.1rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,245,249,0.92))] p-2.5 text-slate-800 shadow-[0_16px_30px_rgba(15,23,42,0.08)] dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.97),rgba(17,24,39,0.95))] dark:text-slate-100 dark:shadow-[0_18px_34px_rgba(2,6,23,0.22)]">
+        <div className="flex items-center gap-2.5">
+          <div className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-300/35 bg-gradient-to-br from-amber-400/18 via-orange-300/10 to-yellow-300/18 text-amber-600 dark:border-amber-300/20 dark:text-amber-200">
+            <Crown className="h-4 w-4" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold leading-tight text-slate-900 dark:text-white">
+              {title}
+            </div>
+            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+              {description}
+            </p>
+          </div>
+
+          <Link
+            to={billingPath}
+            className="inline-flex shrink-0 items-center rounded-full bg-accent-primary/10 px-2.5 py-1 text-[11px] font-semibold text-accent-primary transition hover:bg-accent-primary/15"
+          >
+            {actionLabel}
+          </Link>
+
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-200/70 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-200"
+            aria-label="Dismiss upgrade card"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`rounded-[1.35rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,245,249,0.92))] text-slate-800 shadow-[0_18px_36px_rgba(15,23,42,0.1)] dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.97),rgba(17,24,39,0.95))] dark:text-slate-100 dark:shadow-[0_20px_42px_rgba(2,6,23,0.28)] ${
-      compact ? "p-2.5" : "p-3"
-    }`}>
+    <div className="rounded-[1.35rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(241,245,249,0.92))] p-3 text-slate-800 shadow-[0_18px_36px_rgba(15,23,42,0.1)] dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.97),rgba(17,24,39,0.95))] dark:text-slate-100 dark:shadow-[0_20px_42px_rgba(2,6,23,0.28)]">
       <div className="flex items-start gap-3">
-        <div className={`mt-0.5 inline-flex shrink-0 items-center justify-center rounded-full border border-amber-300/35 bg-gradient-to-br from-amber-400/18 via-orange-300/10 to-yellow-300/18 text-amber-600 dark:border-amber-300/20 dark:text-amber-200 ${
-          compact ? "h-7 w-7" : "h-8 w-8"
-        }`}>
-          <Crown className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-300/35 bg-gradient-to-br from-amber-400/18 via-orange-300/10 to-yellow-300/18 text-amber-600 dark:border-amber-300/20 dark:text-amber-200">
+          <Crown className="h-4 w-4" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className={`font-semibold leading-tight text-slate-900 dark:text-white ${
-            compact ? "text-sm" : "text-[0.98rem]"
-          }`}>
+          <div className="text-[0.98rem] font-semibold leading-tight text-slate-900 dark:text-white">
             {title}
           </div>
-          <p className={`text-slate-600 dark:text-slate-300 ${
-            compact ? "mt-1.5 text-xs leading-5" : "mt-2 text-[0.92rem] leading-6"
-          }`}>
+          <p className="mt-2 text-[0.92rem] leading-6 text-slate-600 dark:text-slate-300">
             {description}
           </p>
         </div>
@@ -311,16 +340,14 @@ function UpgradeSidebarCard({
         </button>
       </div>
 
-      <div className={`px-1 font-medium ${compact ? "mt-3 flex items-center justify-end text-xs" : "mt-4 flex items-center gap-4 text-sm"}`}>
-        {!compact ? (
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
-          >
-            Dismiss
-          </button>
-        ) : null}
+      <div className="mt-4 flex items-center gap-4 px-1 text-sm font-medium">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
+        >
+          Dismiss
+        </button>
         <Link
           to={billingPath}
           className="text-accent-primary transition hover:text-accent-primary/80"

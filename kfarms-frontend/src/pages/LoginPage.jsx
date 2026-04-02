@@ -4,7 +4,7 @@ import AuthWatermark from "../components/AuthWatermark";
 import GlassToast from "../components/GlassToast";
 import { PLATFORM_ONLY_WORKSPACE_MESSAGE, useAuth } from "../hooks/useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 import PageWrapper from "../components/PageWrapper";
 import FloatingInput from "../components/FloatingInput";
 import PageLoader from "../components/PageLoader";
@@ -12,6 +12,10 @@ import { getAuthTrustText } from "../constants/authCopy";
 import { useTenant } from "../tenant/TenantContext";
 import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import {
+  DEMO_ACCOUNT_EMAIL,
+  DEMO_ACCOUNT_INFO,
+  DEMO_ACCOUNT_LABEL,
+  DEMO_ACCOUNT_PASSWORD,
   isDemoAccountUser,
 } from "../auth/demoMode";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
@@ -82,7 +86,7 @@ export default function LoginPage() {
   }, [inlineError]);
 
   React.useEffect(() => {
-    void waitForBackendConnection({ silent: false });
+    void waitForBackendConnection({ silent: false, intervalMs: 2500 });
   }, []);
 
   const getLoginErrorMessage = (err) => {
@@ -118,7 +122,7 @@ export default function LoginPage() {
     setLoaderLabel("Starting secure connection...");
     setInlineError("");
     try {
-      const backendReady = await waitForBackendConnection({ silent: false });
+      const backendReady = await waitForBackendConnection({ silent: false, intervalMs: 2500 });
       if (!backendReady) {
         setInlineError("The server is still starting. Please wait about 2-3 minutes, then try again.");
         return;
@@ -186,6 +190,12 @@ export default function LoginPage() {
   function handleLogin(e) {
     e.preventDefault();
     void submitLogin(identifier, password);
+  }
+
+  function handleDemoLogin() {
+    setIdentifier(DEMO_ACCOUNT_EMAIL);
+    setPassword(DEMO_ACCOUNT_PASSWORD);
+    void submitLogin(DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD);
   }
 
   return (
@@ -297,6 +307,21 @@ export default function LoginPage() {
                   >
                     Create account
                   </Link>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+                  <button
+                    type="button"
+                    onClick={handleDemoLogin}
+                    disabled={loading || authLoading}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+                  >
+                    <span>{DEMO_ACCOUNT_LABEL}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-300">
+                    {DEMO_ACCOUNT_INFO}
+                  </p>
                 </div>
 
                 <div className="text-xs text-slate-500 dark:text-slate-300">

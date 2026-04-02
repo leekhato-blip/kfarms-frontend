@@ -1,12 +1,14 @@
 import React from "react";
 import {
   AlertTriangle,
+  CheckCheck,
   LoaderCircle,
   RefreshCw,
   WifiOff,
   X,
 } from "lucide-react";
 import {
+  getWorkspaceToken,
   getBackendConnectionSnapshot,
   probeBackendConnection,
 } from "../api/apiClient";
@@ -19,6 +21,7 @@ const AUTO_PROBE_INTERVAL_MS = 8000;
 const BACKEND_DOWN_DEBOUNCE_MS = 4200;
 const BACKEND_RECOVERY_CONFIRM_MS = 3200;
 const RECOVERY_SETTLE_MS = 2800;
+const SYNC_SUCCESS_VISIBLE_MS = 2200;
 
 export default function BackendRecoveryPrompt() {
   const [backendDown, setBackendDown] = React.useState(
@@ -37,13 +40,16 @@ export default function BackendRecoveryPrompt() {
   const [queueSnapshot, setQueueSnapshot] = React.useState(() => getOfflineQueueSnapshot());
   const [syncSnapshot, setSyncSnapshot] = React.useState(() => getOfflineSyncSnapshot());
   const [suppressSettledStatuses, setSuppressSettledStatuses] = React.useState(false);
+  const [showSyncSuccess, setShowSyncSuccess] = React.useState(false);
   const backendDownTimerRef = React.useRef(null);
   const backendRecoveryTimerRef = React.useRef(null);
   const recoveryTimerRef = React.useRef(null);
+  const syncSuccessTimerRef = React.useRef(null);
   const probingConnectionRef = React.useRef(false);
   const backendDownRef = React.useRef(backendDown);
   const browserOfflineRef = React.useRef(browserOffline);
   const previousConnectionIssueRef = React.useRef(backendDown || browserOffline);
+  const previousSyncStatusRef = React.useRef(syncSnapshot.status);
 
   React.useEffect(() => {
     backendDownRef.current = backendDown;
@@ -83,6 +89,12 @@ export default function BackendRecoveryPrompt() {
     if (!recoveryTimerRef.current) return;
     clearTimeout(recoveryTimerRef.current);
     recoveryTimerRef.current = null;
+  }, []);
+
+  const clearSyncSuccessTimer = React.useCallback(() => {
+    if (!syncSuccessTimerRef.current) return;
+    clearTimeout(syncSuccessTimerRef.current);
+    syncSuccessTimerRef.current = null;
   }, []);
 
   const clearBackendRecoveryTimer = React.useCallback(() => {
@@ -201,6 +213,7 @@ export default function BackendRecoveryPrompt() {
       clearBackendDownTimer();
       clearBackendRecoveryTimer();
       clearRecoveryTimer();
+      clearSyncSuccessTimer();
       window.removeEventListener("kf-backend-down", handleDown);
       window.removeEventListener("kf-backend-up", handleUp);
       window.removeEventListener("online", handleBrowserOnline);
@@ -212,15 +225,23 @@ export default function BackendRecoveryPrompt() {
     clearBackendDownTimer,
     clearBackendRecoveryTimer,
     clearRecoveryTimer,
+    clearSyncSuccessTimer,
     requestBackendProbe,
     scheduleBackendRecovery,
   ]);
 
+  const hasWorkspaceSession = Boolean(getWorkspaceToken());
   const queuedChanges = Number(queueSnapshot.total || 0);
   const failedChanges = Number(queueSnapshot.failed || 0);
   const syncingChanges = syncSnapshot.status === "syncing";
   const pausedSync = syncSnapshot.status === "paused";
   const hasConnectionIssue = browserOffline || backendDown;
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const onLoginPage = pathname === "/auth/login";
+  const onWorkspaceRoute = pathname.startsWith("/app/");
+  const onPlatformRoute = pathname.startsWith("/platform");
+  const canShowSyncStatus = hasWorkspaceSession && onWorkspaceRoute;
+  const canShowConnectionStatus = onWorkspaceRoute || onLoginPage || onPlatformRoute;
 
   React.useEffect(() => {
     const previousConnectionIssue = previousConnectionIssueRef.current;
@@ -229,6 +250,8 @@ export default function BackendRecoveryPrompt() {
     if (hasConnectionIssue) {
       clearRecoveryTimer();
       clearBackendRecoveryTimer();
+      clearSyncSuccessTimer();
+      setShowSyncSuccess(false);
       setSuppressSettledStatuses(false);
       return;
     }
@@ -241,24 +264,54 @@ export default function BackendRecoveryPrompt() {
         recoveryTimerRef.current = null;
       }, RECOVERY_SETTLE_MS);
     }
-  }, [clearBackendRecoveryTimer, clearRecoveryTimer, hasConnectionIssue]);
+  }, [clearBackendRecoveryTimer, clearRecoveryTimer, clearSyncSuccessTimer, hasConnectionIssue]);
+
+  React.useEffect(() => {
+    const previousStatus = previousSyncStatusRef.current;
+    previousSyncStatusRef.current = syncSnapshot.status;
+
+    if (!canShowSyncStatus || hasConnectionIssue) {
+      clearSyncSuccessTimer();
+      setShowSyncSuccess(false);
+      return;
+    }
+
+    if (
+      syncSnapshot.status === "synced" &&
+      ["syncing", "paused", "attention"].includes(previousStatus)
+    ) {
+      clearSyncSuccessTimer();
+      setShowSyncSuccess(true);
+      syncSuccessTimerRef.current = window.setTimeout(() => {
+        setShowSyncSuccess(false);
+        syncSuccessTimerRef.current = null;
+      }, SYNC_SUCCESS_VISIBLE_MS);
+      return;
+    }
+
+    if (syncSnapshot.status !== "synced") {
+      clearSyncSuccessTimer();
+      setShowSyncSuccess(false);
+    }
+  }, [canShowSyncStatus, clearSyncSuccessTimer, hasConnectionIssue, syncSnapshot.status]);
 
   const shouldShowQueuedStatus =
-    !hasConnectionIssue && !suppressSettledStatuses && queuedChanges > 0;
-  const shouldShowFailedStatus = !hasConnectionIssue && failedChanges > 0;
+    canShowSyncStatus && !hasConnectionIssue && !suppressSettledStatuses && queuedChanges > 0;
+  const shouldShowFailedStatus =
+    canShowSyncStatus && !hasConnectionIssue && failedChanges > 0;
   const shouldShowSyncingStatus =
-    !hasConnectionIssue && !suppressSettledStatuses && syncingChanges;
+    canShowSyncStatus && !hasConnectionIssue && !suppressSettledStatuses && syncingChanges;
   const shouldShowPausedStatus =
+    canShowSyncStatus &&
     !hasConnectionIssue &&
     !suppressSettledStatuses &&
     pausedSync &&
     queuedChanges > 0;
-  const onLoginPage =
-    typeof window !== "undefined" && window.location.pathname === "/auth/login";
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
     if (!hasConnectionIssue) return undefined;
+    if (!canShowConnectionStatus) return undefined;
 
     const timer = window.setInterval(() => {
       void requestBackendProbe({
@@ -275,14 +328,15 @@ export default function BackendRecoveryPrompt() {
     return () => {
       window.clearInterval(timer);
     };
-  }, [hasConnectionIssue, requestBackendProbe]);
+  }, [canShowConnectionStatus, hasConnectionIssue, requestBackendProbe]);
 
   const shouldRender =
-    hasConnectionIssue ||
+    ((hasConnectionIssue && canShowConnectionStatus) ||
     shouldShowQueuedStatus ||
     shouldShowFailedStatus ||
     shouldShowSyncingStatus ||
-    shouldShowPausedStatus;
+    shouldShowPausedStatus ||
+    showSyncSuccess);
 
   if (!shouldRender || dismissed) {
     return null;
@@ -325,6 +379,19 @@ export default function BackendRecoveryPrompt() {
           Icon: LoaderCircle,
           actionLabel: "Retry",
         }
+      : showSyncSuccess
+        ? {
+            label: "Synced",
+            detail: "All queued changes have been synced successfully",
+            toneLight:
+              "border-emerald-300/75 bg-emerald-50/95 text-emerald-950 ring-1 ring-emerald-200/70",
+            toneDark:
+              "border-emerald-500/35 bg-[#082015]/92 text-emerald-100 ring-1 ring-emerald-500/12",
+            iconToneLight: "bg-emerald-500/15 text-emerald-700",
+            iconToneDark: "bg-emerald-400/14 text-emerald-200",
+            Icon: CheckCheck,
+            actionLabel: "",
+          }
       : shouldShowFailedStatus
         ? {
             label: "Sync needs attention",

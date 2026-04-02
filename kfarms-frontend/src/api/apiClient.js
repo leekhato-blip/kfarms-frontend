@@ -47,6 +47,11 @@ function canUseStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
 }
 
+function dispatchWorkspaceSessionEvent(name) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(name));
+}
+
 export function getWorkspaceToken() {
   if (!canUseStorage()) return "";
   return window.localStorage.getItem(WORKSPACE_TOKEN_STORAGE_KEY) || "";
@@ -57,14 +62,17 @@ export function setWorkspaceToken(token) {
 
   if (token) {
     window.localStorage.setItem(WORKSPACE_TOKEN_STORAGE_KEY, String(token));
+    dispatchWorkspaceSessionEvent("kf-workspace-session-ready");
   } else {
     window.localStorage.removeItem(WORKSPACE_TOKEN_STORAGE_KEY);
+    dispatchWorkspaceSessionEvent("kf-workspace-session-cleared");
   }
 }
 
 export function clearWorkspaceToken() {
   if (!canUseStorage()) return;
   window.localStorage.removeItem(WORKSPACE_TOKEN_STORAGE_KEY);
+  dispatchWorkspaceSessionEvent("kf-workspace-session-cleared");
 }
 
 const apiClient = axios.create({

@@ -1001,6 +1001,9 @@ export default function SalesPage() {
                 ? `"${sale.itemName}" saved offline. It will sync automatically.`
                 : `"${sale.itemName}" ${editing ? "updated" : "created"} successfully`,
               type: pendingOffline ? "info" : "success",
+              actionLabel: pendingOffline ? "" : "View item",
+              onAction: pendingOffline ? undefined : () => openDetails(sale),
+              duration: pendingOffline ? 3000 : 5200,
             });
 
             if (editing) {
@@ -1070,6 +1073,9 @@ export default function SalesPage() {
       <GlassToast
         message={toast.message}
         type={toast.type}
+        duration={toast.duration}
+        actionLabel={toast.actionLabel}
+        onAction={toast.onAction}
         onClose={() => setToast({ message: "", type: "info" })}
       />
       <TrashModal

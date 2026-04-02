@@ -1369,6 +1369,9 @@ export default function FeedsPage() {
               ? "Feed record saved offline. It will sync automatically."
               : `Feed record ${editing ? "updated" : "created"} successfully`,
             type: pendingOffline ? "info" : "success",
+            actionLabel: pendingOffline ? "" : "View item",
+            onAction: pendingOffline ? undefined : () => openDetails(saved),
+            duration: pendingOffline ? 3000 : 5200,
           });
           if (!pendingOffline) {
             Promise.all([fetchFeeds(meta.page), fetchFeedSummary()]);
@@ -1428,6 +1431,9 @@ export default function FeedsPage() {
       <GlassToast
         message={toast.message}
         type={toast.type}
+        duration={toast.duration}
+        actionLabel={toast.actionLabel}
+        onAction={toast.onAction}
         onClose={() => setToast({ message: "", type: "info" })}
       />
 

@@ -1779,6 +1779,9 @@ export default function LivestockPage() {
                   ? "Flock saved offline. It will sync automatically."
                   : `Flock ${editing ? "updated" : "created"}`,
                 type: pendingOffline ? "info" : "success",
+                actionLabel: pendingOffline ? "" : "View item",
+                onAction: pendingOffline ? undefined : () => openDetails(saved),
+                duration: pendingOffline ? 3000 : 5200,
               });
               if (!pendingOffline) {
                 fetchList(meta.page);
@@ -1801,6 +1804,9 @@ export default function LivestockPage() {
           <GlassToast
             message={toast.message}
             type={toast.type}
+            duration={toast.duration}
+            actionLabel={toast.actionLabel}
+            onAction={toast.onAction}
             onClose={() => setToast({ message: "", type: "info" })}
           />
       </div>

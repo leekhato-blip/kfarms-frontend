@@ -621,7 +621,6 @@ export default function InventoryPage() {
     const pendingOffline = isOfflinePendingRecord(saved);
     setModalOpen(false);
     setEditing(null);
-    setDetailItem(saved);
 
     setItems((current) => {
       if (editing) {
@@ -657,6 +656,9 @@ export default function InventoryPage() {
         ? `${getItemName(saved)} saved offline`
         : `${getItemName(saved)} ${actionLabel} successfully`,
       type: pendingOffline ? "info" : "success",
+      actionLabel: pendingOffline ? "" : "View item",
+      onAction: pendingOffline ? undefined : () => setDetailItem(saved),
+      duration: pendingOffline ? 3000 : 5200,
     });
   }
 
@@ -918,6 +920,9 @@ export default function InventoryPage() {
       <GlassToast
         message={toast.message}
         type={toast.type}
+        duration={toast.duration}
+        actionLabel={toast.actionLabel}
+        onAction={toast.onAction}
         onClose={() => setToast({ message: "", type: "info" })}
       />
 

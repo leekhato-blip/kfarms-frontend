@@ -2,6 +2,9 @@ export const DEMO_ACCOUNT_HINT_KEY = "kf_demo_account";
 export const DEMO_ACCOUNT_EMAIL = "demo.viewer@demo.kfarms.local";
 export const DEMO_ACCOUNT_USERNAME = "demo.viewer";
 export const DEMO_ACCOUNT_PASSWORD = "FarmDemo@2026";
+export const DEMO_ACCOUNT_LABEL = "Open demo workspace";
+export const DEMO_ACCOUNT_INFO =
+  "Read-only sample farm with poultry, fish, feed, inventory, and sales data.";
 export const DEMO_ACCOUNT_BLOCKED_MESSAGE =
   "This is a demo account. Changes are disabled because the data is not real.";
 export const DEMO_ACCOUNT_EVENT = "kf-demo-mode-blocked";

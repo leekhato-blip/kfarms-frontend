@@ -2171,6 +2171,9 @@ export default function FishPondsPage() {
                 ? `"${pond.pondName}" saved offline. It will sync automatically.`
                 : `"${pond.pondName}" ${pondEditing ? "updated" : "created"}`,
               type: pendingOffline ? "info" : "success",
+              actionLabel: pendingOffline ? "" : "View item",
+              onAction: pendingOffline ? undefined : () => openPondDetails(pond),
+              duration: pendingOffline ? 3000 : 5200,
             });
 
             setPonds((current) => {
@@ -2210,6 +2213,9 @@ export default function FishPondsPage() {
                 ? "Hatch record saved offline. It will sync automatically."
                 : `Hatch record ${hatchEditing ? "updated" : "created"}`,
               type: pendingOffline ? "info" : "success",
+              actionLabel: pendingOffline ? "" : "View item",
+              onAction: pendingOffline ? undefined : () => openHatchDetails(saved),
+              duration: pendingOffline ? 3000 : 5200,
             });
 
             setHatches((current) => {
@@ -2344,6 +2350,9 @@ export default function FishPondsPage() {
         <GlassToast
           message={toast.message}
           type={toast.type}
+          duration={toast.duration}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
           onClose={() => setToast({ message: "", type: "info" })}
         />
       </div>

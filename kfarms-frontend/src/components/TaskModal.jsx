@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 
 
 export default function TaskModal({ open, onClose, onSave, initial = {} }) {
@@ -198,9 +199,9 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
                   type="button"
                   onClick={onClose}
                   aria-label="Close dialog"
-                  className="p-2 rounded-md hover:bg-white/30 dark:hover:bg-black/30"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
                 >
-                  ✕
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
