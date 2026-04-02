@@ -5,7 +5,7 @@ import { clearPlatformDevSession, isPlatformDevToken } from "../auth/platformDev
 export const PLATFORM_TOKEN_KEY = "roots_platform_token";
 export const PLATFORM_JWT_FALLBACK_KEY = "jwt";
 export const PLATFORM_FLASH_KEY = "roots_platform_flash";
-export const PLATFORM_ACTIVE_TENANT_KEY = "activeTenantId";
+export const PLATFORM_ACTIVE_TENANT_KEY = "roots_platform_active_tenant_id";
 
 const DEFAULT_PLATFORM_ROUTE_MODE = "api";
 let preferredPlatformRouteMode = DEFAULT_PLATFORM_ROUTE_MODE;
@@ -39,7 +39,7 @@ export function setPlatformToken(token) {
 
   if (token) {
     window.localStorage.setItem(PLATFORM_TOKEN_KEY, token);
-    window.localStorage.setItem(PLATFORM_JWT_FALLBACK_KEY, token);
+    window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
   } else {
     window.localStorage.removeItem(PLATFORM_TOKEN_KEY);
     window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
@@ -50,6 +50,7 @@ export function clearPlatformSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(PLATFORM_TOKEN_KEY);
   window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
+  window.localStorage.removeItem(PLATFORM_ACTIVE_TENANT_KEY);
   clearPlatformDevSession();
 }
 

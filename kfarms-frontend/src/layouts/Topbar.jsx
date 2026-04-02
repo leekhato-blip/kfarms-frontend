@@ -116,6 +116,68 @@ function notificationLevelClasses(level) {
   return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/40 dark:bg-blue-500/10 dark:text-blue-200";
 }
 
+function formatNotificationLevelLabel(level) {
+  const normalized = String(level || "info").trim().toLowerCase();
+  return normalized ? `${normalized.slice(0, 1).toUpperCase()}${normalized.slice(1)}` : "Info";
+}
+
+function getPlatformNotificationVisual(notification) {
+  const category = String(notification?.category || "").trim().toLowerCase();
+  const level = String(notification?.level || "info").trim().toLowerCase();
+
+  if (category.includes("tenant") || category.includes("workspace")) {
+    return {
+      icon: Building2,
+      iconClass:
+        "border-emerald-300/35 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100",
+      railClass: "from-emerald-400/70 via-emerald-400/18 to-transparent",
+    };
+  }
+
+  if (category.includes("portfolio") || category.includes("app")) {
+    return {
+      icon: Blocks,
+      iconClass:
+        "border-blue-300/35 bg-blue-50 text-blue-700 dark:border-blue-400/20 dark:bg-blue-500/10 dark:text-blue-100",
+      railClass: "from-blue-400/70 via-blue-400/18 to-transparent",
+    };
+  }
+
+  if (category.includes("user") || category.includes("access") || category.includes("team")) {
+    return {
+      icon: Users,
+      iconClass:
+        "border-violet-300/35 bg-violet-50 text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-100",
+      railClass: "from-violet-400/70 via-violet-400/18 to-transparent",
+    };
+  }
+
+  if (level === "critical") {
+    return {
+      icon: Activity,
+      iconClass:
+        "border-rose-300/35 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-100",
+      railClass: "from-rose-400/70 via-rose-400/18 to-transparent",
+    };
+  }
+
+  if (level === "warning") {
+    return {
+      icon: Activity,
+      iconClass:
+        "border-amber-300/35 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100",
+      railClass: "from-amber-400/70 via-amber-400/18 to-transparent",
+    };
+  }
+
+  return {
+    icon: Bell,
+    iconClass:
+      "border-slate-300/35 bg-white/80 text-slate-700 dark:border-slate-400/20 dark:bg-white/5 dark:text-slate-100",
+    railClass: "from-slate-400/65 via-slate-300/12 to-transparent",
+  };
+}
+
 function isPortfolioAdmin(accessTier) {
   return accessTier === "PLATFORM_OWNER" || accessTier === "PLATFORM_ADMIN";
 }
@@ -617,8 +679,8 @@ export default function Topbar({
       if (notificationsOpen) {
         const notificationWidth =
           typeof window !== "undefined" && window.innerWidth < 640
-            ? Math.min(320, window.innerWidth - 24)
-            : 352;
+            ? Math.min(332, window.innerWidth - 24)
+            : 376;
         setNotificationPopoverStyle(measurePopoverPosition(notificationRef, notificationWidth));
       }
 
@@ -863,49 +925,63 @@ export default function Topbar({
               width: `${notificationPopoverStyle.width}px`,
             }}
           >
-            <Card className="w-full p-2.5 shadow-[0_24px_80px_rgba(15,23,42,0.32)] sm:p-3">
+            <Card className="w-full overflow-hidden border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/96 p-0 shadow-[0_28px_88px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
               <div className="relative z-10">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      Notifications
+                <div className="border-b border-[color:var(--atlas-border)]/85 px-3.5 py-3.5 sm:px-4 sm:py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-300/30 bg-violet-500/12 text-violet-700 shadow-[0_14px_34px_rgba(124,58,237,0.12)] dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-100">
+                        <Bell size={17} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                          Platform alerts
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--atlas-muted)]">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            Live
+                          </span>
+                          <span>
+                            {unreadNotifications.length > 0
+                              ? `${unreadNotifications.length} unread platform alert${unreadNotifications.length === 1 ? "" : "s"}`
+                              : "Everything is read for now."}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                      {unreadNotifications.length > 0
-                        ? `${unreadNotifications.length} unread platform alert${unreadNotifications.length === 1 ? "" : "s"}`
-                        : "Everything is read for now."}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={loadNotifications}
-                      className="atlas-icon-button rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
-                      aria-label="Refresh notifications"
-                    >
-                      <RefreshCw size={14} className={notificationsLoading ? "animate-spin" : ""} />
-                    </button>
-                    {unreadNotifications.length > 0 ? (
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => markNotificationsRead(unreadNotifications.map((item) => item.id))}
-                        className="inline-flex h-9 items-center gap-1 rounded-xl border border-[color:var(--atlas-border)] px-3 text-xs font-semibold text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
+                        onClick={loadNotifications}
+                        className="atlas-icon-button rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
+                        aria-label="Refresh notifications"
                       >
-                        <CheckCheck size={13} />
-                        Mark all
+                        <RefreshCw size={14} className={notificationsLoading ? "animate-spin" : ""} />
                       </button>
-                    ) : null}
+                      {unreadNotifications.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => markNotificationsRead(unreadNotifications.map((item) => item.id))}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 px-3 text-xs font-semibold text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
+                        >
+                          <CheckCheck size={13} />
+                          <span className="hidden sm:inline">Mark all</span>
+                          <span className="sm:hidden">Clear</span>
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
                 {notificationsError ? (
-                  <div className="mt-3 rounded-[1rem] border border-violet-300/40 bg-violet-50/70 px-3 py-2 text-xs text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200">
+                  <div className="mx-3.5 mt-3 rounded-[1rem] border border-violet-300/40 bg-violet-50/70 px-3 py-2 text-xs text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200 sm:mx-4">
                     {notificationsError}
                   </div>
                 ) : null}
 
                 <div
-                  className="mt-3 space-y-2 overflow-y-auto pr-1"
+                  className="mt-3 space-y-2.5 overflow-y-auto px-3.5 pb-3.5 pr-2 sm:px-4 sm:pb-4"
                   style={{
                     maxHeight: `${Math.min(
                       notificationPopoverStyle.maxHeight,
@@ -914,65 +990,104 @@ export default function Topbar({
                   }}
                 >
                   {notificationsLoading && notifications.length === 0 ? (
-                    <div className="rounded-[1rem] border border-dashed border-[color:var(--atlas-border)] px-3 py-4 text-sm text-[var(--atlas-muted)]">
+                    <div className="flex items-center gap-3 rounded-[1.1rem] border border-dashed border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/55 px-3.5 py-4 text-sm text-[var(--atlas-muted)]">
+                      <LoaderCircle size={16} className="animate-spin" />
                       Loading platform alerts...
                     </div>
                   ) : notifications.length === 0 ? (
-                    <div className="rounded-[1rem] border border-dashed border-[color:var(--atlas-border)] px-3 py-4 text-sm text-[var(--atlas-muted)]">
-                      No active platform alerts.
+                    <div className="rounded-[1.1rem] border border-dashed border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/55 px-3.5 py-5 text-center">
+                      <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] text-[var(--atlas-text-strong)]">
+                        <Bell size={16} />
+                      </div>
+                      <div className="mt-3 text-sm font-semibold text-[var(--atlas-text-strong)]">
+                        All clear
+                      </div>
+                      <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">
+                        No active platform alerts right now.
+                      </div>
                     </div>
                   ) : (
                     notifications.map((notification) => {
                       const isUnread = unreadNotifications.some((item) => item.id === notification.id);
+                      const visual = getPlatformNotificationVisual(notification);
+                      const VisualIcon = visual.icon;
 
                       return (
                         <div
                           key={notification.id}
-                          className={`rounded-[1rem] border border-[color:var(--atlas-border)] p-2.5 transition sm:p-3 ${
-                            isUnread ? "bg-[color:var(--atlas-surface-soft)]/85" : "bg-[color:var(--atlas-surface-soft)]/55 opacity-80"
+                          className={`relative overflow-hidden rounded-[1.15rem] border border-[color:var(--atlas-border)] p-3 transition sm:p-3.5 ${
+                            isUnread
+                              ? "bg-[color:var(--atlas-surface-soft)]/88 shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
+                              : "bg-[color:var(--atlas-surface-soft)]/58"
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                  className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${notificationLevelClasses(notification.level)}`}
-                                >
-                                  {notification.category}
-                                </span>
-                                {isUnread ? (
-                                  <span className="inline-flex h-2 w-2 rounded-full bg-violet-500" aria-hidden="true" />
-                                ) : null}
+                          <div className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r ${visual.railClass}`} />
+                          <div className="flex items-start gap-3">
+                            <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${visual.iconClass}`}>
+                              <VisualIcon size={16} />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span
+                                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${notificationLevelClasses(notification.level)}`}
+                                    >
+                                      {notification.category}
+                                    </span>
+                                    {isUnread ? (
+                                      <span className="inline-flex items-center gap-1 rounded-full border border-violet-300/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-100">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden="true" />
+                                        New
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNotificationSelect(notification)}
+                                    className="mt-2 block text-left"
+                                  >
+                                    <div className="text-[13px] font-semibold leading-5 text-[var(--atlas-text-strong)] sm:text-sm">
+                                      {notification.title}
+                                    </div>
+                                    <div className="mt-1 text-[11px] leading-5 text-[var(--atlas-muted)] sm:text-xs">
+                                      {notification.message}
+                                    </div>
+                                  </button>
+                                </div>
+                                <div className="shrink-0 text-[11px] text-[var(--atlas-muted)]">
+                                  {formatPlatformNotificationAge(notification.createdAt)}
+                                </div>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => handleNotificationSelect(notification)}
-                                className="mt-2 block text-left"
-                              >
-                                <div className="text-[13px] font-semibold leading-5 text-[var(--atlas-text-strong)] sm:text-sm">
-                                  {notification.title}
+
+                              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                <span
+                                  className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${notificationLevelClasses(notification.level)}`}
+                                >
+                                  {formatNotificationLevelLabel(notification.level)}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {isUnread ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => markNotificationsRead([notification.id])}
+                                      className="rounded-full px-2 py-1 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-500/10 hover:text-violet-800 dark:text-violet-200 dark:hover:bg-violet-400/10 dark:hover:text-violet-100"
+                                    >
+                                      Mark read
+                                    </button>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNotificationSelect(notification)}
+                                    className="inline-flex items-center gap-1 rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/85 px-2.5 py-1 text-[11px] font-semibold text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
+                                  >
+                                    Open
+                                    <ChevronRight size={13} />
+                                  </button>
                                 </div>
-                                <div className="mt-1 text-[11px] leading-5 text-[var(--atlas-muted)] sm:text-xs">
-                                  {notification.message}
-                                </div>
-                              </button>
-                            </div>
-                            <div className="shrink-0 text-[11px] text-[var(--atlas-muted)]">
-                              {formatPlatformNotificationAge(notification.createdAt)}
+                              </div>
                             </div>
                           </div>
-
-                          {isUnread ? (
-                            <div className="mt-3 flex justify-end">
-                              <button
-                                type="button"
-                                onClick={() => markNotificationsRead([notification.id])}
-                                className="text-xs font-semibold text-violet-700 transition hover:text-violet-800 dark:text-violet-200 dark:hover:text-violet-100"
-                              >
-                                Mark read
-                              </button>
-                            </div>
-                          ) : null}
                         </div>
                       );
                     })
@@ -1208,29 +1323,32 @@ export default function Topbar({
     >
       <div className="atlas-command-chrome rounded-[1.35rem] px-3 py-2.5 sm:px-4 sm:py-3 md:rounded-[1.6rem] md:px-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              onClick={onOpenMenu}
-              className="atlas-icon-button rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)] xl:hidden"
-              aria-label="Open sidebar"
-            >
-              <Menu size={17} />
-            </button>
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={onOpenMenu}
+                className="atlas-icon-button rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)] xl:hidden"
+                aria-label="Open sidebar"
+              >
+                <Menu size={17} />
+              </button>
 
-            <div className="min-w-0">
               {showBackButton && (
                 <button
                   type="button"
                   onClick={goBack}
-                  className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/80 text-sm font-semibold text-[var(--atlas-text)] shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-[color:var(--atlas-surface-hover)] md:h-auto md:w-auto md:gap-2 md:px-3 md:py-2"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/80 text-sm font-semibold text-[var(--atlas-text)] shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-[color:var(--atlas-surface-hover)] md:h-auto md:w-auto md:gap-2 md:px-3 md:py-2"
                   aria-label="Go back to the previous page"
                 >
                   <ArrowLeft size={15} />
                   <span className="hidden md:inline">Back</span>
                 </button>
               )}
-              <h2 className="font-header text-xl font-semibold text-[var(--atlas-text-strong)] md:text-2xl">
+            </div>
+
+            <div className="min-w-0">
+              <h2 className="font-header text-[1.4rem] font-semibold leading-tight text-[var(--atlas-text-strong)] sm:text-xl md:text-2xl">
                 {title}
               </h2>
             </div>
@@ -1337,7 +1455,7 @@ export default function Topbar({
             <button
               type="button"
               onClick={onToggleTheme}
-              className="atlas-icon-button hidden shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)] sm:inline-flex"
+              className="atlas-icon-button inline-flex shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
               aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDark ? <Sun size={15} /> : <Moon size={15} />}

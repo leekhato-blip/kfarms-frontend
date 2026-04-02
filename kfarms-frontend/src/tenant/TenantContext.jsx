@@ -5,6 +5,7 @@ import apiClient, { tenantStorageKey } from "../api/apiClient";
 import { useAuth } from "../hooks/useAuth";
 import { isTenantOnboardingPath, isTenantScopedPath } from "./tenantRouting";
 import { FARM_MODULES, normalizeEnabledModules } from "./tenantModules";
+import { normalizePlanId } from "../constants/plans";
 
 const TenantContext = React.createContext(null);
 const TENANT_PLAN_OVERRIDE_STORAGE_KEY = "kf-placeholder-tenant-plan-overrides";
@@ -24,6 +25,48 @@ function readTenantPlanOverrides() {
   } catch {
     return {};
   }
+}
+
+function writeTenantPlanOverrides(overrides) {
+  if (typeof window === "undefined") return;
+
+  if (!overrides || Object.keys(overrides).length === 0) {
+    window.localStorage.removeItem(TENANT_PLAN_OVERRIDE_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(
+    TENANT_PLAN_OVERRIDE_STORAGE_KEY,
+    JSON.stringify(overrides),
+  );
+}
+
+function reconcileTenantPlanOverrides(tenantList = [], currentOverrides = {}) {
+  if (!currentOverrides || typeof currentOverrides !== "object") {
+    return { nextOverrides: {}, changed: false };
+  }
+
+  let changed = false;
+  const nextOverrides = { ...currentOverrides };
+
+  tenantList.forEach((tenant) => {
+    const key = String(Number(tenant?.tenantId) || "");
+    if (!key || !Object.prototype.hasOwnProperty.call(nextOverrides, key)) {
+      return;
+    }
+
+    const serverPlan = normalizePlanId(tenant?.plan, "");
+    const overridePlan = normalizePlanId(nextOverrides[key], "");
+
+    if (!serverPlan || !overridePlan || serverPlan === overridePlan) {
+      return;
+    }
+
+    delete nextOverrides[key];
+    changed = true;
+  });
+
+  return { nextOverrides, changed };
 }
 
 export function useTenant() {
@@ -147,6 +190,14 @@ export function TenantProvider({ children }) {
         const res = await apiClient.get("/tenants/my", { skipAuthInvalid: true });
         const payload = res.data?.data ?? res.data;
         const tenantList = Array.isArray(payload) ? payload : [];
+        const { nextOverrides, changed } = reconcileTenantPlanOverrides(
+          tenantList,
+          readTenantPlanOverrides(),
+        );
+        if (changed) {
+          writeTenantPlanOverrides(nextOverrides);
+          setTenantPlanOverrides(nextOverrides);
+        }
         setTenants(tenantList);
         networkRetryAfterRef.current = 0;
         return tenantList;

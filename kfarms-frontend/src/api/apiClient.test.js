@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  clearWorkspaceToken,
+  getWorkspaceToken,
   isBackendUnavailableError,
   isBackendUnavailableResponse,
   isPlatformPathname,
+  setWorkspaceToken,
+  workspaceTokenStorageKey,
 } from "./apiClient";
 
 describe("apiClient workspace auth guards", () => {
@@ -84,5 +88,36 @@ describe("apiClient workspace auth guards", () => {
         message: "Request failed with status code 401",
       }),
     ).toBe(false);
+  });
+
+  it("stores workspace auth state in its own dedicated token key", () => {
+    const storage = new Map();
+    const originalWindow = globalThis.window;
+
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key) => storage.get(key) ?? null,
+          setItem: (key, value) => storage.set(key, String(value)),
+          removeItem: (key) => storage.delete(key),
+        },
+      },
+    });
+
+    try {
+      setWorkspaceToken("workspace-token");
+      expect(storage.get(workspaceTokenStorageKey)).toBe("workspace-token");
+      expect(getWorkspaceToken()).toBe("workspace-token");
+
+      clearWorkspaceToken();
+      expect(storage.has(workspaceTokenStorageKey)).toBe(false);
+      expect(getWorkspaceToken()).toBe("");
+    } finally {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
   });
 });

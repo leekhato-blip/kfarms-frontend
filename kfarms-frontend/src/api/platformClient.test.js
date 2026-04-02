@@ -4,7 +4,9 @@ import {
   enrichPlatformRequestConfig,
   getAlternatePlatformPath,
   getApiErrorMessage,
+  PLATFORM_ACTIVE_TENANT_KEY,
   resolvePlatformAlternateRequestUrl,
+  setPlatformToken,
   shouldAttachPlatformTenantHeader,
 } from "./platformClient";
 
@@ -121,5 +123,36 @@ describe("platformClient", () => {
     );
 
     expect(message).toBe("Unable to sign in to ROOTS.");
+  });
+
+  it("keeps platform tenant state separate from workspace tenant state", () => {
+    expect(PLATFORM_ACTIVE_TENANT_KEY).not.toBe("activeTenantId");
+  });
+
+  it("stores platform auth in its dedicated key without refreshing the legacy jwt slot", () => {
+    const storage = new Map([["jwt", "legacy-platform-token"]]);
+    const originalWindow = globalThis.window;
+
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key) => storage.get(key) ?? null,
+          setItem: (key, value) => storage.set(key, String(value)),
+          removeItem: (key) => storage.delete(key),
+        },
+      },
+    });
+
+    try {
+      setPlatformToken("new-platform-token");
+      expect(storage.get("roots_platform_token")).toBe("new-platform-token");
+      expect(storage.has("jwt")).toBe(false);
+    } finally {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
   });
 });

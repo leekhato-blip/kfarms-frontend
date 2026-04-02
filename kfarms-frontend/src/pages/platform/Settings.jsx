@@ -10,7 +10,6 @@ import {
   LockKeyhole,
   RefreshCw,
   Shield,
-  ShieldCheck,
   SlidersHorizontal,
   UserCircle2,
   Users,
@@ -18,7 +17,6 @@ import {
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
-import PlatformMetricCard from "../../components/PlatformMetricCard";
 import { useToast } from "../../components/ToastProvider";
 import { usePlatformAuth } from "../../auth/AuthProvider";
 import { PLATFORM_ENDPOINTS } from "../../api/endpoints";
@@ -497,37 +495,6 @@ export default function PlatformSettingsPage() {
           {error}
         </div>
       ) : null}
-
-      <div className="atlas-platform-metric-grid-compact">
-        <PlatformMetricCard
-          icon={ShieldCheck}
-          label="ROOTS Admins"
-          value={formatNumber(overview.platformAdmins || 0)}
-          hint="Full-access accounts."
-          tone="green"
-        />
-        <PlatformMetricCard
-          icon={Building2}
-          label="Managed Workspaces"
-          value={formatNumber(overview.totalTenants || 0)}
-          hint={`${formatNumber(overview.activeTenants || 0)} active workspaces.`}
-          tone="blue"
-        />
-        <PlatformMetricCard
-          icon={Users}
-          label="Total Operators"
-          value={formatNumber(overview.totalUsers || 0)}
-          hint="Users across ROOTS."
-          tone="purple"
-        />
-        <PlatformMetricCard
-          icon={UserCircle2}
-          label="Current Account"
-          value={getPlatformRoleLabel(currentAccessTier)}
-          hint={profileLoading ? "Loading profile..." : currentUser?.email || "Admin session"}
-          tone="blue"
-        />
-      </div>
 
       <section className="rounded-[1.4rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 px-4 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

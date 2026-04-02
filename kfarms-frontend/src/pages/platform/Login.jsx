@@ -334,14 +334,14 @@ function PlatformLoginContent() {
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#16a34a] dark:text-[#4ade80]">
-                    Invite only
+                    Protected access
                   </p>
                   <p className="mt-1 text-xs text-[var(--atlas-muted)]">
-                    Live and demo switching unlocks after a real platform sign-in.
+                    Sign in with your ROOTS account to continue securely to the platform.
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-[#16a34a] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(22,163,74,0.22)]">
-                  Secure access
+                  Secure sign-in
                 </span>
               </div>
             </form>

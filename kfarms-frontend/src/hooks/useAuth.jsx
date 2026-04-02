@@ -3,11 +3,12 @@ import React from "react";
 import { login as loginApi, logout as logoutApi, me as meApi } from "../services/authService";
 import { isDemoAccountUser, setDemoAccountHint } from "../auth/demoMode";
 import { clearQueuedMutations } from "../offline/offlineStore";
-import apiClient from "../api/apiClient";
+import apiClient, { clearWorkspaceToken, getWorkspaceToken, setWorkspaceToken } from "../api/apiClient";
 import {
   applyTenantUserProfile,
   saveTenantUserProfile,
 } from "../services/userProfileService";
+import { readTokenFromPayload } from "../utils/formatters";
 
 export const AuthContext = React.createContext(null);
 const AUTH_SESSION_HINT_KEY = "kf_auth_session_hint";
@@ -22,6 +23,10 @@ function isPlatformPathActive() {
 function hasSessionHint() {
   if (typeof window === "undefined") return false;
   return window.localStorage.getItem(AUTH_SESSION_HINT_KEY) === "1";
+}
+
+function hasWorkspaceSessionBootstrap() {
+  return Boolean(getWorkspaceToken());
 }
 
 function setSessionHint(value) {
@@ -65,7 +70,7 @@ async function canAccessWorkspaceProduct(userData) {
 export function AuthProvider({ children }) {
   const [user, setUser] = React.useState(null);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  const [loading, setLoading] = React.useState(hasSessionHint);
+  const [loading, setLoading] = React.useState(hasWorkspaceSessionBootstrap);
 
   const setSession = (userData) => {
     const nextUser = applyTenantUserProfile(userData);
@@ -81,6 +86,7 @@ export function AuthProvider({ children }) {
 
   const login = async ({ identifier, password }) => {
     const userData = await loginApi({ identifier, password });
+    setWorkspaceToken(readTokenFromPayload(userData));
     const resolvedUser = userData?.user ?? userData;
 
     if (!(await canAccessWorkspaceProduct(resolvedUser))) {
@@ -96,6 +102,7 @@ export function AuthProvider({ children }) {
   };
 
   const logoutLocal = () => {
+    clearWorkspaceToken();
     setUser(null);
     setIsAuthenticated(false);
     setSessionHint(false);
@@ -148,7 +155,11 @@ export function AuthProvider({ children }) {
       return undefined;
     }
 
-    if (!hasSessionHint()) {
+    const workspaceToken = getWorkspaceToken();
+    if (!workspaceToken) {
+      if (hasSessionHint()) {
+        logoutLocal();
+      }
       setLoading(false);
       return undefined;
     }

@@ -17,6 +17,7 @@ import { resolveApiBaseUrl } from "./apiBaseUrl";
 const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const PING_PATH = "/auth/login";
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
+const WORKSPACE_TOKEN_STORAGE_KEY = "kf_workspace_token";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
 const BACKEND_UNAVAILABLE_STATUS_CODES = new Set([502, 503, 504]);
 const BACKEND_UNAVAILABLE_ERROR_CODES = new Set([
@@ -33,9 +34,37 @@ const AUTH_PUBLIC_401_PATHS = new Set([
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
 ]);
+const AUTH_BEARER_EXCLUDED_PATHS = new Set([
+  ...AUTH_PUBLIC_401_PATHS,
+  "/api/auth/logout",
+]);
 
 export function isPlatformPathname(pathname = "") {
   return String(pathname || "").startsWith("/platform");
+}
+
+function canUseStorage() {
+  return typeof window !== "undefined" && Boolean(window.localStorage);
+}
+
+export function getWorkspaceToken() {
+  if (!canUseStorage()) return "";
+  return window.localStorage.getItem(WORKSPACE_TOKEN_STORAGE_KEY) || "";
+}
+
+export function setWorkspaceToken(token) {
+  if (!canUseStorage()) return;
+
+  if (token) {
+    window.localStorage.setItem(WORKSPACE_TOKEN_STORAGE_KEY, String(token));
+  } else {
+    window.localStorage.removeItem(WORKSPACE_TOKEN_STORAGE_KEY);
+  }
+}
+
+export function clearWorkspaceToken() {
+  if (!canUseStorage()) return;
+  window.localStorage.removeItem(WORKSPACE_TOKEN_STORAGE_KEY);
 }
 
 const apiClient = axios.create({
@@ -106,6 +135,10 @@ function shouldAttachTenantHeader(pathname) {
   if (pathname === "/api/tenants" || pathname === "/api/tenants/") return false;
   if (pathname === "/api/tenants/my" || pathname === "/api/tenants/invites/accept") return false;
   return true;
+}
+
+function shouldAttachWorkspaceAuthorization(pathname) {
+  return pathname.startsWith("/api/") && !AUTH_BEARER_EXCLUDED_PATHS.has(pathname);
 }
 
 function extractErrorMessage(error) {
@@ -420,7 +453,15 @@ async function hasActiveSession() {
 
   sessionValidationPromise = (async () => {
     try {
-      const res = await pingClient.get("/auth/me", { validateStatus: () => true });
+      const workspaceToken = getWorkspaceToken();
+      const res = await pingClient.get("/auth/me", {
+        validateStatus: () => true,
+        headers: workspaceToken
+          ? {
+              Authorization: `Bearer ${workspaceToken}`,
+            }
+          : undefined,
+      });
       return res.status >= 200 && res.status < 300;
     } catch {
       // Avoid logging out users on transient network failures.
@@ -439,8 +480,18 @@ apiClient.interceptors.request.use((config) => {
   config._kfRequestStartedAt = Date.now();
 
   const pathname = resolveRequestPath(config);
+  const workspaceToken = getWorkspaceToken();
   if (config.offline?.enabled) {
     ensureOfflineRequestId(config);
+  }
+
+  if (
+    workspaceToken &&
+    shouldAttachWorkspaceAuthorization(pathname) &&
+    !config.headers?.Authorization
+  ) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${workspaceToken}`;
   }
 
   if (shouldAttachTenantHeader(pathname)) {
@@ -526,6 +577,7 @@ apiClient.interceptors.response.use(
       if (shouldProbeSession) {
         const sessionActive = await hasActiveSession();
         if (!sessionActive) {
+          clearWorkspaceToken();
           if (!isPlatformPathname(typeof window !== "undefined" ? window.location.pathname : "")) {
             dispatchWindowEvent(new Event("kf-auth-invalid"));
             redirectToLogin();
@@ -588,4 +640,5 @@ apiClient.interceptors.response.use(
 );
 
 export const tenantStorageKey = ACTIVE_TENANT_STORAGE_KEY;
+export const workspaceTokenStorageKey = WORKSPACE_TOKEN_STORAGE_KEY;
 export default apiClient;

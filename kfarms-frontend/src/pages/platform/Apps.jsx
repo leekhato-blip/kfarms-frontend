@@ -74,87 +74,87 @@ function AppCard({ app, onOpenConsole }) {
   );
 
   return (
-    <Card className="atlas-stage-card flex h-full flex-col gap-4 p-5">
+    <Card className="atlas-stage-card flex h-full flex-col gap-3.5 p-4 sm:gap-4 sm:p-5">
       <div className="relative z-10 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--atlas-muted)] sm:text-[11px] sm:tracking-[0.18em]">
             {app.category}
           </div>
-          <h3 className="mt-1 text-xl font-semibold text-[var(--atlas-text-strong)]">
+          <h3 className="mt-1 text-lg font-semibold text-[var(--atlas-text-strong)] sm:text-xl">
             {app.name}
           </h3>
         </div>
-        <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.12em] uppercase ${lifecycleBadgeClasses(app.lifecycle)}`}>
+        <span className={`inline-flex shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold tracking-[0.1em] uppercase sm:px-2.5 sm:text-[11px] sm:tracking-[0.12em] ${lifecycleBadgeClasses(app.lifecycle)}`}>
           {getAppLifecycleLabel(app.lifecycle)}
         </span>
       </div>
 
       <div className="relative z-10">
-        <div className="text-sm font-medium text-[var(--atlas-text-strong)]">
+        <div className="text-[13px] font-medium text-[var(--atlas-text-strong)] sm:text-sm">
           {app.headline || "App lane"}
         </div>
-        <div className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+        <div className="mt-1.5 text-[13px] leading-5 text-[var(--atlas-muted)] sm:mt-2 sm:text-sm sm:leading-6">
           {app.description || "More detail soon."}
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-2 gap-3 2xl:grid-cols-4">
-        <div className="min-w-0 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-          <div className="break-words text-[10px] uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+      <div className="relative z-10 grid grid-cols-2 gap-2.5 sm:gap-3 2xl:grid-cols-4">
+        <div className="min-w-0 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-2.5 sm:rounded-[1.15rem] sm:p-3">
+          <div className="break-words text-[9px] uppercase tracking-[0.12em] text-[var(--atlas-muted)] sm:text-[10px] sm:tracking-[0.14em]">
             Workspaces
           </div>
-          <div className="mt-2 text-[clamp(1.45rem,2.5vw,2rem)] font-semibold leading-[1.05] text-[var(--atlas-text-strong)] tabular-nums">
+          <div className="mt-1.5 text-[clamp(1.2rem,5vw,1.55rem)] font-semibold leading-[1.05] text-[var(--atlas-text-strong)] tabular-nums sm:mt-2 sm:text-[clamp(1.45rem,2.5vw,2rem)]">
             {formatNumber(app.tenantCount)}
           </div>
-          <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
+          <div className="mt-1 break-words text-[11px] leading-4.5 text-[var(--atlas-muted)] sm:text-xs sm:leading-5">
             {formatNumber(app.activeTenantCount)} active
           </div>
         </div>
-        <div className="min-w-0 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-          <div className="break-words text-[10px] uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+        <div className="min-w-0 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-2.5 sm:rounded-[1.15rem] sm:p-3">
+          <div className="break-words text-[9px] uppercase tracking-[0.12em] text-[var(--atlas-muted)] sm:text-[10px] sm:tracking-[0.14em]">
             Operators
           </div>
-          <div className="mt-2 text-[clamp(1.45rem,2.5vw,2rem)] font-semibold leading-[1.05] text-[var(--atlas-text-strong)] tabular-nums">
+          <div className="mt-1.5 text-[clamp(1.2rem,5vw,1.55rem)] font-semibold leading-[1.05] text-[var(--atlas-text-strong)] tabular-nums sm:mt-2 sm:text-[clamp(1.45rem,2.5vw,2rem)]">
             {formatNumber(app.operatorCount)}
           </div>
-          <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
+          <div className="mt-1 break-words text-[11px] leading-4.5 text-[var(--atlas-muted)] sm:text-xs sm:leading-5">
             Platform reach
           </div>
         </div>
-        <div className="min-w-0 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-          <div className="break-words text-[10px] uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+        <div className="min-w-0 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-2.5 sm:rounded-[1.15rem] sm:p-3">
+          <div className="break-words text-[9px] uppercase tracking-[0.12em] text-[var(--atlas-muted)] sm:text-[10px] sm:tracking-[0.14em]">
             Recurring revenue
           </div>
           <div
-            className="mt-2 max-w-full text-[clamp(1.2rem,2.1vw,1.5rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-[var(--atlas-text-strong)]"
+            className="mt-1.5 max-w-full text-[clamp(1rem,4.6vw,1.2rem)] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--atlas-text-strong)] sm:mt-2 sm:text-[clamp(1.2rem,2.1vw,1.5rem)] sm:tracking-[-0.03em]"
             title={recurringRevenueTooltip}
           >
             <span className="[overflow-wrap:anywhere] tabular-nums">
               {recurringRevenueLabel}
             </span>
           </div>
-          <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
+          <div className="mt-1 break-words text-[11px] leading-4.5 text-[var(--atlas-muted)] sm:text-xs sm:leading-5">
             {isLive ? "Billing live" : "Billing idle"}
           </div>
         </div>
-        <div className="min-w-0 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-          <div className="break-words text-[10px] uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+        <div className="min-w-0 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-2.5 sm:rounded-[1.15rem] sm:p-3">
+          <div className="break-words text-[9px] uppercase tracking-[0.12em] text-[var(--atlas-muted)] sm:text-[10px] sm:tracking-[0.14em]">
             Suspension risk
           </div>
-          <div className="mt-2 text-[clamp(1.45rem,2.5vw,2rem)] font-semibold leading-[1.05] text-[var(--atlas-text-strong)] tabular-nums">
+          <div className="mt-1.5 text-[clamp(1.2rem,5vw,1.55rem)] font-semibold leading-[1.05] text-[var(--atlas-text-strong)] tabular-nums sm:mt-2 sm:text-[clamp(1.45rem,2.5vw,2rem)]">
             {formatNumber(app.suspendedTenantCount)}
           </div>
-          <div className="mt-1 break-words text-xs leading-5 text-[var(--atlas-muted)]">
+          <div className="mt-1 break-words text-[11px] leading-4.5 text-[var(--atlas-muted)] sm:text-xs sm:leading-5">
             Paused
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-wrap gap-2">
+      <div className="relative z-10 flex flex-wrap gap-1.5 sm:gap-2">
         {app.capabilities.length > 0 ? app.capabilities.map((capability) => (
           <span
             key={`${app.id}-${capability}`}
-            className="inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/80 px-2.5 py-1 text-[11px] font-medium text-[var(--atlas-text)]"
+            className="inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/80 px-2 py-0.5 text-[10px] font-medium text-[var(--atlas-text)] sm:px-2.5 sm:py-1 sm:text-[11px]"
           >
             {capability}
           </span>
@@ -163,17 +163,17 @@ function AppCard({ app, onOpenConsole }) {
         )}
       </div>
 
-      <div className="relative z-10 mt-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative z-10 mt-auto flex flex-col gap-2.5 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           variant={isLive ? "primary" : "outline"}
-          className="w-full sm:w-auto sm:min-w-[10.75rem]"
+          className="w-full !min-h-10 text-sm sm:w-auto sm:min-w-[10.75rem]"
           onClick={() => onOpenConsole(app)}
           disabled={!app.consolePath}
         >
           <ArrowUpRight size={14} />
           {isLive ? "Open app" : "View plan"}
         </Button>
-        <div className="min-w-0 text-xs leading-5 text-[var(--atlas-muted)] sm:max-w-[12.5rem] sm:text-right lg:max-w-none">
+        <div className="min-w-0 text-[11px] leading-4.5 text-[var(--atlas-muted)] sm:max-w-[12.5rem] sm:text-xs sm:leading-5 sm:text-right lg:max-w-none">
           {app.workspacePath
             ? `Workspace route ${app.workspacePath}`
             : "No live route yet"}
