@@ -710,6 +710,23 @@ export default function Topbar() {
   }, []);
 
   React.useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const closeFloatingPanels = () => {
+      setShowSearch(false);
+      setMobileSearchOpen(false);
+      setNotifOpen(false);
+      setQuickOpen(false);
+    };
+
+    window.addEventListener("scroll", closeFloatingPanels, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", closeFloatingPanels);
+    };
+  }, []);
+
+  React.useEffect(() => {
     function handleWorkspaceQuickAction(event) {
       const action = String(event?.detail?.action || "").trim();
       if (!action) return;

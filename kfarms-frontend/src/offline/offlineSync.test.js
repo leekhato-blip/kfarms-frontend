@@ -129,6 +129,34 @@ describe("offlineSync", () => {
     });
   });
 
+  it("treats replay timeouts as temporary sync pauses instead of failed mutations", async () => {
+    mocks.listQueuedMutationsMock.mockReturnValue([
+      {
+        requestId: "req-timeout",
+        status: "queued",
+        method: "POST",
+        path: "/api/sales",
+        payload: { itemName: "Layers", quantity: 3 },
+        tenantId: 7,
+      },
+    ]);
+    mocks.requestMock.mockRejectedValueOnce({
+      code: "ECONNABORTED",
+      message: "timeout of 25000ms exceeded",
+    });
+
+    const result = await flushOfflineQueue({ source: "manual" });
+
+    expect(result).toBe(false);
+    expect(mocks.markQueuedMutationQueuedMock).toHaveBeenCalledWith("req-timeout");
+    expect(mocks.markQueuedMutationFailedMock).not.toHaveBeenCalled();
+    expect(mocks.setOfflineSyncSnapshotMock.mock.calls.at(-1)?.[0]).toMatchObject({
+      status: "paused",
+      remaining: 1,
+      failedCount: 0,
+    });
+  });
+
   it("skips replay entirely while demo mode is active", async () => {
     mocks.hasDemoAccountHintMock.mockReturnValue(true);
     mocks.listQueuedMutationsMock.mockReturnValue([

@@ -14,8 +14,8 @@ let initialized = false;
 let flushPromise = null;
 let autoRetryBlockedUntil = 0;
 
-const AUTO_RETRY_COOLDOWN_MS = 12000;
-const REPLAY_REQUEST_TIMEOUT_MS = 10000;
+const AUTO_RETRY_COOLDOWN_MS = 15000;
+const REPLAY_REQUEST_TIMEOUT_MS = 25000;
 
 function extractErrorMessage(error) {
   return (
@@ -28,6 +28,44 @@ function extractErrorMessage(error) {
 
 function isNetworkFailure(error) {
   return isBackendUnavailableError(error);
+}
+
+function isRetriableSyncMessage(message = "") {
+  const normalized = String(message || "").trim().toLowerCase();
+  if (!normalized) return false;
+
+  return (
+    normalized.includes("timeout") ||
+    normalized.includes("network error") ||
+    normalized.includes("connection refused") ||
+    normalized.includes("failed to fetch") ||
+    normalized.includes("load failed") ||
+    normalized.includes("temporarily unavailable")
+  );
+}
+
+function isRetriableSyncFailure(error) {
+  if (isNetworkFailure(error)) {
+    return true;
+  }
+
+  const code = String(error?.code || "").trim().toUpperCase();
+  const status = Number(error?.response?.status || 0);
+  const message = extractErrorMessage(error);
+
+  if (code === "ECONNABORTED") {
+    return true;
+  }
+
+  if ([408, 425, 429, 500, 502, 503, 504].includes(status)) {
+    return true;
+  }
+
+  return isRetriableSyncMessage(message);
+}
+
+function isRetriableQueuedFailure(mutation) {
+  return mutation?.status === "failed" && isRetriableSyncMessage(mutation?.lastError);
 }
 
 async function replayMutation(mutation) {
@@ -75,6 +113,13 @@ export async function flushOfflineQueue(options = {}) {
   }
 
   flushPromise = (async () => {
+    const existingMutations = listQueuedMutations();
+    existingMutations
+      .filter((mutation) => isRetriableQueuedFailure(mutation))
+      .forEach((mutation) => {
+        markQueuedMutationQueued(mutation.requestId);
+      });
+
     const allMutations = listQueuedMutations().filter((item) =>
       item.status === "queued" || item.status === "failed" || item.status === "syncing",
     );
@@ -108,7 +153,7 @@ export async function flushOfflineQueue(options = {}) {
         await replayMutation(mutation);
         removeQueuedMutation(mutation.requestId);
       } catch (error) {
-        if (isNetworkFailure(error)) {
+        if (isRetriableSyncFailure(error)) {
           pausedForNetworkFailure = true;
           autoRetryBlockedUntil = Date.now() + AUTO_RETRY_COOLDOWN_MS;
           markQueuedMutationQueued(mutation.requestId);

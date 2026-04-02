@@ -27,6 +27,11 @@ export default function BackendRecoveryPrompt() {
   const [browserOffline, setBrowserOffline] = React.useState(
     () => typeof window !== "undefined" && !window.navigator.onLine,
   );
+  const [isDark, setIsDark] = React.useState(
+    () =>
+      typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark"),
+  );
   const [dismissed, setDismissed] = React.useState(false);
   const [probingConnection, setProbingConnection] = React.useState(false);
   const [queueSnapshot, setQueueSnapshot] = React.useState(() => getOfflineQueueSnapshot());
@@ -47,6 +52,26 @@ export default function BackendRecoveryPrompt() {
   React.useEffect(() => {
     browserOfflineRef.current = browserOffline;
   }, [browserOffline]);
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const syncTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const clearBackendDownTimer = React.useCallback(() => {
     if (!backendDownTimerRef.current) return;
@@ -275,10 +300,12 @@ export default function BackendRecoveryPrompt() {
           queuedChanges > 0
             ? `${queuedChanges} saved ${queuedChanges === 1 ? "change is" : "changes are"} waiting for internet`
             : "Waiting for internet before syncing again",
-        tone:
-          "border-amber-300/75 bg-amber-50/95 text-amber-950 ring-1 ring-amber-200/70 dark:border-amber-500/35 dark:bg-[#1d1203]/92 dark:text-amber-100 dark:ring-amber-500/12",
-        iconTone:
-          "bg-amber-500/15 text-amber-700 dark:bg-amber-400/14 dark:text-amber-200",
+        toneLight:
+          "border-amber-300/75 bg-amber-50/95 text-amber-950 ring-1 ring-amber-200/70",
+        toneDark:
+          "border-amber-500/35 bg-[#1d1203]/92 text-amber-100 ring-1 ring-amber-500/12",
+        iconToneLight: "bg-amber-500/15 text-amber-700",
+        iconToneDark: "bg-amber-400/14 text-amber-200",
         Icon: WifiOff,
         actionLabel: "",
       }
@@ -289,10 +316,12 @@ export default function BackendRecoveryPrompt() {
             queuedChanges > 0
               ? `${queuedChanges} saved ${queuedChanges === 1 ? "change is" : "changes are"} queued locally`
               : "Reconnecting in the background",
-          tone:
-            "border-sky-300/75 bg-sky-50/95 text-sky-950 ring-1 ring-sky-200/70 dark:border-sky-500/35 dark:bg-[#071628]/92 dark:text-sky-100 dark:ring-sky-500/12",
-          iconTone:
-            "bg-sky-500/15 text-sky-700 dark:bg-sky-400/14 dark:text-sky-200",
+          toneLight:
+            "border-sky-300/75 bg-sky-50/95 text-sky-950 ring-1 ring-sky-200/70",
+          toneDark:
+            "border-sky-500/35 bg-[#071628]/92 text-sky-100 ring-1 ring-sky-500/12",
+          iconToneLight: "bg-sky-500/15 text-sky-700",
+          iconToneDark: "bg-sky-400/14 text-sky-200",
           Icon: LoaderCircle,
           actionLabel: "Retry",
         }
@@ -300,10 +329,12 @@ export default function BackendRecoveryPrompt() {
         ? {
             label: "Sync needs attention",
             detail: `${failedChanges} ${failedChanges === 1 ? "change" : "changes"} failed to sync`,
-            tone:
-              "border-rose-300/75 bg-rose-50/95 text-rose-950 ring-1 ring-rose-200/70 dark:border-rose-500/35 dark:bg-[#260812]/92 dark:text-rose-100 dark:ring-rose-500/12",
-            iconTone:
-              "bg-rose-500/15 text-rose-700 dark:bg-rose-400/14 dark:text-rose-200",
+            toneLight:
+              "border-rose-300/75 bg-rose-50/95 text-rose-950 ring-1 ring-rose-200/70",
+            toneDark:
+              "border-rose-500/35 bg-[#260812]/92 text-rose-100 ring-1 ring-rose-500/12",
+            iconToneLight: "bg-rose-500/15 text-rose-700",
+            iconToneDark: "bg-rose-400/14 text-rose-200",
             Icon: AlertTriangle,
             actionLabel: "Sync",
           }
@@ -311,20 +342,24 @@ export default function BackendRecoveryPrompt() {
           ? {
               label: "Syncing",
               detail: `${processedChanges}/${Number(syncSnapshot.total || 0)} saved changes`,
-              tone:
-                "border-indigo-300/75 bg-indigo-50/95 text-indigo-950 ring-1 ring-indigo-200/70 dark:border-indigo-500/35 dark:bg-[#0d1431]/92 dark:text-indigo-100 dark:ring-indigo-500/12",
-              iconTone:
-                "bg-indigo-500/15 text-indigo-700 dark:bg-indigo-400/14 dark:text-indigo-200",
+              toneLight:
+                "border-indigo-300/75 bg-indigo-50/95 text-indigo-950 ring-1 ring-indigo-200/70",
+              toneDark:
+                "border-indigo-500/35 bg-[#0d1431]/92 text-indigo-100 ring-1 ring-indigo-500/12",
+              iconToneLight: "bg-indigo-500/15 text-indigo-700",
+              iconToneDark: "bg-indigo-400/14 text-indigo-200",
               Icon: LoaderCircle,
               actionLabel: "",
             }
           : {
               label: shouldShowPausedStatus ? "Saved changes waiting" : "Ready to sync",
               detail: `${queuedChanges} ${queuedChanges === 1 ? "change" : "changes"} queued locally`,
-              tone:
-                "border-slate-300/80 bg-slate-50/92 text-slate-900 ring-1 ring-slate-200/80 dark:border-white/12 dark:bg-[#0b1322]/94 dark:text-slate-100 dark:ring-white/10",
-              iconTone:
-                "bg-slate-500/10 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+              toneLight:
+                "border-slate-300/80 bg-slate-50/92 text-slate-900 ring-1 ring-slate-200/80",
+              toneDark:
+                "border-white/12 bg-[#0b1322]/94 text-slate-100 ring-1 ring-white/10",
+              iconToneLight: "bg-slate-500/10 text-slate-700",
+              iconToneDark: "bg-white/10 text-slate-200",
               Icon: RefreshCw,
               actionLabel: "Sync",
             };
@@ -340,10 +375,16 @@ export default function BackendRecoveryPrompt() {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-[12000] flex justify-center px-3 sm:top-4">
       <div
-        className={`pointer-events-auto inline-flex max-w-[min(94vw,30rem)] items-center gap-2.5 rounded-full border px-3 py-2 shadow-[0_18px_35px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:shadow-[0_18px_40px_rgba(0,0,0,0.34)] ${status.tone}`}
+        className={`pointer-events-auto inline-flex max-w-[min(94vw,30rem)] items-center gap-2.5 rounded-full border px-3 py-2 shadow-[0_18px_35px_rgba(15,23,42,0.16)] backdrop-blur-xl ${
+          isDark
+            ? "shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
+            : "shadow-[0_18px_35px_rgba(15,23,42,0.16)]"
+        } ${isDark ? status.toneDark : status.toneLight}`}
       >
         <span
-          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${status.iconTone}`}
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+            isDark ? status.iconToneDark : status.iconToneLight
+          }`}
         >
           <StatusIcon className={iconClassName} strokeWidth={2.3} />
         </span>
@@ -359,7 +400,9 @@ export default function BackendRecoveryPrompt() {
           <button
             type="button"
             disabled={probingConnection || syncingChanges}
-            className="inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-current/15 px-3 text-xs font-semibold transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/10"
+            className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-current/15 px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isDark ? "hover:bg-white/10" : "hover:bg-black/5"
+            }`}
             onClick={async () => {
               if (hasConnectionIssue) {
                 await requestBackendProbe({
@@ -381,7 +424,9 @@ export default function BackendRecoveryPrompt() {
           onClick={() => {
             setDismissed(true);
           }}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-current/70 transition hover:bg-black/5 hover:text-current dark:hover:bg-white/10"
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-current/70 transition hover:text-current ${
+            isDark ? "hover:bg-white/10" : "hover:bg-black/5"
+          }`}
           aria-label="Dismiss connection message"
         >
           <X className="h-4 w-4" />
