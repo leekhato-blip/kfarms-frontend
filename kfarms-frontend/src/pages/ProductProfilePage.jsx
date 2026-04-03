@@ -582,50 +582,59 @@ export default function ProductProfilePage() {
         data-reveal
         style={{ "--reveal-delay": "80ms" }}
       >
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="relative overflow-hidden rounded-2xl bg-white/10 dark:bg-darkCard/70 border border-white/10 shadow-neo dark:shadow-dark p-6">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10 opacity-70" />
-            <h2 className="text-xl font-header font-semibold mb-3">
-              No internet? No problem.
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Keep working, record everything, and sync later when network returns.
-            </p>
-            <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-500 dark:text-slate-400">
-              {OFFLINE_BENEFITS.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-lg border border-white/10 bg-white/5 dark:bg-darkCard/70 p-3 shadow-soft dark:shadow-dark"
-                >
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 w-4 h-4 shrink-0 text-emerald-400" />
-                    <span>{item}</span>
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark sm:p-6">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10 opacity-70" />
+          <div className="relative grid gap-5 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
+            <div>
+              <h2 className="text-xl font-header font-semibold">
+                No internet? No problem.
+              </h2>
+              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                Keep working, record everything, and sync later when network returns.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+                {OFFLINE_BENEFITS.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-lg border border-white/10 bg-white/5 p-3 shadow-soft dark:bg-darkCard/70 dark:shadow-dark"
+                  >
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                      <span>{item}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 dark:bg-darkCard/70 p-6 shadow-soft dark:shadow-dark">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-sky-500/10 opacity-60" />
-            <h3 className="font-header font-semibold text-lg mb-3">
-              Made for busy farm days
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              KFarms keeps daily records simple when work is moving fast, teams are spread out, and
-              network is unreliable.
-            </p>
-            <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-500 dark:text-slate-400">
-              {OFFLINE_PANELS.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-lg border border-white/10 bg-white/5 dark:bg-darkCard/70 p-3 shadow-soft dark:shadow-dark"
-                >
-                  <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">
-                    {item.title}
+
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="font-header text-lg font-semibold">
+                  Made for busy farm days
+                </h3>
+                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  Offline-safe flow
+                </span>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                KFarms keeps daily records simple when work is moving fast, teams are spread out,
+                and network is unreliable.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                {OFFLINE_PANELS.map((item) => (
+                  <div
+                    key={item.title}
+                    className="rounded-lg border border-white/10 bg-white/5 p-3 shadow-soft dark:bg-darkCard/70 dark:shadow-dark"
+                  >
+                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                      {item.title}
+                    </div>
+                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      {item.body}
+                    </div>
                   </div>
-                  <div className="mt-2">{item.body}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>

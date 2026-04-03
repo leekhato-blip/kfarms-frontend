@@ -1,6 +1,7 @@
 import React from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  AlertTriangle,
   Bell,
   Building2,
   CheckCircle2,
@@ -13,9 +14,11 @@ import {
   Save,
   Shield,
   Smartphone,
+  Trash2,
   UserCircle2,
 } from "lucide-react";
 import DashboardLayout from "../layouts/DashboardLayout";
+import ConfirmModal from "../components/ConfirmModal";
 import GlassToast from "../components/GlassToast";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
@@ -46,6 +49,7 @@ import {
   getUserPreferences,
   saveOrganizationSettings,
   saveUserPreferences,
+  deleteTenantOwnerAccount,
   updateAccountContact,
   updatePassword,
   verifyAccountContact,
@@ -59,6 +63,9 @@ import {
   looksLikePhoneNumber,
   validateAccountPassword,
 } from "../utils/accountValidation";
+import { normalizeWorkspaceRole } from "../utils/workspaceRoles";
+
+const DELETE_ACCOUNT_CONFIRMATION_TEXT = "DELETE MY ACCOUNT";
 
 const inputClassName =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20 dark:border-white/10 dark:bg-darkCard/70 dark:text-darkText";
@@ -130,9 +137,13 @@ function createAccountContactState(user, payload = {}) {
   const source = payload && typeof payload === "object" ? payload : {};
   const phoneNumber = String(source.phoneNumber || user?.phoneNumber || "").trim();
   const email = String(source.email || user?.email || "").trim();
-  const emailVerified = Boolean(source.emailVerified);
-  const phoneVerified = Boolean(source.phoneVerified);
   const hasPhoneNumber = source.hasPhoneNumber ?? Boolean(phoneNumber);
+  const emailVerified = Boolean(
+    source.emailVerified ?? user?.emailVerified,
+  );
+  const phoneVerified = hasPhoneNumber
+    ? Boolean(source.phoneVerified ?? user?.phoneVerified)
+    : false;
   const verificationRequired =
     source.verificationRequired ??
     (!emailVerified || (hasPhoneNumber && !phoneVerified));
@@ -152,8 +163,9 @@ function createAccountContactState(user, payload = {}) {
 }
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, updateProfile, refreshMe } = useAuth();
+  const { user, updateProfile, refreshMe, logout } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
 
   const [loading, setLoading] = React.useState(true);
@@ -200,12 +212,24 @@ export default function SettingsPage() {
   const [sendingAccountCodes, setSendingAccountCodes] = React.useState(false);
   const [updatingPassword, setUpdatingPassword] = React.useState(false);
   const [verifyingAccountContactState, setVerifyingAccountContactState] = React.useState(false);
+  const [deletingOwnerAccount, setDeletingOwnerAccount] = React.useState(false);
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = React.useState(false);
+  const [deleteAccountForm, setDeleteAccountForm] = React.useState({
+    currentPassword: "",
+    confirmEmail: "",
+    confirmWorkspaceName: "",
+    confirmationText: "",
+    understandsAccessLoss: false,
+    ownershipHandled: false,
+  });
   const [toast, setToast] = React.useState({ message: "", type: "info" });
 
   const userId = user?.id || user?.username || user?.email || "me";
   const currentPlanId = normalizePlanId(activeTenant?.plan, "FREE");
   const currentPlan = getPlanById(currentPlanId, "FREE");
   const isEnterprisePlan = currentPlanId === "ENTERPRISE";
+  const isWorkspaceOwner =
+    normalizeWorkspaceRole(activeTenant?.myRole || activeTenant?.role) === "OWNER";
   const canManageWorkspaceSettings = hasWorkspacePermission(
     activeTenant,
     WORKSPACE_PERMISSIONS.SETTINGS_MANAGE,
@@ -246,30 +270,68 @@ export default function SettingsPage() {
     accountContact.hasPhoneNumber,
     accountContact.phoneVerified,
   ]);
-  const profileCompletionChecklist = React.useMemo(
-    () => [
-      {
-        id: "email",
-        label: "Email verified",
-        complete: accountContact.emailVerified,
-      },
-      {
-        id: "phone-added",
-        label: "Phone added",
-        complete: accountContact.hasPhoneNumber,
-      },
-      {
-        id: "phone-verified",
-        label: "Phone verified",
-        complete: accountContact.phoneVerified,
-      },
-    ],
-    [
-      accountContact.emailVerified,
-      accountContact.hasPhoneNumber,
-      accountContact.phoneVerified,
-    ],
+  const requiresAnyVerification =
+    requiresEmailVerification || requiresPhoneVerification;
+  const deleteAccountChecks = React.useMemo(
+    () => ({
+      emailMatches:
+        deleteAccountForm.confirmEmail.trim().toLowerCase() ===
+        String(user?.email || "")
+          .trim()
+          .toLowerCase(),
+      workspaceMatches:
+        deleteAccountForm.confirmWorkspaceName.trim().toLowerCase() ===
+        String(activeTenant?.name || "")
+          .trim()
+          .toLowerCase(),
+      confirmationMatches:
+        deleteAccountForm.confirmationText.trim().toUpperCase() ===
+        DELETE_ACCOUNT_CONFIRMATION_TEXT,
+      hasPassword: Boolean(deleteAccountForm.currentPassword.trim()),
+    }),
+    [activeTenant?.name, deleteAccountForm, user?.email],
   );
+  const deleteAccountReady =
+    isWorkspaceOwner &&
+    deleteAccountChecks.emailMatches &&
+    deleteAccountChecks.workspaceMatches &&
+    deleteAccountChecks.confirmationMatches &&
+    deleteAccountChecks.hasPassword &&
+    deleteAccountForm.understandsAccessLoss &&
+    deleteAccountForm.ownershipHandled;
+  const verificationSendLabel = React.useMemo(() => {
+    if (requiresEmailVerification && requiresPhoneVerification) {
+      return "Send codes";
+    }
+    if (requiresPhoneVerification) return "Send SMS code";
+    return "Send email code";
+  }, [requiresEmailVerification, requiresPhoneVerification]);
+  const verificationSubmitLabel = React.useMemo(() => {
+    if (requiresEmailVerification && requiresPhoneVerification) {
+      return "Verify codes";
+    }
+    if (requiresPhoneVerification) return "Verify SMS";
+    return "Verify email";
+  }, [requiresEmailVerification, requiresPhoneVerification]);
+  const verificationStatusSummary = React.useMemo(() => {
+    if (!requiresAnyVerification) {
+      return "Your contact details are ready for alerts and account recovery.";
+    }
+    if (requiresEmailVerification && requiresPhoneVerification) {
+      return "Send fresh codes, then enter both to finish setup.";
+    }
+    if (requiresPhoneVerification) {
+      return "Verify the SMS code to enable urgent farm alerts.";
+    }
+    return "Verify the email code to finish your account setup.";
+  }, [
+    requiresAnyVerification,
+    requiresEmailVerification,
+    requiresPhoneVerification,
+  ]);
+  const canSubmitVerification =
+    (!requiresEmailVerification || verificationForm.emailCode.trim()) &&
+    (!requiresPhoneVerification || verificationForm.phoneCode.trim());
   const brandPreviewStyle = React.useMemo(
     () => ({
       borderColor: `${organizationSettings.brandPrimaryColor}40`,
@@ -508,7 +570,7 @@ export default function SettingsPage() {
       await refreshMe().catch(() => null);
       setToast({
         message: updatedContact.hasPhoneNumber
-          ? "Phone number saved. Verify it to receive important alerts."
+          ? "Phone saved. Verify it when you are ready."
           : "Phone number removed. You can add one later from this page.",
         type: "success",
       });
@@ -531,9 +593,13 @@ export default function SettingsPage() {
       setAccountContact(updatedContact);
       setToast({
         message:
-          updatedContact.hasPhoneNumber && !updatedContact.phoneVerified
-            ? "Verification codes sent to your email and phone."
-            : "A fresh email verification code has been sent.",
+          updatedContact.hasPhoneNumber &&
+          !updatedContact.phoneVerified &&
+          !updatedContact.emailVerified
+            ? "Fresh email and SMS codes sent."
+            : updatedContact.hasPhoneNumber && !updatedContact.phoneVerified
+              ? "A fresh SMS code has been sent."
+              : "A fresh email code has been sent.",
         type: "success",
       });
     } catch (error) {
@@ -551,7 +617,7 @@ export default function SettingsPage() {
 
     if (requiresEmailVerification && !verificationForm.emailCode.trim()) {
       setToast({
-        message: "Enter the email code before finishing verification.",
+        message: "Enter the email code first.",
         type: "error",
       });
       return;
@@ -559,7 +625,7 @@ export default function SettingsPage() {
 
     if (requiresPhoneVerification && !verificationForm.phoneCode.trim()) {
       setToast({
-        message: "Enter the SMS code before finishing verification.",
+        message: "Enter the SMS code first.",
         type: "error",
       });
       return;
@@ -577,8 +643,8 @@ export default function SettingsPage() {
       await refreshMe().catch(() => null);
       setToast({
         message: updatedContact.verificationRequired
-          ? "Verification updated. Finish the remaining steps to complete your profile."
-          : "Profile complete. You will now receive important notifications and recovery info.",
+          ? "Verification updated. Finish the remaining step to complete setup."
+          : "Contact details verified. Alerts and recovery updates are now ready.",
         type: "success",
       });
     } catch (error) {
@@ -644,6 +710,59 @@ export default function SettingsPage() {
 
   function resetProfileChanges() {
     setUserProfile(userProfileSnapshot);
+  }
+
+  function handleDeleteAccountFieldChange(field, value) {
+    setDeleteAccountForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  async function handleDeleteOwnerAccount() {
+    if (!deleteAccountReady || deletingOwnerAccount) {
+      return;
+    }
+
+    setDeletingOwnerAccount(true);
+    try {
+      const result = await deleteTenantOwnerAccount({
+        tenantId: activeTenantId,
+        currentPassword: deleteAccountForm.currentPassword,
+        confirmEmail: deleteAccountForm.confirmEmail,
+        confirmWorkspaceName: deleteAccountForm.confirmWorkspaceName,
+        confirmationText: deleteAccountForm.confirmationText,
+      });
+
+      setDeleteAccountModalOpen(false);
+      setDeleteAccountForm({
+        currentPassword: "",
+        confirmEmail: "",
+        confirmWorkspaceName: "",
+        confirmationText: "",
+        understandsAccessLoss: false,
+        ownershipHandled: false,
+      });
+      setToast({
+        message:
+          result?.message ||
+          "Your owner account has been deleted. Signing you out now.",
+        type: "success",
+      });
+      await refreshTenants({ force: true }).catch(() => null);
+      await logout();
+      navigate("/auth/login", { replace: true });
+    } catch (error) {
+      setDeleteAccountModalOpen(false);
+      setToast({
+        message:
+          error?.message ||
+          "Could not delete this owner account right now.",
+        type: "error",
+      });
+    } finally {
+      setDeletingOwnerAccount(false);
+    }
   }
 
   return (
@@ -768,155 +887,126 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-                  <div className="rounded-2xl border border-emerald-300/25 bg-gradient-to-br from-emerald-500/12 via-white/70 to-cyan-500/10 p-4 dark:border-emerald-400/20 dark:from-emerald-500/10 dark:via-white/5 dark:to-cyan-500/10">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
-                          Profile completion
-                        </div>
-                        <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                          {profileCompletion}% complete
+                <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-accent-primary" />
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                          Contact verification
                         </h3>
-                        <p className="mt-2 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">
-                          Verify your email and phone to complete your profile and receive
-                          important notifications, recovery details, and account updates.
-                        </p>
                       </div>
-                      <div className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                        {accountContact.verificationRequired ? "Action needed" : "All set"}
-                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        Keep one email and one alerts number ready. We only ask for the codes you
+                        still need.
+                      </p>
                     </div>
-
-                    <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-accent-primary transition-[width] duration-300"
-                        style={{ width: `${profileCompletion}%` }}
-                      />
-                    </div>
-
-                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                      {profileCompletionChecklist.map((item) => (
-                        <div
-                          key={item.id}
-                          className={cn(
-                            "rounded-2xl border px-3 py-3 text-sm",
-                            item.complete
-                              ? "border-emerald-300/50 bg-emerald-500/10 text-emerald-900 dark:border-emerald-400/30 dark:text-emerald-100"
-                              : "border-slate-200/80 bg-white/70 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300",
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2
-                              className={cn(
-                                "h-4 w-4",
-                                item.complete ? "text-emerald-500" : "text-slate-400",
-                              )}
-                            />
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                      {requiresAnyVerification ? "Action needed" : "All set"}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-white/10 dark:bg-white/5">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-accent-primary" />
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-                        Contact verification
-                      </h3>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 px-4 py-3.5 dark:border-white/10 dark:bg-white/5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            Email
+                          </div>
+                          <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                            {accountContact.email || user?.email || "Not available"}
+                          </div>
+                        </div>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-medium",
+                            accountContact.emailVerified
+                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+                              : "bg-amber-500/10 text-amber-700 dark:text-amber-200",
+                          )}
+                        >
+                          {accountContact.emailVerified ? "Verified" : "Pending"}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="mt-4 space-y-3 text-sm">
-                      <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 dark:border-white/10 dark:bg-white/5">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                              Email
-                            </div>
-                            <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                              {accountContact.email || user?.email || "Not available"}
-                            </div>
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 px-4 py-3.5 dark:border-white/10 dark:bg-white/5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            SMS alerts
                           </div>
-                          <span
-                            className={cn(
-                              "rounded-full px-2.5 py-1 text-xs font-medium",
-                              accountContact.emailVerified
+                          <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                            {accountContact.phoneNumber || "Not added yet"}
+                          </div>
+                        </div>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-medium",
+                            !accountContact.hasPhoneNumber
+                              ? "bg-slate-500/10 text-slate-600 dark:text-slate-300"
+                              : accountContact.phoneVerified
                                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
                                 : "bg-amber-500/10 text-amber-700 dark:text-amber-200",
-                            )}
-                          >
-                            {accountContact.emailVerified ? "Verified" : "Pending"}
-                          </span>
-                        </div>
+                          )}
+                        >
+                          {!accountContact.hasPhoneNumber
+                            ? "Optional"
+                            : accountContact.phoneVerified
+                              ? "Verified"
+                              : "Pending"}
+                        </span>
                       </div>
+                    </div>
+                  </div>
 
+                  <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-white/5">
+                    <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                      Phone number for urgent alerts
+                    </label>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={accountContactDraft}
+                        onChange={(event) => setAccountContactDraft(event.target.value)}
+                        className={inputClassName}
+                        placeholder="+234..."
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveAccountContact}
+                        disabled={!accountContactDirty || savingAccountContact}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-[9rem]"
+                      >
+                        {savingAccountContact ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Smartphone className="h-4 w-4" />
+                        )}
+                        Save number
+                      </button>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Add the number that should receive urgent farm alerts and account recovery
+                      notices.
+                    </p>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-white/5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                          Phone number for alerts
-                        </label>
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                          <input
-                            type="text"
-                            value={accountContactDraft}
-                            onChange={(event) => setAccountContactDraft(event.target.value)}
-                            className={inputClassName}
-                            placeholder="+234..."
-                          />
-                          <button
-                            type="button"
-                            onClick={handleSaveAccountContact}
-                            disabled={!accountContactDirty || savingAccountContact}
-                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {savingAccountContact ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Smartphone className="h-4 w-4" />
-                            )}
-                            Save phone
-                          </button>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          Verification
                         </div>
-                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                          Add the number that should receive urgent farm alerts and account recovery
-                          notices.
+                        <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                          {verificationStatusSummary}
                         </p>
                       </div>
-
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 dark:border-white/10 dark:bg-white/5">
-                          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                            Email status
-                          </div>
-                          <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {accountContact.emailVerified
-                              ? "Ready for account notifications"
-                              : "Verify this email to complete profile setup"}
-                          </div>
-                        </div>
-                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-3 dark:border-white/10 dark:bg-white/5">
-                          <div className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                            Phone status
-                          </div>
-                          <div className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {!accountContact.hasPhoneNumber
-                              ? "Add a phone number to unlock SMS alerts"
-                              : accountContact.phoneVerified
-                                ? "Ready for urgent SMS alerts"
-                                : "Verify this number to receive urgent SMS alerts"}
-                          </div>
-                        </div>
-                      </div>
-
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
                           onClick={handleSendAccountCodes}
-                          disabled={
-                            sendingAccountCodes ||
-                            (!requiresEmailVerification && !requiresPhoneVerification)
-                          }
+                          disabled={sendingAccountCodes || !requiresAnyVerification}
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
                         >
                           {sendingAccountCodes ? (
@@ -924,14 +1014,15 @@ export default function SettingsPage() {
                           ) : (
                             <Mail className="h-4 w-4" />
                           )}
-                          Send verification codes
+                          {verificationSendLabel}
                         </button>
                         <button
                           type="button"
                           onClick={handleVerifyAccountContact}
                           disabled={
                             verifyingAccountContactState ||
-                            (!requiresEmailVerification && !requiresPhoneVerification)
+                            !requiresAnyVerification ||
+                            !canSubmitVerification
                           }
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -940,70 +1031,72 @@ export default function SettingsPage() {
                           ) : (
                             <CheckCircle2 className="h-4 w-4" />
                           )}
-                          Complete verification
+                          {verificationSubmitLabel}
                         </button>
                       </div>
-
-                      {(requiresEmailVerification || requiresPhoneVerification) && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {requiresEmailVerification ? (
-                            <div>
-                              <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                                Email code
-                              </label>
-                              <input
-                                type="text"
-                                value={verificationForm.emailCode}
-                                onChange={(event) =>
-                                  setVerificationForm((prev) => ({
-                                    ...prev,
-                                    emailCode: event.target.value,
-                                  }))
-                                }
-                                className={inputClassName}
-                                placeholder="Enter email code"
-                              />
-                            </div>
-                          ) : null}
-
-                          {requiresPhoneVerification ? (
-                            <div>
-                              <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
-                                SMS code
-                              </label>
-                              <input
-                                type="text"
-                                value={verificationForm.phoneCode}
-                                onChange={(event) =>
-                                  setVerificationForm((prev) => ({
-                                    ...prev,
-                                    phoneCode: event.target.value,
-                                  }))
-                                }
-                                className={inputClassName}
-                                placeholder="Enter SMS code"
-                              />
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
-
-                      {accountContact.preview ? (
-                        <div className="rounded-2xl border border-dashed border-emerald-300/40 bg-emerald-500/8 px-3.5 py-3 text-xs text-emerald-900 dark:border-emerald-400/30 dark:text-emerald-100">
-                          <div className="font-semibold uppercase tracking-[0.16em]">
-                            Preview codes
-                          </div>
-                          <div className="mt-2 space-y-1">
-                            {accountContact.preview.emailCode ? (
-                              <div>Email code: {accountContact.preview.emailCode}</div>
-                            ) : null}
-                            {accountContact.preview.phoneCode ? (
-                              <div>SMS code: {accountContact.preview.phoneCode}</div>
-                            ) : null}
-                          </div>
-                        </div>
-                      ) : null}
                     </div>
+
+                    {requiresAnyVerification ? (
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {requiresEmailVerification ? (
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                              Email code
+                            </label>
+                            <input
+                              type="text"
+                              value={verificationForm.emailCode}
+                              onChange={(event) =>
+                                setVerificationForm((prev) => ({
+                                  ...prev,
+                                  emailCode: event.target.value,
+                                }))
+                              }
+                              className={inputClassName}
+                              placeholder="Enter email code"
+                              inputMode="numeric"
+                            />
+                          </div>
+                        ) : null}
+
+                        {requiresPhoneVerification ? (
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                              SMS code
+                            </label>
+                            <input
+                              type="text"
+                              value={verificationForm.phoneCode}
+                              onChange={(event) =>
+                                setVerificationForm((prev) => ({
+                                  ...prev,
+                                  phoneCode: event.target.value,
+                                }))
+                              }
+                              className={inputClassName}
+                              placeholder="Enter SMS code"
+                              inputMode="numeric"
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {accountContact.preview ? (
+                      <div className="mt-4 rounded-2xl border border-dashed border-emerald-300/40 bg-emerald-500/8 px-3.5 py-3 text-xs text-emerald-900 dark:border-emerald-400/30 dark:text-emerald-100">
+                        <div className="font-semibold uppercase tracking-[0.16em]">
+                          Preview codes
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {accountContact.preview.emailCode ? (
+                            <div>Email code: {accountContact.preview.emailCode}</div>
+                          ) : null}
+                          {accountContact.preview.phoneCode ? (
+                            <div>SMS code: {accountContact.preview.phoneCode}</div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -1739,6 +1832,170 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </form>
+
+                <div className="mt-6 rounded-2xl border border-rose-400/25 bg-rose-500/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-xl bg-rose-500/10 p-2 text-rose-500">
+                      <AlertTriangle className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-header text-base font-semibold text-slate-900 dark:text-slate-100">
+                          Delete owner account
+                        </h3>
+                        <span className="rounded-full border border-rose-400/30 bg-rose-500/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-rose-700 dark:text-rose-200">
+                          Danger zone
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        This is only for tenant owners. If this farm should keep running, transfer
+                        ownership first from the Users page before deleting this account.
+                      </p>
+                    </div>
+                  </div>
+
+                  {!isWorkspaceOwner ? (
+                    <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                      Only workspace owners can request account deletion from here.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                            Current password
+                          </label>
+                          <input
+                            type="password"
+                            autoComplete="current-password"
+                            value={deleteAccountForm.currentPassword}
+                            onChange={(event) =>
+                              handleDeleteAccountFieldChange(
+                                "currentPassword",
+                                event.target.value,
+                              )
+                            }
+                            className={inputClassName}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                            Confirm your email
+                          </label>
+                          <input
+                            type="email"
+                            value={deleteAccountForm.confirmEmail}
+                            onChange={(event) =>
+                              handleDeleteAccountFieldChange(
+                                "confirmEmail",
+                                event.target.value,
+                              )
+                            }
+                            className={inputClassName}
+                            placeholder={user?.email || "you@example.com"}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                            Type workspace name
+                          </label>
+                          <input
+                            type="text"
+                            value={deleteAccountForm.confirmWorkspaceName}
+                            onChange={(event) =>
+                              handleDeleteAccountFieldChange(
+                                "confirmWorkspaceName",
+                                event.target.value,
+                              )
+                            }
+                            className={inputClassName}
+                            placeholder={activeTenant?.name || "Workspace name"}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+                            Final confirmation text
+                          </label>
+                          <input
+                            type="text"
+                            value={deleteAccountForm.confirmationText}
+                            onChange={(event) =>
+                              handleDeleteAccountFieldChange(
+                                "confirmationText",
+                                event.target.value,
+                              )
+                            }
+                            className={inputClassName}
+                            placeholder={DELETE_ACCOUNT_CONFIRMATION_TEXT}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-2">
+                        <label className="inline-flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={deleteAccountForm.understandsAccessLoss}
+                            onChange={(event) =>
+                              handleDeleteAccountFieldChange(
+                                "understandsAccessLoss",
+                                event.target.checked,
+                              )
+                            }
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                          />
+                          I understand that deleting this owner account removes my login and farm
+                          access immediately.
+                        </label>
+                        <label className="inline-flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={deleteAccountForm.ownershipHandled}
+                            onChange={(event) =>
+                              handleDeleteAccountFieldChange(
+                                "ownershipHandled",
+                                event.target.checked,
+                              )
+                            }
+                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                          />
+                          I have transferred ownership already, or I understand this can leave the
+                          farm without an owner.
+                        </label>
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                        <div className="text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                          Safety checklist
+                        </div>
+                        <div className="mt-2 grid gap-2 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+                          <div>{deleteAccountChecks.hasPassword ? "OK" : "Missing"} current password</div>
+                          <div>{deleteAccountChecks.emailMatches ? "OK" : "Check"} exact account email</div>
+                          <div>{deleteAccountChecks.workspaceMatches ? "OK" : "Check"} exact workspace name</div>
+                          <div>{deleteAccountChecks.confirmationMatches ? "OK" : "Type"} {DELETE_ACCOUNT_CONFIRMATION_TEXT}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          disabled={!deleteAccountReady || deletingOwnerAccount}
+                          onClick={() => setDeleteAccountModalOpen(true)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete owner account
+                        </button>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          We only enable the final step after every confirmation check is complete.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </section>
             </div>
 
@@ -1789,7 +2046,11 @@ export default function SettingsPage() {
                       </p>
                       <p className="text-slate-700 dark:text-slate-200">
                         Email {accountContact.emailVerified ? "verified" : "pending"} · Phone{" "}
-                        {accountContact.phoneVerified ? "verified" : "pending"}
+                        {accountContact.hasPhoneNumber
+                          ? accountContact.phoneVerified
+                            ? "verified"
+                            : "pending"
+                          : "not added"}
                       </p>
                     </div>
                     <div>
@@ -1894,6 +2155,20 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteAccountModalOpen}
+        title="Delete owner account"
+        message={`Delete the owner account for ${activeTenant?.name || "this workspace"}? This removes your login and workspace access immediately. If the farm should keep running, transfer ownership first.`}
+        confirmText="Delete account"
+        cancelText="Keep account"
+        loading={deletingOwnerAccount}
+        onCancel={() => {
+          if (deletingOwnerAccount) return;
+          setDeleteAccountModalOpen(false);
+        }}
+        onConfirm={handleDeleteOwnerAccount}
+      />
 
       <GlassToast
         message={toast.message}

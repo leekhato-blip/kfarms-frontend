@@ -27,7 +27,6 @@ import {
   unwrapApiResponse,
 } from "../../api/platformClient";
 import {
-  PLATFORM_CONTROL_SETTINGS_CHANGED_EVENT,
   PLATFORM_CONTROL_SETTINGS_KEY,
 } from "../../constants/platformControlSettings";
 import { TIMEZONE_OPTIONS } from "../../constants/settings";
@@ -41,7 +40,19 @@ import {
   resolvePlatformAccessTier,
   resolvePlatformUserEnabled,
 } from "./platformInsights";
-import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
+import {
+  buildPlatformDemoSnapshot,
+  buildPlatformLiveSnapshot,
+  getPlatformCatalogApps,
+} from "./platformWorkbench";
+import { writePlatformControlSettings } from "../../utils/platformControlStore";
+import {
+  DEFAULT_PROMOTION_APP_ID,
+  getAppPromotion,
+  getPromotionPreview,
+  normalizePlatformPromotions,
+  updateAppPromotion,
+} from "../../utils/platformPromotions";
 
 const FALLBACK_OVERVIEW = {
   totalTenants: 0,
@@ -63,11 +74,7 @@ const DEFAULT_PLATFORM_CONTROL_SETTINGS = Object.freeze({
   revenueVisibility: true,
   riskyActionConfirmation: true,
   maintenanceBannerEnabled: false,
-  bonanzaEnabled: true,
-  bonanzaType: "discount",
-  bonanzaDiscountPrice: "7000",
-  bonanzaDurationDays: "30",
-  bonanzaTrialMonths: "1",
+  promotions: normalizePlatformPromotions({}),
 });
 
 const DEFAULT_PLATFORM_ACCOUNT_SETTINGS = Object.freeze({
@@ -215,23 +222,7 @@ function normalizePlatformControlSettings(settings = {}) {
     maintenanceBannerEnabled:
       settings.maintenanceBannerEnabled ??
       DEFAULT_PLATFORM_CONTROL_SETTINGS.maintenanceBannerEnabled,
-    bonanzaEnabled:
-      settings.bonanzaEnabled ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaEnabled,
-    bonanzaType: String(
-      settings.bonanzaType ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaType,
-    ).trim(),
-    bonanzaDiscountPrice: String(
-      settings.bonanzaDiscountPrice ??
-        DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaDiscountPrice,
-    ).trim(),
-    bonanzaDurationDays: String(
-      settings.bonanzaDurationDays ??
-        DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaDurationDays,
-    ).trim(),
-    bonanzaTrialMonths: String(
-      settings.bonanzaTrialMonths ??
-        DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaTrialMonths,
-    ).trim(),
+    promotions: normalizePlatformPromotions(settings),
   };
 }
 
@@ -317,6 +308,9 @@ export default function PlatformSettingsPage() {
       normalizePlatformControlSettings,
     ),
   );
+  const [selectedPromotionAppId, setSelectedPromotionAppId] = React.useState(
+    DEFAULT_PROMOTION_APP_ID,
+  );
   const [accountSettings, setAccountSettings] = React.useState(() =>
     readStoredState(
       PLATFORM_ACCOUNT_SETTINGS_KEY,
@@ -330,6 +324,22 @@ export default function PlatformSettingsPage() {
   const [userProfileSnapshot, setUserProfileSnapshot] = React.useState(() =>
     createPlatformUserProfileDraft(currentUser),
   );
+  const promotionApps = React.useMemo(
+    () => getPlatformCatalogApps(customApps),
+    [customApps],
+  );
+
+  React.useEffect(() => {
+    if (!promotionApps.length) return;
+
+    if (promotionApps.some((app) => app.id === selectedPromotionAppId)) {
+      return;
+    }
+
+    setSelectedPromotionAppId(
+      promotionApps[0]?.id || DEFAULT_PROMOTION_APP_ID,
+    );
+  }, [promotionApps, selectedPromotionAppId]);
 
   const loadOverview = React.useCallback(async () => {
     setLoading(true);
@@ -405,35 +415,36 @@ export default function PlatformSettingsPage() {
     platformSettings.releaseChannel,
     platformSettings.releaseChannel,
   );
+  const selectedPromotionApp = React.useMemo(
+    () =>
+      promotionApps.find((app) => app.id === selectedPromotionAppId) ||
+      promotionApps[0] ||
+      null,
+    [promotionApps, selectedPromotionAppId],
+  );
+  const selectedPromotion = React.useMemo(
+    () =>
+      getAppPromotion(platformSettings, {
+        appId: selectedPromotionApp?.id || DEFAULT_PROMOTION_APP_ID,
+      }),
+    [platformSettings, selectedPromotionApp],
+  );
   const bonanzaTypeLabel = findLabel(
     BONANZA_TYPE_OPTIONS,
-    platformSettings.bonanzaType,
-    platformSettings.bonanzaType,
+    selectedPromotion.type,
+    selectedPromotion.type,
   );
   const bonanzaDurationLabel = findLabel(
     BONANZA_DURATION_OPTIONS,
-    platformSettings.bonanzaDurationDays,
-    platformSettings.bonanzaDurationDays,
-  );
-  const bonanzaTrialLabel = findLabel(
-    BONANZA_TRIAL_OPTIONS,
-    platformSettings.bonanzaTrialMonths,
-    platformSettings.bonanzaTrialMonths,
+    selectedPromotion.durationDays,
+    selectedPromotion.durationDays,
   );
   const bonanzaPreview = React.useMemo(() => {
-    if (platformSettings.bonanzaType === "trial") {
-      return `Give new farms ${bonanzaTrialLabel.toLowerCase()} free before billing starts, then move them onto the normal price.`;
-    }
-    if (platformSettings.bonanzaType === "bonus-month") {
-      return `Offer an extra free month when a farm commits early, for example after taking a yearly plan.`;
-    }
-    return `Temporarily reduce Pro from NGN 10,000 to NGN ${platformSettings.bonanzaDiscountPrice || "7,000"} for ${bonanzaDurationLabel.toLowerCase()}.`;
-  }, [
-    bonanzaDurationLabel,
-    bonanzaTrialLabel,
-    platformSettings.bonanzaDiscountPrice,
-    platformSettings.bonanzaType,
-  ]);
+    return getPromotionPreview(selectedPromotion, {
+      appName: selectedPromotionApp?.name || "this app",
+      planLabel: selectedPromotion.planId,
+    });
+  }, [selectedPromotion, selectedPromotionApp]);
   const profileDirty = !isSame(userProfile, userProfileSnapshot);
   const activeSectionMeta =
     PLATFORM_SETTINGS_SECTIONS.find((section) => section.id === activeSection) ||
@@ -469,11 +480,8 @@ export default function PlatformSettingsPage() {
   function savePlatformSettings() {
     const nextSettings = normalizePlatformControlSettings(platformSettings);
     setSavingPlatform(true);
-    writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
+    writePlatformControlSettings(nextSettings);
     setPlatformSettings(nextSettings);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(PLATFORM_CONTROL_SETTINGS_CHANGED_EVENT));
-    }
     window.setTimeout(() => {
       setSavingPlatform(false);
       notify(
@@ -499,10 +507,7 @@ export default function PlatformSettingsPage() {
       DEFAULT_PLATFORM_CONTROL_SETTINGS,
     );
     setPlatformSettings(nextSettings);
-    writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(PLATFORM_CONTROL_SETTINGS_CHANGED_EVENT));
-    }
+    writePlatformControlSettings(nextSettings);
     notify("Platform settings reset.", "info");
   }
 
@@ -541,6 +546,26 @@ export default function PlatformSettingsPage() {
     } finally {
       setSavingProfile(false);
     }
+  }
+
+  function updateBonanzaSettings(updater) {
+    setPlatformSettings((current) => {
+      const currentPromotion = getAppPromotion(current, {
+        appId: selectedPromotionApp?.id || DEFAULT_PROMOTION_APP_ID,
+      });
+      const patch =
+        typeof updater === "function" ? updater(currentPromotion) : updater;
+      const nextSettings = normalizePlatformControlSettings({
+        ...current,
+        promotions: updateAppPromotion(
+          current.promotions,
+          selectedPromotionApp?.id || DEFAULT_PROMOTION_APP_ID,
+          patch,
+        ),
+      });
+      writePlatformControlSettings(nextSettings);
+      return nextSettings;
+    });
   }
 
   function resetUserProfile() {
@@ -766,8 +791,8 @@ export default function PlatformSettingsPage() {
                       Plan temporary promos from the platform side
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
-                      This helps us map short-term offers like a reduced intro price, a free trial
-                      month, or an extra free month before we wire the billing automation.
+                      Keep promo settings per app, so KFarms can run one offer now and future apps
+                      can carry their own pricing ideas later without sharing the same draft.
                     </p>
                   </div>
                   <div className="rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] px-4 py-3">
@@ -775,10 +800,11 @@ export default function PlatformSettingsPage() {
                       Draft status
                     </div>
                     <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {platformSettings.bonanzaEnabled ? "Bonanza ready" : "No active draft"}
+                      {selectedPromotion.enabled ? "Bonanza ready" : "No active draft"}
                     </div>
                     <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                      {bonanzaTypeLabel} · {bonanzaDurationLabel}
+                      {(selectedPromotionApp?.name || "Selected app")} · {bonanzaTypeLabel} ·{" "}
+                      {bonanzaDurationLabel}
                     </div>
                   </div>
                 </div>
@@ -786,29 +812,61 @@ export default function PlatformSettingsPage() {
                 <div className="mt-4 space-y-3">
                   <ToggleRow
                     label="Bonanza draft"
-                    hint="Keep a promotional offer ready for campaigns, launches, or seasonal pushes."
-                    checked={platformSettings.bonanzaEnabled}
+                    hint="Turn this on only for the app you are editing right now."
+                    checked={selectedPromotion.enabled}
                     onChange={(checked) =>
-                      setPlatformSettings((current) => ({
-                        ...current,
-                        bonanzaEnabled: checked,
-                      }))
+                      updateBonanzaSettings({ enabled: checked })
                     }
                   />
                 </div>
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <SettingsField
+                    label="App"
+                    hint="Pick the app that should receive this promo draft."
+                  >
+                    <select
+                      value={selectedPromotionApp?.id || DEFAULT_PROMOTION_APP_ID}
+                      onChange={(event) => setSelectedPromotionAppId(event.target.value)}
+                      className={inputClassName}
+                    >
+                      {promotionApps.map((app) => (
+                        <option key={app.id} value={app.id}>
+                          {app.name}
+                        </option>
+                      ))}
+                    </select>
+                  </SettingsField>
+
+                  <SettingsField
+                    label="Target plan"
+                    hint="Use a plan code or price lane name for the selected app."
+                  >
+                    <input
+                      type="text"
+                      value={selectedPromotion.planId}
+                      onChange={(event) =>
+                        updateBonanzaSettings({
+                          enabled: true,
+                          planId: event.target.value,
+                        })
+                      }
+                      className={inputClassName}
+                      placeholder="PRO"
+                    />
+                  </SettingsField>
+
                   <SettingsField
                     label="Offer type"
                     hint="Choose the type of promo you want to run."
                   >
                     <select
-                      value={platformSettings.bonanzaType}
+                      value={selectedPromotion.type}
                       onChange={(event) =>
-                        setPlatformSettings((current) => ({
-                          ...current,
-                          bonanzaType: event.target.value,
-                        }))
+                        updateBonanzaSettings({
+                          enabled: true,
+                          type: event.target.value,
+                        })
                       }
                       className={inputClassName}
                     >
@@ -825,12 +883,12 @@ export default function PlatformSettingsPage() {
                     hint="How long the bonanza should stay available."
                   >
                     <select
-                      value={platformSettings.bonanzaDurationDays}
+                      value={selectedPromotion.durationDays}
                       onChange={(event) =>
-                        setPlatformSettings((current) => ({
-                          ...current,
-                          bonanzaDurationDays: event.target.value,
-                        }))
+                        updateBonanzaSettings({
+                          enabled: true,
+                          durationDays: event.target.value,
+                        })
                       }
                       className={inputClassName}
                     >
@@ -842,19 +900,19 @@ export default function PlatformSettingsPage() {
                     </select>
                   </SettingsField>
 
-                  {platformSettings.bonanzaType === "discount" ? (
+                  {selectedPromotion.type === "discount" ? (
                     <SettingsField
-                      label="Promo Pro price"
-                      hint="Use this to plan a temporary drop, for example from NGN 10,000 to NGN 7,000."
+                      label="Promo price"
+                      hint="Use this to plan a temporary drop like NGN 10,000 to NGN 7,000."
                     >
                       <input
                         type="text"
-                        value={platformSettings.bonanzaDiscountPrice}
+                        value={selectedPromotion.discountPrice}
                         onChange={(event) =>
-                          setPlatformSettings((current) => ({
-                            ...current,
-                            bonanzaDiscountPrice: event.target.value,
-                          }))
+                          updateBonanzaSettings({
+                            enabled: true,
+                            discountPrice: event.target.value,
+                          })
                         }
                         className={inputClassName}
                         placeholder="7000"
@@ -862,18 +920,18 @@ export default function PlatformSettingsPage() {
                     </SettingsField>
                   ) : null}
 
-                  {platformSettings.bonanzaType === "trial" ? (
+                  {selectedPromotion.type === "trial" ? (
                     <SettingsField
                       label="Free trial length"
                       hint="Give farms some time before the first paid billing cycle starts."
                     >
                       <select
-                        value={platformSettings.bonanzaTrialMonths}
+                        value={selectedPromotion.trialMonths}
                         onChange={(event) =>
-                          setPlatformSettings((current) => ({
-                            ...current,
-                            bonanzaTrialMonths: event.target.value,
-                          }))
+                          updateBonanzaSettings({
+                            enabled: true,
+                            trialMonths: event.target.value,
+                          })
                         }
                         className={inputClassName}
                       >
@@ -892,10 +950,14 @@ export default function PlatformSettingsPage() {
                     Current bonanza plan
                   </div>
                   <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                    {bonanzaTypeLabel}
+                    {(selectedPromotionApp?.name || "Selected app")} · {selectedPromotion.planId}
                   </div>
                   <p className="mt-1 text-sm leading-6 text-[var(--atlas-muted)]">
                     {bonanzaPreview}
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--atlas-muted)]">
+                    KFarms reads this promo into its live pricing cards now. Other apps can keep
+                    their own drafts here until their billing pages are ready.
                   </p>
                   <div className="mt-3 grid gap-2 text-xs text-[var(--atlas-muted)] md:grid-cols-3">
                     <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-3 py-2">

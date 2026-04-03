@@ -1435,20 +1435,6 @@ export default function UsersPage() {
           <Badge kind="active" value={member.active ? "ENABLED" : "DISABLED"} />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <WorkspaceRolePill role={currentRole} />
-          {isCurrentUser(member) ? (
-            <div className="inline-flex rounded-full border border-sky-300/40 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-600 dark:text-sky-100">
-              You
-            </div>
-          ) : null}
-          {roleDisplay.isCustom ? (
-            <div className="inline-flex rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-              {roleDisplay.label}
-            </div>
-          ) : null}
-        </div>
-
         {member.createdBy ? (
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Added by {member.createdBy}
@@ -1456,6 +1442,21 @@ export default function UsersPage() {
         ) : null}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <MobileField label="Access lane">
+            <div className="flex flex-wrap gap-1.5">
+              <WorkspaceRolePill role={currentRole} />
+              {isCurrentUser(member) ? (
+                <div className="inline-flex items-center rounded-full border border-sky-300/40 bg-sky-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-700 dark:text-sky-100">
+                  You
+                </div>
+              ) : null}
+              {roleDisplay.isCustom ? (
+                <div className="inline-flex items-center rounded-full border border-slate-200/70 bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
+                  {roleDisplay.label}
+                </div>
+              ) : null}
+            </div>
+          </MobileField>
           <MobileField label="Status">
             {member.active
               ? "Can access this workspace"
@@ -1526,7 +1527,7 @@ export default function UsersPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                  Enterprise access
+                  Access details
                 </div>
                 <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">
                   {permissionSummary.length} active permission
@@ -1747,25 +1748,25 @@ export default function UsersPage() {
       ? {
           icon: Users,
           title: canViewAudit
-            ? "How to manage team access and review audit history"
-            : "How to manage your farm team",
+            ? "Understand team access faster"
+            : "Understand your farm team faster",
           description: canViewAudit
-            ? "Use this page to invite teammates, adjust roles, and review the access history behind every change."
-            : "Use this page to invite teammates, adjust roles, and keep access tidy as your farm grows.",
+            ? "See who already has access, who is still waiting on an invite, and what changed over time."
+            : "See who already has access, who is still waiting on an invite, and what each person can do.",
           steps: [
-            "Invite teammates with the lowest role they need for their work.",
-            "Use the Members tab for live access and the Invitations tab for pending onboarding.",
+            "Start with the access cards so you know your role, active teammates, and pending invites at a glance.",
+            "Use Members for people who can already sign in and Invitations for people who are still joining.",
             ...(canViewAudit
-              ? ["Use Audit log to review role changes, invite activity, and access updates over time."]
-              : ["Review member roles and pending invites regularly so access stays clean."]),
+              ? ["Use Audit log when you need to explain role changes, invite activity, or access updates."]
+              : ["Keep roles small and clear so workers only see what they need."]),
           ],
           tip: canViewAudit
-            ? "Owners stay protected here, and the audit log gives you a clean trail for each access change."
-            : "Owners stay protected here, and only admins can change team access.",
+            ? "If something feels unclear, check the access lane on the member card first, then the audit log."
+            : "If something feels unclear, start from the access lane on each member card before changing roles.",
         }
       : {
           icon: History,
-          title: "How to use the audit log",
+          title: "Understand the audit log faster",
           description:
             "Use this page to review invitation activity, role changes, and access updates recorded for this workspace.",
           steps: [
@@ -1845,13 +1846,16 @@ export default function UsersPage() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="relative z-10 mt-4 grid grid-cols-3 gap-2 sm:gap-3">
             <div className={`${insetPanelClass} px-3 py-2.5`}>
               <p className="text-[11px] uppercase tracking-[0.14em] text-slate-600/80 dark:text-slate-300/70">
                 Your access
               </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {getWorkspaceRoleLabel(tenantRole)}
+              </p>
+              <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
+                Current role
               </p>
             </div>
             {canViewUsers ? (
@@ -1861,10 +1865,10 @@ export default function UsersPage() {
                     Active access
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {formatNumber(activeMemberCount)} of {formatNumber(members.length)}
+                    {formatNumber(activeMemberCount)}/{formatNumber(members.length)}
                   </p>
-                  <p className="mt-1 text-xs text-slate-600/80 dark:text-slate-300/80">
-                    Teammates who can sign in right now
+                  <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
+                    Can sign in now
                   </p>
                 </div>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
@@ -1873,9 +1877,11 @@ export default function UsersPage() {
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatNumber(invitations.length)}
+                  </p>
+                  <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
                     {expiringSoonInviteCount > 0
-                      ? ` · ${formatNumber(expiringSoonInviteCount)} expiring soon`
-                      : ""}
+                      ? `${formatNumber(expiringSoonInviteCount)} expiring soon`
+                      : "Waiting to join"}
                   </p>
                 </div>
               </>
@@ -1889,6 +1895,9 @@ export default function UsersPage() {
                     {AUDIT_ACTION_OPTIONS.find((option) => option.value === auditAction)?.label ||
                       "All activity"}
                   </p>
+                  <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
+                    Current filter
+                  </p>
                 </div>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
                   <p className="text-[11px] uppercase tracking-[0.14em] text-slate-600/80 dark:text-slate-300/70">
@@ -1896,6 +1905,9 @@ export default function UsersPage() {
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatNumber(auditTotalItems)}
+                  </p>
+                  <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
+                    Events found
                   </p>
                 </div>
               </>

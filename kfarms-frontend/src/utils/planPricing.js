@@ -1,66 +1,50 @@
 import { PLAN_TIER_CONFIG, normalizePlanId } from "../constants/plans";
-import { PLATFORM_CONTROL_SETTINGS_KEY } from "../constants/platformControlSettings";
+import { readPlatformControlSettings } from "./platformControlStore";
+import {
+  DEFAULT_PROMOTION_APP_ID,
+  getAppPromotion,
+  normalizeAppPromotion,
+  formatPromotionPrice,
+} from "./platformPromotions";
 
-const DEFAULT_PROMO_SETTINGS = Object.freeze({
-  bonanzaEnabled: true,
-  bonanzaType: "discount",
-  bonanzaDiscountPrice: "7000",
-  bonanzaDurationDays: "30",
-  bonanzaTrialMonths: "1",
-});
-
-function formatNaira(value) {
-  const numeric = Number(String(value || "").replace(/[^\d.]/g, ""));
-  if (!Number.isFinite(numeric) || numeric <= 0) return "";
-  return `NGN ${numeric.toLocaleString("en-NG")}`;
-}
-
-export function normalizePlanPromoSettings(settings = {}) {
-  return {
-    bonanzaEnabled:
-      settings.bonanzaEnabled ?? DEFAULT_PROMO_SETTINGS.bonanzaEnabled,
-    bonanzaType: String(
-      settings.bonanzaType ?? DEFAULT_PROMO_SETTINGS.bonanzaType,
-    ).trim(),
-    bonanzaDiscountPrice: String(
-      settings.bonanzaDiscountPrice ??
-        DEFAULT_PROMO_SETTINGS.bonanzaDiscountPrice,
-    ).trim(),
-    bonanzaDurationDays: String(
-      settings.bonanzaDurationDays ?? DEFAULT_PROMO_SETTINGS.bonanzaDurationDays,
-    ).trim(),
-    bonanzaTrialMonths: String(
-      settings.bonanzaTrialMonths ?? DEFAULT_PROMO_SETTINGS.bonanzaTrialMonths,
-    ).trim(),
-  };
-}
-
-export function readPlanPromoSettings() {
-  if (typeof window === "undefined") {
-    return normalizePlanPromoSettings(DEFAULT_PROMO_SETTINGS);
+export function normalizePlanPromoSettings(settings = {}, planId = "PRO") {
+  if (
+    settings &&
+    typeof settings === "object" &&
+    !Object.prototype.hasOwnProperty.call(settings, "promotions") &&
+    (Object.prototype.hasOwnProperty.call(settings, "discountPrice") ||
+      Object.prototype.hasOwnProperty.call(settings, "type") ||
+      Object.prototype.hasOwnProperty.call(settings, "trialMonths") ||
+      Object.prototype.hasOwnProperty.call(settings, "durationDays"))
+  ) {
+    return normalizeAppPromotion(settings, {
+      appId: DEFAULT_PROMOTION_APP_ID,
+      planId,
+    });
   }
 
-  try {
-    const raw = window.localStorage.getItem(PLATFORM_CONTROL_SETTINGS_KEY);
-    if (!raw) return normalizePlanPromoSettings(DEFAULT_PROMO_SETTINGS);
-    return normalizePlanPromoSettings(JSON.parse(raw));
-  } catch {
-    return normalizePlanPromoSettings(DEFAULT_PROMO_SETTINGS);
-  }
+  return getAppPromotion(settings, {
+    appId: DEFAULT_PROMOTION_APP_ID,
+    planId,
+  });
 }
 
-export function getDisplayPlan(plan, promoSettings = readPlanPromoSettings()) {
-  const promo = normalizePlanPromoSettings(promoSettings);
+export function readPlanPromoSettings(planId = "PRO") {
+  return normalizePlanPromoSettings(readPlatformControlSettings(), planId);
+}
+
+export function getDisplayPlan(plan, promoSettings = readPlatformControlSettings()) {
+  const promo = normalizePlanPromoSettings(promoSettings, plan?.id || "PRO");
   const nextPlan = { ...plan, compareAtPriceLabel: "" };
 
-  if (plan.id !== "PRO" || !promo.bonanzaEnabled) {
+  if (plan.id !== promo.planId || !promo.enabled) {
     return nextPlan;
   }
 
   const regularPriceLabel = plan.priceLabel;
 
-  if (promo.bonanzaType === "trial") {
-    const months = Number(promo.bonanzaTrialMonths || 1);
+  if (promo.type === "trial") {
+    const months = Number(promo.trialMonths || 1);
     const monthLabel = months === 1 ? "month" : "months";
     return {
       ...nextPlan,
@@ -71,7 +55,7 @@ export function getDisplayPlan(plan, promoSettings = readPlanPromoSettings()) {
     };
   }
 
-  if (promo.bonanzaType === "bonus-month") {
+  if (promo.type === "bonus-month") {
     return {
       ...nextPlan,
       priceLabel: regularPriceLabel,
@@ -83,22 +67,22 @@ export function getDisplayPlan(plan, promoSettings = readPlanPromoSettings()) {
   return {
     ...nextPlan,
     compareAtPriceLabel: regularPriceLabel,
-    priceLabel: formatNaira(promo.bonanzaDiscountPrice) || "NGN 7,000",
+    priceLabel: formatPromotionPrice(promo.discountPrice) || "NGN 7,000",
     cycleLabel: "intro price per month",
-    promoNote: `Regular price returns after ${promo.bonanzaDurationDays || "30"} days`,
+    promoNote: `Regular price returns after ${promo.durationDays || "30"} days`,
   };
 }
 
 export function getDisplayPlanCatalog(
   basePlans = PLAN_TIER_CONFIG,
-  promoSettings = readPlanPromoSettings(),
+  promoSettings = readPlatformControlSettings(),
 ) {
   return basePlans.map((plan) => getDisplayPlan(plan, promoSettings));
 }
 
 export function getDisplayPlanById(
   planId,
-  promoSettings = readPlanPromoSettings(),
+  promoSettings = readPlatformControlSettings(),
   fallback = "FREE",
 ) {
   const normalizedPlanId = normalizePlanId(planId, fallback);

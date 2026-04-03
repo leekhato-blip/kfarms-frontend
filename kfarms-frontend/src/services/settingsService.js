@@ -18,6 +18,7 @@ const SETTINGS_ENDPOINTS = {
   accountContact: "/settings/account-contact",
   accountContactSendCodes: "/settings/account-contact/send-codes",
   accountContactVerify: "/settings/account-contact/verify",
+  accountDelete: "/settings/account",
 };
 
 function normalizeAccountContactStatus(payload) {
@@ -279,6 +280,41 @@ export async function verifyAccountContact({ emailCode, phoneCode } = {}) {
   } catch (error) {
     throw new Error(
       extractErrorMessage(error, "Could not verify those contact codes."),
+    );
+  }
+}
+
+export async function deleteTenantOwnerAccount({
+  tenantId,
+  currentPassword,
+  confirmEmail,
+  confirmWorkspaceName,
+  confirmationText,
+} = {}) {
+  if (!tenantId) {
+    throw new Error("Choose a workspace before deleting an owner account.");
+  }
+
+  try {
+    const response = await apiClient.delete(SETTINGS_ENDPOINTS.accountDelete, {
+      data: {
+        tenantId,
+        currentPassword: String(currentPassword || "").trim(),
+        confirmEmail: String(confirmEmail || "").trim(),
+        confirmWorkspaceName: String(confirmWorkspaceName || "").trim(),
+        confirmationText: String(confirmationText || "").trim(),
+      },
+    });
+    return response.data?.data ?? response.data ?? {};
+  } catch (error) {
+    if (Number(error?.response?.status || 0) === 404) {
+      throw new Error(
+        "Delete account is not live on the backend yet. The safety flow is ready, but the API still needs final support.",
+      );
+    }
+
+    throw new Error(
+      extractErrorMessage(error, "Could not delete this owner account."),
     );
   }
 }
