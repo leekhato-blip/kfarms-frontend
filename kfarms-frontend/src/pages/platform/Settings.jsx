@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Shield,
   SlidersHorizontal,
+  Sparkles,
   UserCircle2,
   Users,
 } from "lucide-react";
@@ -25,6 +26,10 @@ import {
   platformAxios,
   unwrapApiResponse,
 } from "../../api/platformClient";
+import {
+  PLATFORM_CONTROL_SETTINGS_CHANGED_EVENT,
+  PLATFORM_CONTROL_SETTINGS_KEY,
+} from "../../constants/platformControlSettings";
 import { TIMEZONE_OPTIONS } from "../../constants/settings";
 import {
   createPlatformUserProfileDraft,
@@ -46,7 +51,6 @@ const FALLBACK_OVERVIEW = {
   platformAdmins: 0,
 };
 
-const PLATFORM_CONTROL_SETTINGS_KEY = "kf_platform_control_settings";
 const PLATFORM_ACCOUNT_SETTINGS_KEY = "kf_platform_account_settings";
 
 const DEFAULT_PLATFORM_CONTROL_SETTINGS = Object.freeze({
@@ -59,6 +63,11 @@ const DEFAULT_PLATFORM_CONTROL_SETTINGS = Object.freeze({
   revenueVisibility: true,
   riskyActionConfirmation: true,
   maintenanceBannerEnabled: false,
+  bonanzaEnabled: true,
+  bonanzaType: "discount",
+  bonanzaDiscountPrice: "7000",
+  bonanzaDurationDays: "30",
+  bonanzaTrialMonths: "1",
 });
 
 const DEFAULT_PLATFORM_ACCOUNT_SETTINGS = Object.freeze({
@@ -82,6 +91,26 @@ const AUDIT_RETENTION_OPTIONS = Object.freeze([
   { value: "90", label: "90 days" },
   { value: "180", label: "180 days" },
   { value: "365", label: "365 days" },
+]);
+
+const BONANZA_TYPE_OPTIONS = Object.freeze([
+  { value: "discount", label: "Temporary discount" },
+  { value: "trial", label: "Free trial month" },
+  { value: "bonus-month", label: "Extra free month" },
+]);
+
+const BONANZA_DURATION_OPTIONS = Object.freeze([
+  { value: "7", label: "7 days" },
+  { value: "14", label: "14 days" },
+  { value: "30", label: "30 days" },
+  { value: "60", label: "60 days" },
+  { value: "90", label: "90 days" },
+]);
+
+const BONANZA_TRIAL_OPTIONS = Object.freeze([
+  { value: "1", label: "1 month" },
+  { value: "2", label: "2 months" },
+  { value: "3", label: "3 months" },
 ]);
 
 const PLATFORM_START_PAGE_OPTIONS = Object.freeze([
@@ -186,6 +215,23 @@ function normalizePlatformControlSettings(settings = {}) {
     maintenanceBannerEnabled:
       settings.maintenanceBannerEnabled ??
       DEFAULT_PLATFORM_CONTROL_SETTINGS.maintenanceBannerEnabled,
+    bonanzaEnabled:
+      settings.bonanzaEnabled ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaEnabled,
+    bonanzaType: String(
+      settings.bonanzaType ?? DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaType,
+    ).trim(),
+    bonanzaDiscountPrice: String(
+      settings.bonanzaDiscountPrice ??
+        DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaDiscountPrice,
+    ).trim(),
+    bonanzaDurationDays: String(
+      settings.bonanzaDurationDays ??
+        DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaDurationDays,
+    ).trim(),
+    bonanzaTrialMonths: String(
+      settings.bonanzaTrialMonths ??
+        DEFAULT_PLATFORM_CONTROL_SETTINGS.bonanzaTrialMonths,
+    ).trim(),
   };
 }
 
@@ -359,6 +405,35 @@ export default function PlatformSettingsPage() {
     platformSettings.releaseChannel,
     platformSettings.releaseChannel,
   );
+  const bonanzaTypeLabel = findLabel(
+    BONANZA_TYPE_OPTIONS,
+    platformSettings.bonanzaType,
+    platformSettings.bonanzaType,
+  );
+  const bonanzaDurationLabel = findLabel(
+    BONANZA_DURATION_OPTIONS,
+    platformSettings.bonanzaDurationDays,
+    platformSettings.bonanzaDurationDays,
+  );
+  const bonanzaTrialLabel = findLabel(
+    BONANZA_TRIAL_OPTIONS,
+    platformSettings.bonanzaTrialMonths,
+    platformSettings.bonanzaTrialMonths,
+  );
+  const bonanzaPreview = React.useMemo(() => {
+    if (platformSettings.bonanzaType === "trial") {
+      return `Give new farms ${bonanzaTrialLabel.toLowerCase()} free before billing starts, then move them onto the normal price.`;
+    }
+    if (platformSettings.bonanzaType === "bonus-month") {
+      return `Offer an extra free month when a farm commits early, for example after taking a yearly plan.`;
+    }
+    return `Temporarily reduce Pro from NGN 10,000 to NGN ${platformSettings.bonanzaDiscountPrice || "7,000"} for ${bonanzaDurationLabel.toLowerCase()}.`;
+  }, [
+    bonanzaDurationLabel,
+    bonanzaTrialLabel,
+    platformSettings.bonanzaDiscountPrice,
+    platformSettings.bonanzaType,
+  ]);
   const profileDirty = !isSame(userProfile, userProfileSnapshot);
   const activeSectionMeta =
     PLATFORM_SETTINGS_SECTIONS.find((section) => section.id === activeSection) ||
@@ -396,6 +471,9 @@ export default function PlatformSettingsPage() {
     setSavingPlatform(true);
     writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
     setPlatformSettings(nextSettings);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(PLATFORM_CONTROL_SETTINGS_CHANGED_EVENT));
+    }
     window.setTimeout(() => {
       setSavingPlatform(false);
       notify(
@@ -422,6 +500,9 @@ export default function PlatformSettingsPage() {
     );
     setPlatformSettings(nextSettings);
     writeStoredState(PLATFORM_CONTROL_SETTINGS_KEY, nextSettings);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(PLATFORM_CONTROL_SETTINGS_CHANGED_EVENT));
+    }
     notify("Platform settings reset.", "info");
   }
 
@@ -674,6 +755,162 @@ export default function PlatformSettingsPage() {
             </div>
 
             <div className="mt-5 space-y-3">
+              <div className="rounded-[1.35rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                      <Sparkles size={12} />
+                      Bonanza ideas
+                    </div>
+                    <h3 className="mt-3 text-lg font-semibold text-[var(--atlas-text-strong)]">
+                      Plan temporary promos from the platform side
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                      This helps us map short-term offers like a reduced intro price, a free trial
+                      month, or an extra free month before we wire the billing automation.
+                    </p>
+                  </div>
+                  <div className="rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] px-4 py-3">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                      Draft status
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
+                      {platformSettings.bonanzaEnabled ? "Bonanza ready" : "No active draft"}
+                    </div>
+                    <div className="mt-1 text-xs text-[var(--atlas-muted)]">
+                      {bonanzaTypeLabel} · {bonanzaDurationLabel}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <ToggleRow
+                    label="Bonanza draft"
+                    hint="Keep a promotional offer ready for campaigns, launches, or seasonal pushes."
+                    checked={platformSettings.bonanzaEnabled}
+                    onChange={(checked) =>
+                      setPlatformSettings((current) => ({
+                        ...current,
+                        bonanzaEnabled: checked,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <SettingsField
+                    label="Offer type"
+                    hint="Choose the type of promo you want to run."
+                  >
+                    <select
+                      value={platformSettings.bonanzaType}
+                      onChange={(event) =>
+                        setPlatformSettings((current) => ({
+                          ...current,
+                          bonanzaType: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                    >
+                      {BONANZA_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </SettingsField>
+
+                  <SettingsField
+                    label="Offer window"
+                    hint="How long the bonanza should stay available."
+                  >
+                    <select
+                      value={platformSettings.bonanzaDurationDays}
+                      onChange={(event) =>
+                        setPlatformSettings((current) => ({
+                          ...current,
+                          bonanzaDurationDays: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                    >
+                      {BONANZA_DURATION_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </SettingsField>
+
+                  {platformSettings.bonanzaType === "discount" ? (
+                    <SettingsField
+                      label="Promo Pro price"
+                      hint="Use this to plan a temporary drop, for example from NGN 10,000 to NGN 7,000."
+                    >
+                      <input
+                        type="text"
+                        value={platformSettings.bonanzaDiscountPrice}
+                        onChange={(event) =>
+                          setPlatformSettings((current) => ({
+                            ...current,
+                            bonanzaDiscountPrice: event.target.value,
+                          }))
+                        }
+                        className={inputClassName}
+                        placeholder="7000"
+                      />
+                    </SettingsField>
+                  ) : null}
+
+                  {platformSettings.bonanzaType === "trial" ? (
+                    <SettingsField
+                      label="Free trial length"
+                      hint="Give farms some time before the first paid billing cycle starts."
+                    >
+                      <select
+                        value={platformSettings.bonanzaTrialMonths}
+                        onChange={(event) =>
+                          setPlatformSettings((current) => ({
+                            ...current,
+                            bonanzaTrialMonths: event.target.value,
+                          }))
+                        }
+                        className={inputClassName}
+                      >
+                        {BONANZA_TRIAL_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </SettingsField>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] px-4 py-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
+                    Current bonanza plan
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
+                    {bonanzaTypeLabel}
+                  </div>
+                  <p className="mt-1 text-sm leading-6 text-[var(--atlas-muted)]">
+                    {bonanzaPreview}
+                  </p>
+                  <div className="mt-3 grid gap-2 text-xs text-[var(--atlas-muted)] md:grid-cols-3">
+                    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-3 py-2">
+                      Temporary discount: show the regular price crossed out and the offer price clearly.
+                    </div>
+                    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-3 py-2">
+                      Free trial: let new farms use the product for a month before billing starts.
+                    </div>
+                    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 px-3 py-2">
+                      Bonus month: reward annual or early commitment with extra time at no extra cost.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <ToggleRow
                 label="Admin change alerts"
                 hint="Alert admins when access changes."

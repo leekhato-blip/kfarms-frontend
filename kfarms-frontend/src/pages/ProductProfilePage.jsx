@@ -4,34 +4,30 @@ import {
   ArrowUp,
   ArrowUpRight,
   BarChart3,
-  BellRing,
   CheckCircle2,
   Check,
-  Building2,
-  Leaf,
-  Droplets,
-  TrendingUp,
   Users,
-  KeyRound,
   Layers3,
   Mail,
+  Monitor,
   Phone,
   MapPin,
   Sun,
   Moon,
-  Package,
   WifiOff,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { formatThemePreferenceLabel } from "../constants/settings";
+import { useTheme } from "../hooks/useTheme";
 import { useTenant } from "../tenant/TenantContext";
 import {
   PLAN_FEATURE_MATRIX,
   PLAN_IDS,
-  PLAN_TIER_CONFIG,
   getPlanById,
   isFeatureIncluded,
   normalizePlanId,
 } from "../constants/plans";
+import { usePlanCatalog } from "../hooks/usePlanCatalog";
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 
 const PLAN_TONE = {
@@ -78,7 +74,7 @@ const FOOTER_LINK_GROUPS = [
     ],
   },
   {
-    title: "Platform",
+    title: "Access",
     links: [
       { label: "Login", to: "/auth/login" },
       { label: "Signup", to: "/auth/signup" },
@@ -87,10 +83,10 @@ const FOOTER_LINK_GROUPS = [
     ],
   },
   {
-    title: "Company",
+    title: "KFarms",
     links: [
-      { label: "ROOTS", to: "/company-profile" },
-      { label: "Product Profile", to: "/product-profile" },
+      { label: "About KFarms", to: "/company-profile" },
+      { label: "Overview", to: "/product-profile" },
       { label: "Sales Team", href: "#contact" },
       { label: "Support Team", href: "mailto:support@kfarms.app" },
     ],
@@ -105,17 +101,17 @@ const HERO_NAV_LINKS = [
 ];
 
 const HERO_TRUST_POINTS = [
-  "Keep working when the internet drops, then sync back automatically.",
-  "Run ponds, poultry, feeds, supplies, inventory, production, and sales from one workspace.",
-  "Give each teammate the right access without exposing the wrong records.",
-  "Scale from one farm to multi-site operations without rewriting your process.",
+  "Keep working even without internet",
+  "Track poultry, fish, sales, and inventory in one place",
+  "Give your team access without losing control",
+  "Grow from one farm to multiple locations easily",
 ];
 
 const PRODUCT_FEATURES = [
   {
     title: "Offline-ready capture",
     description:
-      "Record field activity without waiting for perfect network conditions. KFarms keeps work moving and syncs forward when the connection returns.",
+      "Record your daily farm work even without internet. Everything syncs automatically later.",
     icon: WifiOff,
     accent: "from-indigo-500/20 via-transparent to-sky-500/20",
     iconBg: "bg-indigo-500/20 text-indigo-400 ring-indigo-400/40",
@@ -123,7 +119,7 @@ const PRODUCT_FEATURES = [
   {
     title: "Connected operations",
     description:
-      "Keep ponds, poultry, feeds, inventory, supplies, and sales flowing inside one product instead of scattered tools and notes.",
+      "Manage poultry, fish, feed, inventory, and sales in one simple app.",
     icon: Layers3,
     accent: "from-sky-500/20 via-transparent to-indigo-500/20",
     iconBg: "bg-sky-500/20 text-sky-400 ring-sky-400/40",
@@ -131,41 +127,25 @@ const PRODUCT_FEATURES = [
   {
     title: "Role-based teamwork",
     description:
-      "Owners, admins, managers, and staff can work from the same farm without seeing the wrong records or controls.",
+      "Let workers record data while you stay in control of what they can see and do.",
     icon: Users,
     accent: "from-emerald-500/18 via-transparent to-sky-500/18",
     iconBg: "bg-emerald-500/20 text-emerald-400 ring-emerald-400/40",
   },
   {
-    title: "Multi-farm control",
+    title: "Decision dashboards",
     description:
-      "Keep each farm separate while giving operators and leaders a cleaner way to work across more than one location.",
-    icon: Building2,
-    accent: "from-amber-500/18 via-transparent to-emerald-500/18",
-    iconBg: "bg-amber-500/20 text-amber-400 ring-amber-400/40",
-  },
-  {
-    title: "Dashboards and trends",
-    description:
-      "Use summaries, watchlists, revenue views, and performance signals to react faster and plan better.",
+      "Quickly see if your farm is doing well or needs attention.",
     icon: BarChart3,
     accent: "from-indigo-500/18 via-transparent to-emerald-500/18",
     iconBg: "bg-indigo-500/20 text-indigo-400 ring-indigo-400/40",
   },
-  {
-    title: "Support for rollout",
-    description:
-      "Bring teams on smoothly with invitations, help flows, and product guidance that supports real adoption.",
-    icon: BellRing,
-    accent: "from-emerald-500/18 via-transparent to-sky-500/18",
-    iconBg: "bg-emerald-500/20 text-emerald-400 ring-emerald-400/40",
-  },
 ];
 
 const OFFLINE_BENEFITS = [
-  "Save core actions locally while the network is weak or unavailable.",
-  "Resume sync automatically once a connection is available again.",
-  "Avoid double entry and late reconstruction after service interruptions.",
+  "Save your work even when network is down",
+  "Sync automatically when internet is back",
+  "No lost data, no double recording",
 ];
 
 const OFFLINE_PANELS = [
@@ -183,42 +163,22 @@ const OFFLINE_PANELS = [
   },
 ];
 
-const PRODUCT_LANES = [
+const HOW_IT_WORKS_STEPS = [
   {
-    title: "Ponds and livestock",
-    body: "Track pond stock, flock batches, mortality, and routine operational notes.",
-    icon: Droplets,
-    iconClass: "text-sky-400",
+    title: "Record",
+    body: "Log eggs, sales, feed, or stock in seconds.",
   },
   {
-    title: "Feeds and inventory",
-    body: "Watch stock levels, feed usage, reorder pressure, and storage movement in one place.",
-    icon: Package,
-    iconClass: "text-emerald-400",
+    title: "Track",
+    body: "See everything happening on your farm in one place.",
   },
   {
-    title: "Sales and revenue",
-    body: "Capture sales activity, track income, and keep the commercial side tied to operations.",
-    icon: TrendingUp,
-    iconClass: "text-indigo-400",
+    title: "Continue offline",
+    body: "Keep working even when network fails.",
   },
   {
-    title: "Team coordination",
-    body: "Invite teammates, assign roles, and keep each person focused on the right lane of work.",
-    icon: Users,
-    iconClass: "text-violet-400",
-  },
-  {
-    title: "Permissions and control",
-    body: "Maintain isolated farm data, clear permissions, and safer workspace boundaries.",
-    icon: KeyRound,
-    iconClass: "text-amber-400",
-  },
-  {
-    title: "Daily execution",
-    body: "Make day-to-day logging practical and consistent so records stay useful long after entry.",
-    icon: Leaf,
-    iconClass: "text-lime-400",
+    title: "Decide better",
+    body: "Know if you're making progress or losing money.",
   },
 ];
 
@@ -237,23 +197,14 @@ function normalizeLimitLabel(label) {
   return raw;
 }
 
-function getInitialTheme() {
-  if (typeof window === "undefined") return "dark";
-  const saved = localStorage.getItem("kf_theme");
-  if (saved) return saved;
-  const prefersDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
-}
-
 export default function ProductProfilePage() {
   const navigate = useNavigate();
-  const [theme, setTheme] = React.useState(getInitialTheme);
+  const { theme, isDark, toggleTheme } = useTheme();
   const [showScrollTop, setShowScrollTop] = React.useState(false);
-  const isDark = theme === "dark";
   const { isAuthenticated, user, logout } = useAuth();
   const { activeTenantId, activeTenant, tenants, loadingTenants } = useTenant();
+  const planTierConfig = usePlanCatalog();
+  const themeLabel = formatThemePreferenceLabel(theme);
 
   const workspacePath = activeTenantId ? "/dashboard" : "/onboarding/create-tenant";
   const workspaceLabel = activeTenantId
@@ -263,22 +214,13 @@ export default function ProductProfilePage() {
       : (tenants?.length || 0) > 0
         ? "Choose farm"
         : "Create farm";
-  const planNameById = PLAN_TIER_CONFIG.reduce((acc, plan) => {
+  const planNameById = planTierConfig.reduce((acc, plan) => {
     acc[plan.id] = plan.name;
     return acc;
   }, {});
   const currentTenantPlanId = normalizePlanId(activeTenant?.plan, "FREE");
   const currentTenantPlanName = getPlanById(currentTenantPlanId, "FREE").name;
   const currentYear = new Date().getFullYear();
-
-  React.useEffect(() => {
-    const isDark = theme === "dark";
-    document.documentElement.classList.toggle("dark", isDark);
-    document.body.classList.toggle("dark", isDark);
-    localStorage.setItem("kf_theme", theme);
-    document.documentElement.style.transition =
-      "background-color 200ms, color 200ms";
-  }, [theme]);
 
   React.useEffect(() => {
     const nodes = document.querySelectorAll("[data-reveal]");
@@ -306,7 +248,7 @@ export default function ProductProfilePage() {
   }, []);
 
   React.useEffect(() => {
-    document.title = "KFarms Product Profile";
+    document.title = "KFarms | Farm records";
   }, []);
 
   React.useEffect(() => {
@@ -356,20 +298,28 @@ export default function ProductProfilePage() {
 
         <button
           type="button"
-          onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+          onClick={toggleTheme}
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-slate-700 shadow-neo transition hover:scale-[1.02] hover:bg-white/20 dark:bg-darkCard/70 dark:text-slate-200 dark:shadow-dark"
-          aria-label="Toggle theme"
+          aria-label={`Theme: ${themeLabel}. Click to cycle theme.`}
+          title={`Theme: ${themeLabel}. Click to cycle theme.`}
         >
-          {theme === "dark" ? (
+          {theme === "system" ? (
             <>
-              <Sun className="w-4 h-4 text-amber-400" />
-              Light
+              <Monitor className="h-4 w-4 text-sky-400" />
+              {themeLabel}
             </>
           ) : (
-            <>
-              <Moon className="w-4 h-4 text-indigo-400" />
-              Dark
-            </>
+            theme === "dark" ? (
+              <>
+                <Moon className="h-4 w-4 text-indigo-400" />
+                {themeLabel}
+              </>
+            ) : (
+              <>
+                <Sun className="h-4 w-4 text-amber-400" />
+                {themeLabel}
+              </>
+            )
           )}
         </button>
       </div>
@@ -400,7 +350,7 @@ export default function ProductProfilePage() {
                         KFarms
                       </div>
                       <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        Product Profile
+                        Farm records
                       </div>
                     </div>
                   </div>
@@ -441,15 +391,13 @@ export default function ProductProfilePage() {
 
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700 dark:bg-white/10 dark:text-slate-200">
-                Product profile
-              </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-header font-semibold leading-tight text-slate-800 dark:text-slate-100">
-                One product for farm work, offline capture, and clearer daily decisions.
+                Stop guessing. Know what's happening on your farm.
               </h1>
               <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl">
-                KFarms helps farm teams record operations, keep work moving when the network fails,
-                and manage ponds, poultry, inventory, supplies, sales, and teamwork from one place.
+                Track eggs, sales, feed, and stock in one place, even without internet. KFarms
+                keeps your records clear, syncs when you're back online, and helps you stay in
+                control every day.
               </p>
 
               {!isAuthenticated ? (
@@ -573,19 +521,18 @@ export default function ProductProfilePage() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h2 className="text-xl font-header font-semibold">
-                Top product features
+                What you can actually do with KFarms
               </h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-                The product profile should quickly show buyers and operators what makes KFarms
-                practical, interesting, and valuable in real day-to-day farm work.
+                Used by farmers to track daily eggs, sales, and feed without stress.
               </p>
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/10 text-xs text-slate-500 dark:text-slate-400">
-              Product-led • Farm-ready • Practical
+              Simple • Practical • Reliable
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             {PRODUCT_FEATURES.map((item) => {
               const Icon = item.icon;
 
@@ -635,13 +582,14 @@ export default function ProductProfilePage() {
         data-reveal
         style={{ "--reveal-delay": "80ms" }}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="relative overflow-hidden rounded-2xl bg-white/10 dark:bg-darkCard/70 border border-white/10 shadow-neo dark:shadow-dark p-6">
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-indigo-500/10 opacity-70" />
-            <h2 className="text-xl font-header font-semibold mb-3">Offline mode</h2>
+            <h2 className="text-xl font-header font-semibold mb-3">
+              No internet? No problem.
+            </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              KFarms is built for real field conditions. When the network drops, your team can keep
-              capturing work and sync forward once the connection returns.
+              Keep working, record everything, and sync later when network returns.
             </p>
             <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-500 dark:text-slate-400">
               {OFFLINE_BENEFITS.map((item) => (
@@ -660,11 +608,11 @@ export default function ProductProfilePage() {
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 dark:bg-darkCard/70 p-6 shadow-soft dark:shadow-dark">
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-sky-500/10 opacity-60" />
             <h3 className="font-header font-semibold text-lg mb-3">
-              Built by ROOTS for practical rollout
+              Made for busy farm days
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              The product profile should show confidence not just in design, but in how the app
-              behaves when farms are busy, distributed, and not always online.
+              KFarms keeps daily records simple when work is moving fast, teams are spread out, and
+              network is unreliable.
             </p>
             <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-500 dark:text-slate-400">
               {OFFLINE_PANELS.map((item) => (
@@ -683,50 +631,6 @@ export default function ProductProfilePage() {
         </div>
       </section>
 
-      {/* Product Lanes */}
-      <section
-        id="services"
-        className="max-w-6xl mx-auto px-6 pb-12 reveal"
-        data-reveal
-        style={{ "--reveal-delay": "120ms" }}
-      >
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-xl font-header font-semibold">Product lanes</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-              KFarms should feel like a real operating surface, not just a brochure. These are the
-              lanes teams can recognize immediately.
-            </p>
-          </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/10 text-xs text-slate-500 dark:text-slate-400">
-            Operational • Visible • Actionable
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PRODUCT_LANES.map((service) => {
-            const Icon = service.icon;
-
-            return (
-            <div
-              key={service.title}
-              className="group relative overflow-hidden rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 p-5 shadow-soft dark:shadow-dark transition hover:-translate-y-0.5 card-hover"
-            >
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/20 via-transparent to-indigo-500/20 opacity-80" />
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg grid place-items-center ring-1 ring-white/10 bg-white/10 dark:bg-white/5">
-                  <Icon className={`w-5 h-5 ${service.iconClass}`} />
-                </div>
-                <h3 className="font-semibold">{service.title}</h3>
-              </div>
-              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                {service.body}
-              </p>
-            </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Plans */}
       <section
         id="plans"
@@ -741,8 +645,10 @@ export default function ProductProfilePage() {
               <div>
                 <h2 className="text-xl font-header font-semibold">Plans</h2>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">
-                  Choose a tier based on your current stage. This pricing matrix is data-driven, so
-                  updating one config updates every plan card and feature row automatically.
+                  Start simple. Upgrade as your farm grows.
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 max-w-3xl">
+                  You can start for free and upgrade only when you need more.
                 </p>
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/10 text-xs text-slate-500 dark:text-slate-400">
@@ -751,7 +657,7 @@ export default function ProductProfilePage() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {PLAN_TIER_CONFIG.map((plan) => {
+              {planTierConfig.map((plan) => {
                 const tone = PLAN_TONE[plan.id] || PLAN_TONE.FREE;
                 let actionPath = plan.ctaPath;
                 let actionLabel = plan.ctaLabel;
@@ -795,10 +701,22 @@ export default function ProductProfilePage() {
                         </span>
                       )}
                     </div>
-                    <div className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                      {plan.priceLabel}
+                    <div className="mt-3 flex items-end gap-3">
+                      {plan.compareAtPriceLabel && (
+                        <span className="text-sm font-medium text-slate-400 line-through dark:text-slate-500">
+                          {plan.compareAtPriceLabel}
+                        </span>
+                      )}
+                      <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                        {plan.priceLabel}
+                      </div>
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">{plan.cycleLabel}</div>
+                    {plan.promoNote && (
+                      <div className="mt-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                        {plan.promoNote}
+                      </div>
+                    )}
                     <p className="mt-3 text-xs text-slate-600 dark:text-slate-400">{plan.tagline}</p>
 
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -900,49 +818,18 @@ export default function ProductProfilePage() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h2 className="text-xl font-header font-semibold">
-                How KFarms works
+                How it works
               </h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                A clean operating loop that turns field activity into clearer action and better coordination.
+                A simple flow for recording work and staying in control every day.
               </p>
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/10 text-xs text-slate-500 dark:text-slate-400">
               Simple • Smart • Professional
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            {[
-              {
-                title: "Capture",
-                body:
-                  "Log ponds, hatches, sales, inventory, and supplies with guided forms even during busy workdays.",
-              },
-              {
-                title: "Monitor",
-                body:
-                  "Track stock, water changes, queues, and performance with summaries your team can understand quickly.",
-              },
-              {
-                title: "Recover",
-                body:
-                  "Continue recording offline, then let sync recovery bring the data back into the main view.",
-              },
-              {
-                title: "Analyze",
-                body:
-                  "Use trends, dashboards, and revenue views to improve planning, budgeting, and output.",
-              },
-              {
-                title: "Align",
-                body:
-                  "Keep owners, managers, and staff on the same page with role-based workflows and cleaner visibility.",
-              },
-              {
-                title: "Scale",
-                body:
-                  "Start with one farm, then expand into broader teams and multi-site operations when you are ready.",
-              },
-            ].map((item) => (
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            {HOW_IT_WORKS_STEPS.map((item) => (
               <div
                 key={item.title}
                 className="rounded-xl border border-white/10 bg-white/5 dark:bg-darkCard/70 p-4 shadow-soft dark:shadow-dark card-hover"
@@ -972,8 +859,8 @@ export default function ProductProfilePage() {
             <div>
               <h2 className="text-xl font-header font-semibold">Contact</h2>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-                Talk to the KFarms product team for setup, pricing, offline deployment questions,
-                or larger rollouts. We usually reply the same business day.
+                Need help getting started? We'll guide you, answer your questions, and help you set
+                up your farm.
               </p>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
                 <a
@@ -1031,14 +918,14 @@ export default function ProductProfilePage() {
             <div className="space-y-4 lg:col-span-5">
               <div className="rounded-2xl border border-white/15 bg-white/40 p-5 shadow-neo backdrop-blur-xl dark:bg-darkCard/70 dark:shadow-dark">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/50 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-200">
-                  KFarms Product Profile
+                  KFarms
                 </div>
                 <h3 className="mt-3 text-lg font-header font-semibold text-slate-900 dark:text-slate-100">
-                  Farm software built for real work on real farms.
+                  Simple farm records. Clear decisions. Better results.
                 </h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  KFarms helps teams record work, stay productive offline, see progress clearly,
-                  and grow from one farm into a more coordinated operation.
+                  Record daily work, stay productive offline, and keep a clear view of what your
+                  farm is producing, selling, and spending.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
@@ -1095,7 +982,7 @@ export default function ProductProfilePage() {
           </div>
 
           <div className="mt-8 flex flex-col gap-3 border-t border-white/15 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
-            <span>© {currentYear} KFarms by ROOTS. All rights reserved.</span>
+            <span>© {currentYear} KFarms. All rights reserved.</span>
             <div className="flex flex-wrap items-center gap-4">
               <a className="transition hover:text-accent-primary" href="mailto:support@kfarms.app">
                 support@kfarms.app

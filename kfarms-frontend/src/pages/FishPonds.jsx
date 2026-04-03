@@ -1000,6 +1000,9 @@ export default function FishPondsPage() {
         fetchHatches(),
         fetchSummaries(),
       ]);
+      setToast({ message: "Fish ponds refreshed", type: "success" });
+    } catch {
+      setToast({ message: "Failed to refresh fish ponds", type: "error" });
     } finally {
       setRefreshing(false);
     }

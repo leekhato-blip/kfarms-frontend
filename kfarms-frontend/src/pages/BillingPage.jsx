@@ -19,7 +19,8 @@ import FarmerGuideCard from "../components/FarmerGuideCard";
 import GlassToast from "../components/GlassToast";
 import { useTenant } from "../tenant/TenantContext";
 import { useAuth } from "../hooks/useAuth";
-import { PLAN_TIER_CONFIG, getPlanById, normalizePlanId } from "../constants/plans";
+import { usePlanCatalog } from "../hooks/usePlanCatalog";
+import { getPlanById, normalizePlanId } from "../constants/plans";
 import {
   normalizeOrganizationSettings,
 } from "../constants/settings";
@@ -131,6 +132,7 @@ export default function BillingPage() {
   const location = useLocation();
   const { user } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
+  const displayPlans = usePlanCatalog();
 
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -933,7 +935,7 @@ export default function BillingPage() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                  {PLAN_TIER_CONFIG.map((plan) => {
+                  {displayPlans.map((plan) => {
                     const isCurrent = plan.id === effectivePlanId;
                     const isFocused = focusPlanId === plan.id;
                     const billingInfo = getPlanBillingInfo(plan.id);
@@ -981,8 +983,21 @@ export default function BillingPage() {
                           )}
                         </div>
 
-                        <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          {billingInfo.label}
+                        <div className="mt-2 flex items-end gap-2">
+                          {plan.compareAtPriceLabel && (
+                            <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
+                              {plan.compareAtPriceLabel}
+                            </span>
+                          )}
+                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                            {plan.priceLabel}
+                          </p>
+                        </div>
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {plan.cycleLabel}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                          {plan.promoNote || billingInfo.label}
                         </p>
                         <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{plan.tagline}</p>
 
