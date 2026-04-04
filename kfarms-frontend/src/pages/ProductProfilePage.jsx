@@ -78,6 +78,7 @@ const FOOTER_LINK_GROUPS = [
     links: [
       { label: "Login", to: "/auth/login" },
       { label: "Signup", to: "/auth/signup" },
+      { label: "Terms", to: "/terms" },
       { label: "Workspace", to: "/dashboard" },
       { label: "Help Center", href: "#contact" },
     ],
@@ -993,6 +994,9 @@ export default function ProductProfilePage() {
           <div className="mt-8 flex flex-col gap-3 border-t border-white/15 pt-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
             <span>© {currentYear} KFarms. All rights reserved.</span>
             <div className="flex flex-wrap items-center gap-4">
+              <Link className="transition hover:text-accent-primary" to="/terms">
+                Terms
+              </Link>
               <a className="transition hover:text-accent-primary" href="mailto:support@kfarms.app">
                 support@kfarms.app
               </a>

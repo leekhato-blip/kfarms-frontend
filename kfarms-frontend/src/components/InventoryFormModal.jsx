@@ -25,9 +25,15 @@ import {
   formatInventoryCategoryLabel,
 } from "../constants/inventory";
 import { createInventory, updateInventory } from "../services/inventoryService";
+import {
+  formatCurrencyInput,
+  normalizeCurrencyOnBlur,
+  sanitizeCurrencyInput,
+  todayDateInputValue,
+} from "../utils/formInputs";
 
 function todayValue() {
-  return new Date().toISOString().slice(0, 10);
+  return todayDateInputValue();
 }
 
 function defaultForm() {
@@ -55,7 +61,7 @@ function parseNumber(value, fallback = 0) {
   if (value === "" || value === null || value === undefined) {
     return fallback;
   }
-  const numeric = Number(value);
+  const numeric = Number(String(value).replace(/,/g, ""));
   return Number.isFinite(numeric) ? numeric : fallback;
 }
 
@@ -295,25 +301,24 @@ export default function InventoryFormModal({
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">
+              <label className={GUIDED_FORM_LABEL_CLASS}>
+                <Archive className={GUIDED_FORM_ICON_CLASS} />
                 Category <Required />
               </label>
-              <div className="flex flex-wrap gap-2">
+              <select
+                value={form.category}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, category: event.target.value }))
+                }
+                className={GUIDED_FORM_FIELD_CLASS}
+                required
+              >
                 {INVENTORY_CATEGORIES.map((category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => setForm((current) => ({ ...current, category }))}
-                    className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                      form.category === category
-                        ? "border-accent-primary bg-accent-primary text-white"
-                        : "border-white/20 bg-white/50 text-slate-700 dark:bg-white/10 dark:text-slate-200"
-                    }`}
-                  >
+                  <option key={category} value={category}>
                     {formatInventoryCategoryLabel(category)}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             <div className="md:col-span-2">
@@ -370,13 +375,30 @@ export default function InventoryFormModal({
                   Unit cost (Naira)
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.unitCost}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatCurrencyInput(form.unitCost, {
+                    maximumFractionDigits: 2,
+                  })}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, unitCost: event.target.value }))
+                    setForm((current) => ({
+                      ...current,
+                      unitCost: sanitizeCurrencyInput(event.target.value, {
+                        allowDecimal: true,
+                        maxFractionDigits: 2,
+                      }),
+                    }))
                   }
+                  onBlur={() => {
+                    if (form.unitCost === "") return;
+                    setForm((current) => ({
+                      ...current,
+                      unitCost: normalizeCurrencyOnBlur(current.unitCost, {
+                        allowDecimal: true,
+                        maxFractionDigits: 2,
+                      }),
+                    }));
+                  }}
                   className={GUIDED_FORM_FIELD_CLASS}
                   placeholder="0.00"
                 />

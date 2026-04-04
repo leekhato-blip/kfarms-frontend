@@ -24,6 +24,8 @@ const SETTINGS_ENDPOINTS = {
 function normalizeAccountContactStatus(payload) {
   const source = payload && typeof payload === "object" ? payload : {};
   const phoneNumber = String(source.phoneNumber || "").trim();
+  const preview =
+    source.preview && typeof source.preview === "object" ? source.preview : null;
   return {
     email: String(source.email || "").trim(),
     phoneNumber,
@@ -33,8 +35,11 @@ function normalizeAccountContactStatus(payload) {
     emailVerified: Boolean(source.emailVerified),
     phoneVerified: Boolean(source.phoneVerified),
     verificationRequired: Boolean(source.verificationRequired),
-    preview:
-      source.preview && typeof source.preview === "object" ? source.preview : null,
+    preview,
+    previewMode: Boolean(
+      source.previewMode ??
+        (preview && (preview.emailCode || preview.phoneCode)),
+    ),
   };
 }
 

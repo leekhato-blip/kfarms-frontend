@@ -1,326 +1,314 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { CalendarClock, ClipboardList, Flag, X } from "lucide-react";
+import { TASK_TYPE_OPTIONS } from "../constants/formOptions";
+import {
+  nowDateTimeLocalValue,
+  toDateTimeLocalValue,
+} from "../utils/formInputs";
 
+const FIELD_CLASS =
+  "w-full rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/15 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100";
+const LABEL_CLASS =
+  "mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400";
+
+const PRIORITY_META = {
+  1: { text: "High", dot: "bg-rose-500" },
+  2: { text: "Normal", dot: "bg-amber-500" },
+  3: { text: "Low", dot: "bg-emerald-500" },
+};
 
 export default function TaskModal({ open, onClose, onSave, initial = {} }) {
-  // State for form fields and UI behavior
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("OTHER");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState(3);
   const [errors, setErrors] = useState({});
-  const [mounted, setMounted] = useState(false); // for entrance animation
+  const [mounted, setMounted] = useState(false);
 
-  const modalRef = useRef(null); // ref to modal container for focus management
-  const firstInputRef = useRef(null); // ref to first input for auto-focus
+  const modalRef = useRef(null);
+  const firstInputRef = useRef(null);
 
-  // Effect: initialize form fields and animate modal on open
   useEffect(() => {
-    if (open) {
-      setTitle(initial.title ?? "");
-      setDescription(initial.description ?? "");
-      setType(initial.type ?? "OTHER");
-      setDueDate(initial.dueDate ? initial.dueDate.substring(0, 16) : "");
-      setPriority(initial.priority ?? 3);
-      setErrors({});
-
-      requestAnimationFrame(() => setMounted(true));
-      setTimeout(() => firstInputRef.current?.focus(), 120); // focus first input
-    } else {
+    if (!open) {
       setMounted(false);
+      return;
     }
-  }, [open, initial]);
 
-  // Validate form inputs
+    setTitle(initial.title ?? "");
+    setDescription(initial.description ?? "");
+    setType(initial.type ?? "OTHER");
+    setDueDate(toDateTimeLocalValue(initial.dueDate, nowDateTimeLocalValue()));
+    setPriority(Number(initial.priority) || 3);
+    setErrors({});
+
+    const frameId = window.requestAnimationFrame(() => setMounted(true));
+    const timerId = window.setTimeout(() => firstInputRef.current?.focus(), 120);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timerId);
+    };
+  }, [initial, open]);
+
   const validate = useCallback(() => {
-    const e = {};
+    const nextErrors = {};
+
     if (!title || title.trim().length < 3) {
-      e.title = "Title is required (min 3 chars).";
-      setTimeout(() => setErrors({}), 3000); // error disappears after 3.5s
+      nextErrors.title = "Title is required and should be at least 3 characters.";
     }
-    setErrors(e);
-    return Object.keys(e).length === 0;
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   }, [title]);
 
-  // Handle form submission
-  const handleSubmit = useCallback((ev) => {
-    if (ev && typeof ev.preventDefault === "function") ev.preventDefault();
-    if (!validate()) return;
-    const payload = {
-      title: title.trim(),
-      description: description?.trim() || null,
-      type,
-      priority,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-    };
-    onSave(payload);
-  }, [description, dueDate, onSave, priority, title, type, validate]);
-
-  // Effect: handle keyboard shortcuts (Escape to close, Ctrl/Cmd+Enter to save)
-  useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape") onClose?.();
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        handleSubmit(new Event("submit", { cancelable: true }));
+  const handleSubmit = useCallback(
+    (event) => {
+      if (event && typeof event.preventDefault === "function") {
+        event.preventDefault();
       }
-    }
 
-    if (open) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+      if (!validate()) {
+        return;
+      }
+
+      onSave?.({
+        title: title.trim(),
+        description: description?.trim() || null,
+        type,
+        priority,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      });
+    },
+    [description, dueDate, onSave, priority, title, type, validate],
+  );
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose?.();
+        return;
+      }
+
+      if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+        handleSubmit(event);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleSubmit, onClose, open]);
 
-  // Effect: trap focus within modal for accessibility
   useEffect(() => {
-    if (!open) return;
-    const focusablesSelector =
-      'a[href], input, textarea, select, button, [tabindex]:not([tabindex="-1"])';
-    const node = modalRef.current;
-    if (!node) return;
-    const focusables = Array.from(node.querySelectorAll(focusablesSelector));
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
+    if (!open) return undefined;
 
-    function onTab(e) {
-      if (e.key !== "Tab") return;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
+    const node = modalRef.current;
+    if (!node) return undefined;
+
+    const selector =
+      'a[href], input, textarea, select, button, [tabindex]:not([tabindex="-1"])';
+
+    const handleTab = (event) => {
+      if (event.key !== "Tab") return;
+      const focusables = Array.from(node.querySelectorAll(selector)).filter(
+        (element) => !element.hasAttribute("disabled"),
+      );
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
         first.focus();
       }
-    }
+    };
 
-    node.addEventListener("keydown", onTab);
-    return () => node.removeEventListener("keydown", onTab);
+    node.addEventListener("keydown", handleTab);
+    return () => node.removeEventListener("keydown", handleTab);
   }, [open]);
 
-  if (!open) return null;
-  if (typeof document === "undefined") return null;
+  if (!open || typeof document === "undefined") return null;
 
-  // Mapping task types to color styles
-  const typeColors = {
-    FEED: "bg-amber-100 text-amber-800",
-    COLLECT: "bg-emerald-100 text-emerald-800",
-    HEALTH: "bg-rose-100 text-rose-800",
-    MAINTENANCE: "bg-sky-100 text-sky-800",
-    VACCINATION: "bg-violet-100 text-violet-800",
-    OTHER: "bg-slate-100 text-slate-800",
-  };
-
-  // Mapping priority levels to label and color dot
-  const priorityLabel = {
-    1: { text: "High", dot: "bg-status-danger" },
-    2: { text: "Normal", dot: "bg-status-warning" },
-    3: { text: "Low", dot: "bg-status-success" },
-  };
+  const priorityMeta = PRIORITY_META[priority] || PRIORITY_META[3];
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      {/* Backdrop with blur effect */}
+    <div className="fixed inset-0 z-[12000] flex items-end justify-center px-3 py-[max(0.75rem,env(safe-area-inset-top))] sm:items-center sm:px-4 sm:py-6">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-md"
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
         onClick={onClose}
-        aria-hidden
+        aria-hidden="true"
       />
 
-      {/* Decorative blurred gradient orbs */}
-      <div className="pointer-events-none absolute -bottom-16 -right-8 w-56 h-56 rounded-full bg-gradient-to-br from-purple-400/20 to-indigo-600/10 blur-3xl" />
-      <div className="pointer-events-none absolute -top-20 -left-12 w-44 h-44 rounded-full bg-gradient-to-tr from-emerald-300/10 to-cyan-400/10 blur-2xl" />
-
-      {/* Modal container with entrance animation */}
       <form
         ref={modalRef}
         onSubmit={handleSubmit}
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-modal-title"
-        className={`relative z-10 w-full max-w-xl rounded-2xl p-1 transition-all duration-300 ease-out transform ${
-          mounted
-            ? "opacity-100 scale-100 translate-y-0"
-            : "opacity-0 scale-95 translate-y-2"
-        }`}
+        className={`relative flex w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] shadow-[0_28px_60px_rgba(15,23,42,0.2)] transition-all duration-200 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,15,30,0.98),rgba(7,18,33,0.96))] dark:shadow-[0_28px_72px_rgba(2,6,23,0.46)] ${
+          mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+        } max-h-[min(92dvh,48rem)]`}
       >
-        <div className="rounded-2xl p-px bg-darkCard/50 shadow-lg">
-          <div className="bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl p-6 shadow-inner border border-white/20">
-            {/* Header: icon, title, description, priority and close button */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/30 dark:bg-black/30 border border-white/10">
-                  {/* Decorative SVG icon */}
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden
-                  >
-                    <path
-                      d="M4 20c6-6 8-10 16-12"
-                      stroke="#6D28D9"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M7 7c3 0 5 2 6 5"
-                      stroke="#06B6D4"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3
-                    id="task-modal-title"
-                    className="text-lg font-semibold leading-tight"
-                  >
-                    {initial.id ? "Edit Task" : "Add Task"}
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Add a task to stay on track.
-                  </p>
-                </div>
-              </div>
-
-              {/* Priority display and close button */}
-              <div className="flex items-center gap-2">
-                <div className="text-xs flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <span
-                    className={`inline-block w-2 h-2 rounded-full ${priorityLabel[priority].dot}`}
-                  />
-                  <span>{priorityLabel[priority].text}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Close dialog"
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
+        <div className="border-b border-slate-200/80 px-4 pb-4 pt-4 dark:border-white/10 sm:px-6 sm:pb-5 sm:pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-accent-primary/15 bg-accent-primary/10 text-accent-primary dark:border-accent-primary/25 dark:bg-accent-primary/12">
+                <ClipboardList className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <h3
+                  id="task-modal-title"
+                  className="text-lg font-semibold text-slate-900 dark:text-slate-50 sm:text-xl"
                 >
-                  <X className="h-5 w-5" />
-                </button>
+                  {initial.id ? "Edit task" : "Add task"}
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Keep this short and clear so the next action is easy to understand.
+                </p>
               </div>
             </div>
 
-            {/* Form fields: title, description, type, priority, due date */}
-            <div className="mt-4 grid gap-3">
-              {/* Title input */}
+            <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 sm:inline-flex">
+                <span className={`h-2.5 w-2.5 rounded-full ${priorityMeta.dot}`} />
+                {priorityMeta.text} priority
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close task modal"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 transition hover:bg-white dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-100 dark:hover:bg-white/[0.12]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="task-title" className={LABEL_CLASS}>
+                Task title
+              </label>
+              <input
+                id="task-title"
+                ref={firstInputRef}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                className={`${FIELD_CLASS} ${
+                  errors.title
+                    ? "border-rose-300 focus:border-rose-400 focus:ring-rose-200/40 dark:border-rose-400/40"
+                    : ""
+                }`}
+                placeholder="e.g. Feed layers in the morning"
+              />
+              {errors.title ? (
+                <p className="mt-2 text-sm text-rose-600 dark:text-rose-200">{errors.title}</p>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="text-xs block mb-1">Title</label>
-                <input
-                  ref={firstInputRef}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full p-3 rounded-lg bg-white/80 focus:border-accent-primary dark:bg-black/60 border transition-shadow outline-none ${
-                    errors.title
-                      ? "border-rose-400 shadow-[0_0_0_3px_rgba(255,200,210,0.06)]"
-                      : "border-transparent"
-                  } focus:shadow-[0_8px_30px_rgba(99,102,241,0.08)']`}
-                  placeholder="e.g. Feed Layers - Morning"
-                />
-                {errors.title && (
-                  <div className="text-status-danger text-xs mt-1">
-                    {errors.title}
-                  </div>
-                )}
+                <label htmlFor="task-type" className={LABEL_CLASS}>
+                  Task category
+                </label>
+                <select
+                  id="task-type"
+                  value={type}
+                  onChange={(event) => setType(event.target.value)}
+                  className={`${FIELD_CLASS} [color-scheme:light] dark:[color-scheme:dark]`}
+                >
+                  {TASK_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Description textarea */}
               <div>
-                <label className="text-xs block mb-1">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-white/80 focus:border-accent-primary dark:bg-black/60 border border-transparent h-24 resize-none outline-none focus:shadow-[0_8px_30px_rgba(6,182,212,0.06)]"
-                  placeholder="Optional notes..."
-                />
-              </div>
-
-              {/* Type and Priority */}
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="text-xs block mb-1">Type</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      "FEED",
-                      "COLLECT",
-                      "HEALTH",
-                      "MAINTENANCE",
-                      "VACCINATION",
-                      "OTHER",
-                    ].map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setType(t)}
-                        className={`text-xs px-3 py-2 rounded-full border ${
-                          type === t
-                            ? "ring-2 ring-offset-4 ring-offset-purple-50"
-                            : "border-transparent"
-                        } ${typeColors[t]} bg-opacity-70`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-2 md:mt-0">
-                  <label className="text-xs block mb-1">Priority</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(Number(e.target.value))}
-                    className="w-full p-3 rounded-lg focus:border-accent-primary bg-white/80 dark:bg-black/60"
-                  >
-                    <option value={1}>1 — High</option>
-                    <option value={2}>2 — Normal</option>
-                    <option value={3}>3 — Low</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Due date input with calendar pseudo-icon */}
-              <div>
-                <label className="text-xs block mb-1">Due (optional)</label>
-                <div className="relative">
-                  <input
-                    type="datetime-local"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-white/80 dark:bg-black/60 outline-none appearance-none"
-                  />
-                  <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400 dark:text-slate-300">
-                    📅
-                  </div>
-                </div>
+                <label htmlFor="task-priority" className={LABEL_CLASS}>
+                  <span className="inline-flex items-center gap-2">
+                    <Flag className="h-3.5 w-3.5" />
+                    Priority
+                  </span>
+                </label>
+                <select
+                  id="task-priority"
+                  value={priority}
+                  onChange={(event) => setPriority(Number(event.target.value))}
+                  className={`${FIELD_CLASS} [color-scheme:light] dark:[color-scheme:dark]`}
+                >
+                  <option value={1}>High</option>
+                  <option value={2}>Normal</option>
+                  <option value={3}>Low</option>
+                </select>
               </div>
             </div>
 
-            {/* Footer: tip and action buttons */}
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <div className="text-xs text-slate-500 dark:text-slate-300">
-                Tip: press <span className="font-medium">Ctrl/Cmd + Enter</span>{" "}
-                to save quickly
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-md bg-transparent border border-white/20 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-md text-sm font-medium bg-accent-primary text-white shadow-md hover:scale-[1.02] transition-transform"
-                >
-                  Save
-                </button>
-              </div>
+            <div>
+              <label htmlFor="task-due-date" className={LABEL_CLASS}>
+                <span className="inline-flex items-center gap-2">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Due date and time
+                </span>
+              </label>
+              <input
+                id="task-due-date"
+                type="datetime-local"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                className={`${FIELD_CLASS} [color-scheme:light] dark:[color-scheme:dark]`}
+              />
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Defaulted to now so you can save quickly, then adjust if this task is due later.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="task-description" className={LABEL_CLASS}>
+                Notes
+              </label>
+              <textarea
+                id="task-description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                rows={5}
+                className={`${FIELD_CLASS} min-h-[8.5rem] resize-y`}
+                placeholder="Optional details, instructions, or reminder notes"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200/80 bg-slate-50/96 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur-xl dark:border-white/10 dark:bg-[#08111e]/94 sm:px-6 sm:pb-5 sm:pt-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+              Tip: press <span className="font-semibold text-slate-700 dark:text-slate-200">Ctrl/Cmd + Enter</span> to save quickly.
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:hover:bg-white/[0.1]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-accent-primary/30 bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-105"
+              >
+                {initial.id ? "Save changes" : "Save task"}
+              </button>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProductionChart from "../components/ProductionChart";
 import SummaryCard from "../components/SummaryCard";
@@ -200,6 +200,7 @@ function isRecentActivityVisibleForWorkspace(activity, { poultryEnabled, fishEna
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { activeTenant } = useTenant();
   const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
@@ -992,9 +993,7 @@ export default function DashboardPage() {
                       </p>
                       <button
                         className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
-                        onClick={() => {
-                          window.location.href = "/feeds";
-                        }}
+                        onClick={() => navigate("/feeds")}
                       >
                         Log Feed Consumption
                       </button>
@@ -1202,9 +1201,7 @@ export default function DashboardPage() {
                     </p>
                     <button
                       className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
-                      onClick={() => {
-                        window.location.href = "/feeds";
-                      }}
+                      onClick={() => navigate("/feeds")}
                     >
                       Log Feed Consumption
                     </button>

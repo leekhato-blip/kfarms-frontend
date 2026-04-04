@@ -11,6 +11,7 @@ import GuidedFormModal, {
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createFishPond, updateFishPond } from "../services/fishPondService";
+import { todayDateInputValue } from "../utils/formInputs";
 
 function defaultForm() {
   return {
@@ -19,7 +20,7 @@ function defaultForm() {
     status: "ACTIVE",
     capacity: "",
     currentStock: "",
-    lastWaterChange: "",
+    lastWaterChange: todayDateInputValue(),
     note: "",
   };
 }
@@ -61,7 +62,7 @@ export default function FishPondFormModal({
         currentStock: initialData.currentStock ?? "",
         lastWaterChange: initialData.lastWaterChange
           ? String(initialData.lastWaterChange).slice(0, 10)
-          : "",
+          : todayDateInputValue(),
         note: initialData.note ?? "",
       });
     } else {

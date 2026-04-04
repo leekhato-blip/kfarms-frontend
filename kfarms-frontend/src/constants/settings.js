@@ -1,5 +1,10 @@
 export const THEME_STORAGE_KEY = "kf_theme";
+export const PLATFORM_THEME_STORAGE_KEY = "roots_theme";
 export const SETTINGS_THEME_EVENT = "kf-theme-changed";
+export const THEME_SCOPES = Object.freeze({
+  KFARMS: "kfarms",
+  PLATFORM: "platform",
+});
 
 export const DEFAULT_ORGANIZATION_SETTINGS = Object.freeze({
   organizationName: "",
@@ -62,16 +67,83 @@ export const THEME_OPTIONS = Object.freeze([
 ]);
 
 const VALID_THEME_PREFERENCES = new Set(THEME_OPTIONS.map((option) => option.value));
+const THEME_SCOPE_DEFAULTS = Object.freeze({
+  [THEME_SCOPES.KFARMS]: DEFAULT_USER_PREFERENCES.themePreference,
+  [THEME_SCOPES.PLATFORM]: "DARK",
+});
 const VALID_LANDING_PAGES = new Set([
   ...LANDING_PAGE_OPTIONS.map((option) => option.value),
   "/livestock",
 ]);
+
+function resolveThemeScopeConfig(scope = THEME_SCOPES.KFARMS) {
+  const normalizedScope =
+    String(scope || "")
+      .trim()
+      .toLowerCase() === THEME_SCOPES.PLATFORM
+      ? THEME_SCOPES.PLATFORM
+      : THEME_SCOPES.KFARMS;
+
+  return {
+    scope: normalizedScope,
+    storageKey:
+      normalizedScope === THEME_SCOPES.PLATFORM
+        ? PLATFORM_THEME_STORAGE_KEY
+        : THEME_STORAGE_KEY,
+    defaultPreference:
+      THEME_SCOPE_DEFAULTS[normalizedScope] ||
+      DEFAULT_USER_PREFERENCES.themePreference,
+  };
+}
+
+function getSystemThemeMode() {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  ) {
+    return "dark";
+  }
+
+  return "light";
+}
+
+export function resolveThemeScopeFromPath(pathname = "") {
+  return String(pathname || "").trim().startsWith("/platform")
+    ? THEME_SCOPES.PLATFORM
+    : THEME_SCOPES.KFARMS;
+}
 
 export function normalizeThemePreference(value) {
   const normalized = String(value ?? "").trim().toUpperCase();
   return VALID_THEME_PREFERENCES.has(normalized)
     ? normalized
     : DEFAULT_USER_PREFERENCES.themePreference;
+}
+
+export function getStoredThemePreference(scope = THEME_SCOPES.KFARMS) {
+  const { storageKey, defaultPreference } = resolveThemeScopeConfig(scope);
+
+  if (typeof window === "undefined") {
+    return normalizeThemePreference(defaultPreference).toLowerCase();
+  }
+
+  return normalizeThemePreference(
+    window.localStorage.getItem(storageKey) || defaultPreference,
+  ).toLowerCase();
+}
+
+export function cycleThemePreference(themePreference) {
+  const current = normalizeThemePreference(themePreference).toLowerCase();
+
+  if (current === "system") return "dark";
+  if (current === "dark") return "light";
+  return "system";
+}
+
+export function formatThemePreferenceLabel(themePreference) {
+  const normalized = normalizeThemePreference(themePreference).toLowerCase();
+  return `${normalized.slice(0, 1).toUpperCase()}${normalized.slice(1)}`;
 }
 
 export function normalizeLandingPage(value) {
@@ -157,40 +229,38 @@ export function resolveThemeMode(themePreference) {
   const preference = normalizeThemePreference(themePreference);
   if (preference === "LIGHT") return "light";
   if (preference === "DARK") return "dark";
+  return getSystemThemeMode();
+}
 
-  if (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
-    return "dark";
+export function getStoredThemeMode(scope = THEME_SCOPES.KFARMS) {
+  const { defaultPreference } = resolveThemeScopeConfig(scope);
+
+  if (typeof window === "undefined") {
+    return resolveThemeMode(defaultPreference);
   }
 
-  return "light";
+  return resolveThemeMode(getStoredThemePreference(scope));
 }
 
-export function getStoredThemeMode() {
-  if (typeof window === "undefined") return "dark";
-  const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (saved === "dark" || saved === "light") return saved;
-  return resolveThemeMode("SYSTEM");
-}
-
-export function applyThemePreference(themePreference) {
+export function applyThemePreference(themePreference, scope = THEME_SCOPES.KFARMS) {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
+  const { scope: normalizedScope, storageKey } = resolveThemeScopeConfig(scope);
   const preference = normalizeThemePreference(themePreference);
+  const preferenceKey = preference.toLowerCase();
   const mode = resolveThemeMode(preference);
 
   document.documentElement.classList.toggle("dark", mode === "dark");
   document.body?.classList.toggle("dark", mode === "dark");
   document.documentElement.style.colorScheme = mode;
-  window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+  window.localStorage.setItem(storageKey, preferenceKey);
   window.dispatchEvent(
     new CustomEvent(SETTINGS_THEME_EVENT, {
       detail: {
         mode,
-        preference,
+        preference: preferenceKey,
+        scope: normalizedScope,
+        storageKey,
       },
     }),
   );

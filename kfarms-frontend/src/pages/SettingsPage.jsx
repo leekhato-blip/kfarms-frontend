@@ -135,14 +135,19 @@ function resolveTenantSettingsSection(sectionId) {
 
 function createAccountContactState(user, payload = {}) {
   const source = payload && typeof payload === "object" ? payload : {};
+  const hasOwnValue = (key) => Object.prototype.hasOwnProperty.call(source, key);
   const phoneNumber = String(source.phoneNumber || user?.phoneNumber || "").trim();
   const email = String(source.email || user?.email || "").trim();
   const hasPhoneNumber = source.hasPhoneNumber ?? Boolean(phoneNumber);
-  const emailVerified = Boolean(
-    source.emailVerified ?? user?.emailVerified,
-  );
+  const preview =
+    source.preview && typeof source.preview === "object" ? source.preview : null;
+  const emailVerified = hasOwnValue("emailVerified")
+    ? Boolean(source.emailVerified)
+    : false;
   const phoneVerified = hasPhoneNumber
-    ? Boolean(source.phoneVerified ?? user?.phoneVerified)
+    ? hasOwnValue("phoneVerified")
+      ? Boolean(source.phoneVerified)
+      : false
     : false;
   const verificationRequired =
     source.verificationRequired ??
@@ -157,15 +162,18 @@ function createAccountContactState(user, payload = {}) {
     emailVerified,
     phoneVerified,
     verificationRequired,
-    preview:
-      source.preview && typeof source.preview === "object" ? source.preview : null,
+    preview,
+    previewMode: Boolean(
+      source.previewMode ??
+        (preview && (preview.emailCode || preview.phoneCode)),
+    ),
   };
 }
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, updateProfile, refreshMe, logout } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
 
   const [loading, setLoading] = React.useState(true);
@@ -272,6 +280,7 @@ export default function SettingsPage() {
   ]);
   const requiresAnyVerification =
     requiresEmailVerification || requiresPhoneVerification;
+  const verificationPreviewMode = Boolean(accountContact.previewMode);
   const deleteAccountChecks = React.useMemo(
     () => ({
       emailMatches:
@@ -564,10 +573,9 @@ export default function SettingsPage() {
       const updatedContact = await updateAccountContact({
         phoneNumber: nextPhoneNumber,
       });
-      setAccountContact(updatedContact);
+      setAccountContact(createAccountContactState(user, updatedContact));
       setAccountContactDraft(updatedContact.phoneNumber || "");
       setVerificationForm({ emailCode: "", phoneCode: "" });
-      await refreshMe().catch(() => null);
       setToast({
         message: updatedContact.hasPhoneNumber
           ? "Phone saved. Verify it when you are ready."
@@ -590,12 +598,13 @@ export default function SettingsPage() {
     setSendingAccountCodes(true);
     try {
       const updatedContact = await sendAccountContactCodes();
-      setAccountContact(updatedContact);
+      setAccountContact(createAccountContactState(user, updatedContact));
       setToast({
-        message:
-          updatedContact.hasPhoneNumber &&
-          !updatedContact.phoneVerified &&
-          !updatedContact.emailVerified
+        message: updatedContact.previewMode
+          ? "Preview mode is active. The latest verification codes are shown here because live email and SMS delivery are not configured yet."
+          : updatedContact.hasPhoneNumber &&
+              !updatedContact.phoneVerified &&
+              !updatedContact.emailVerified
             ? "Fresh email and SMS codes sent."
             : updatedContact.hasPhoneNumber && !updatedContact.phoneVerified
               ? "A fresh SMS code has been sent."
@@ -637,10 +646,9 @@ export default function SettingsPage() {
         emailCode: verificationForm.emailCode,
         phoneCode: verificationForm.phoneCode,
       });
-      setAccountContact(updatedContact);
+      setAccountContact(createAccountContactState(user, updatedContact));
       setAccountContactDraft(updatedContact.phoneNumber || "");
       setVerificationForm({ emailCode: "", phoneCode: "" });
-      await refreshMe().catch(() => null);
       setToast({
         message: updatedContact.verificationRequired
           ? "Verification updated. Finish the remaining step to complete setup."
@@ -1036,6 +1044,18 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
+                    {verificationPreviewMode ? (
+                      <div className="mt-4 rounded-2xl border border-sky-300/40 bg-sky-50/90 px-4 py-3 text-sm text-sky-900 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-100">
+                        <div className="font-semibold">Preview mode is enabled</div>
+                        <p className="mt-1 leading-6 text-sky-800 dark:text-sky-100/90">
+                          KFarms is generating verification codes on this page because live email
+                          and SMS delivery are not configured yet. To receive real messages, add
+                          SMTP and SMS provider credentials on the backend and switch preview mode
+                          off.
+                        </p>
+                      </div>
+                    ) : null}
+
                     {requiresAnyVerification ? (
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         {requiresEmailVerification ? (
@@ -1085,7 +1105,10 @@ export default function SettingsPage() {
                     {accountContact.preview ? (
                       <div className="mt-4 rounded-2xl border border-dashed border-emerald-300/40 bg-emerald-500/8 px-3.5 py-3 text-xs text-emerald-900 dark:border-emerald-400/30 dark:text-emerald-100">
                         <div className="font-semibold uppercase tracking-[0.16em]">
-                          Preview codes
+                          Current preview codes
+                        </div>
+                        <div className="mt-1 text-[11px] leading-5 text-emerald-800/90 dark:text-emerald-100/80">
+                          These are for this preview environment only.
                         </div>
                         <div className="mt-2 space-y-1">
                           {accountContact.preview.emailCode ? (

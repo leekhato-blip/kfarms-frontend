@@ -238,6 +238,9 @@ export default function FeedsPage() {
         fetchFeedSummary(),
         fetchFeeds(meta.page),
       ]);
+      setToast({ message: "Feeds refreshed", type: "success" });
+    } catch {
+      setToast({ message: "Failed to refresh feeds", type: "error" });
     } finally {
       setRefreshing(false);
     }

@@ -366,6 +366,9 @@ export default function ProductionsPage() {
         fetchLayerBatches(),
         fetchRecords(meta.page),
       ]);
+      setToast({ message: "Productions refreshed", type: "success" });
+    } catch {
+      setToast({ message: "Failed to refresh productions", type: "error" });
     } finally {
       setRefreshing(false);
     }

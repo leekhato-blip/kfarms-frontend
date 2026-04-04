@@ -284,6 +284,9 @@ export default function LivestockPage() {
     setRefreshing(true);
     try {
       await Promise.all([fetchList(meta.page), fetchOverview()]);
+      setToast({ message: "Livestock refreshed", type: "success" });
+    } catch {
+      setToast({ message: "Failed to refresh livestock", type: "error" });
     } finally {
       setRefreshing(false);
     }

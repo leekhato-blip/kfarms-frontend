@@ -92,7 +92,7 @@ export default function ConfirmModal({
                 <div>
                   <h3
                     id="confirm-modal-title"
-                    className="text-lg font-semibold flex items-center gap-2"
+                    className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100"
                   >
                     {title}
                     <span
@@ -105,7 +105,7 @@ export default function ConfirmModal({
                           : "Confirm"}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-300">
                     {isRestoreAction
                       ? "Recover this record back into the active list"
                       : isDangerAction
@@ -116,6 +116,7 @@ export default function ConfirmModal({
               </div>
 
               <button
+                type="button"
                 onClick={onCancel}
                 disabled={loading}
                 aria-label="Close modal"
@@ -135,6 +136,7 @@ export default function ConfirmModal({
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
+                type="button"
                 onClick={onCancel}
                 disabled={loading}
                 className="px-4 py-2.5 rounded-lg bg-white/80 dark:bg-black/60 border border-white/20 text-slate-700 dark:text-slate-200 transition hover:bg-white/90 dark:hover:bg-black/70 disabled:opacity-60"
@@ -143,6 +145,7 @@ export default function ConfirmModal({
               </button>
 
               <button
+                type="button"
                 disabled={loading}
                 onClick={onConfirm}
                 className={`px-4 py-2.5 rounded-lg font-semibold transition disabled:opacity-60 ${accentClasses.confirmButton}`}

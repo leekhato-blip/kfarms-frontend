@@ -10,6 +10,7 @@ import {
   Layers3,
   Mail,
   MapPin,
+  Monitor,
   Moon,
   Phone,
   ShieldCheck,
@@ -17,7 +18,9 @@ import {
   Sun,
   Users,
 } from "lucide-react";
+import { formatThemePreferenceLabel } from "../constants/settings";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 import { useTenant } from "../tenant/TenantContext";
 
 const COMPANY_NAV_LINKS = [
@@ -109,22 +112,12 @@ const APPROACH_STEPS = [
   },
 ];
 
-function getInitialTheme() {
-  if (typeof window === "undefined") return "dark";
-  const saved = localStorage.getItem("kf_theme");
-  if (saved) return saved;
-  const prefersDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
-}
-
 export default function CompanyProfilePage() {
-  const [theme, setTheme] = React.useState(getInitialTheme);
+  const { theme, isDark, toggleTheme } = useTheme();
   const [showScrollTop, setShowScrollTop] = React.useState(false);
-  const isDark = theme === "dark";
   const { isAuthenticated } = useAuth();
   const { activeTenantId, tenants, loadingTenants } = useTenant();
+  const themeLabel = formatThemePreferenceLabel(theme);
 
   const workspacePath = activeTenantId ? "/dashboard" : "/onboarding/create-tenant";
   const workspaceLabel = activeTenantId
@@ -134,14 +127,6 @@ export default function CompanyProfilePage() {
       : (tenants?.length || 0) > 0
         ? "Choose Workspace"
         : "Create Workspace";
-
-  React.useEffect(() => {
-    const nextDark = theme === "dark";
-    document.documentElement.classList.toggle("dark", nextDark);
-    document.body.classList.toggle("dark", nextDark);
-    localStorage.setItem("kf_theme", theme);
-    document.documentElement.style.transition = "background-color 200ms, color 200ms";
-  }, [theme]);
 
   React.useEffect(() => {
     document.title = "ROOTS Company Profile";
@@ -187,20 +172,28 @@ export default function CompanyProfilePage() {
 
         <button
           type="button"
-          onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+          onClick={toggleTheme}
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-semibold text-slate-700 shadow-neo transition hover:scale-[1.02] hover:bg-white/20 dark:bg-darkCard/70 dark:text-slate-200 dark:shadow-dark"
-          aria-label="Toggle theme"
+          aria-label={`Theme: ${themeLabel}. Click to cycle theme.`}
+          title={`Theme: ${themeLabel}. Click to cycle theme.`}
         >
-          {theme === "dark" ? (
+          {theme === "system" ? (
             <>
-              <Sun className="h-4 w-4 text-amber-400" />
-              Light
+              <Monitor className="h-4 w-4 text-sky-400" />
+              {themeLabel}
             </>
           ) : (
-            <>
-              <Moon className="h-4 w-4 text-indigo-400" />
-              Dark
-            </>
+            theme === "dark" ? (
+              <>
+                <Moon className="h-4 w-4 text-indigo-400" />
+                {themeLabel}
+              </>
+            ) : (
+              <>
+                <Sun className="h-4 w-4 text-amber-400" />
+                {themeLabel}
+              </>
+            )
           )}
         </button>
       </div>

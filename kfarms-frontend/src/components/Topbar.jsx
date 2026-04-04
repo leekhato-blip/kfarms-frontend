@@ -15,6 +15,7 @@ import {
   Droplets,
   ShieldAlert,
   Info,
+  Monitor,
   Wheat,
   Package,
   CheckCheck,
@@ -39,14 +40,13 @@ import {
   toKfarmsAppPath,
 } from "../apps/kfarms/paths";
 import {
-  SETTINGS_THEME_EVENT,
-  THEME_STORAGE_KEY,
-  getStoredThemeMode,
+  formatThemePreferenceLabel,
 } from "../constants/settings";
 import { WORKSPACE_QUICK_ACTION_EVENT } from "../constants/workspaceQuickActions";
 import { getUserDisplayName } from "../services/userProfileService";
 import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
 import { resolveWorkspaceTopbarMeta } from "../utils/pageMeta";
+import { useTheme } from "../hooks/useTheme";
 
 async function fetchNotifications() {
   try {
@@ -80,13 +80,48 @@ const NOTIFICATION_RESYNC_MS = 180000;
 const NOTIFICATION_FALLBACK_POLL_MS = 45000;
 const NOTIFICATION_DROPDOWN_LIMIT = 8;
 
+function normalizeNotificationContent(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\b\d{4}-\d{2}-\d{2}(?:[t\s]\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?z?)?\b/g, "#date")
+    .replace(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g, "#date")
+    .replace(/\b\d[\d,]*(?:\.\d+)?\b/g, "#")
+    .replace(/\s+/g, " ");
+}
+
+function isStockAlertNotification(notification) {
+  const title = toLowerText(notification?.title);
+  const message = toLowerText(notification?.message || notification?.body);
+  const type = toLowerText(notification?.type);
+  const content = `${title} ${message}`.trim();
+
+  if (!content) {
+    return false;
+  }
+
+  return (
+    content.includes("low stock") ||
+    content.includes("out of stock") ||
+    type.includes("inventory") ||
+    type.includes("feed") ||
+    type.includes("suppl")
+  );
+}
+
 function notificationSignature(notification) {
+  const title = notification?.title ?? "";
+  const message = notification?.message ?? notification?.body ?? "";
+  const normalize = isStockAlertNotification(notification)
+    ? normalizeNotificationContent
+    : toLowerText;
+
   return [
     notification?.tenant?.id ?? notification?.tenantId ?? "",
     notification?.user?.id ?? notification?.userId ?? "",
     notification?.type ?? "",
-    (notification?.title ?? "").trim().toLowerCase(),
-    (notification?.message ?? notification?.body ?? "").trim().toLowerCase(),
+    normalize(title),
+    normalize(message),
   ].join("::");
 }
 
@@ -712,33 +747,12 @@ export default function Topbar() {
     navigate(KFARMS_ROUTE_REGISTRY.dashboard.appPath);
   }, [layerBatchesLoading, navigate]);
 
-  const [theme, setTheme] = React.useState(getStoredThemeMode);
-  React.useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.body.classList.toggle("dark", theme === "dark");
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-    window.dispatchEvent(
-      new CustomEvent(SETTINGS_THEME_EVENT, {
-        detail: { mode: theme },
-      }),
-    );
-    document.documentElement.style.transition =
-      "background-color 200ms, color 200ms";
-  }, [theme]);
-
-  React.useEffect(() => {
-    const syncTheme = () => {
-      setTheme(getStoredThemeMode());
-    };
-
-    window.addEventListener(SETTINGS_THEME_EVENT, syncTheme);
-    window.addEventListener("storage", syncTheme);
-
-    return () => {
-      window.removeEventListener(SETTINGS_THEME_EVENT, syncTheme);
-      window.removeEventListener("storage", syncTheme);
-    };
-  }, []);
+  const {
+    theme: themePreference,
+    themeMode,
+    toggleTheme,
+  } = useTheme();
+  const themeLabel = formatThemePreferenceLabel(themePreference);
 
   React.useEffect(() => {
     function onDocClick(e) {
@@ -1461,15 +1475,18 @@ export default function Topbar() {
 
           {/* Theme toggle */}
           <button
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            onClick={toggleTheme}
             className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
-              theme === "dark"
+              themeMode === "dark"
                 ? "border-accent-primary/40 bg-accent-primary text-white shadow-[0_10px_22px_rgba(37,99,235,0.34)] hover:bg-accent-primary/90"
                 : "border-amber-300/70 bg-amber-200/90 text-amber-900 shadow-[0_8px_18px_rgba(217,119,6,0.24)] hover:bg-amber-200"
             }`}
-            aria-label="Toggle theme"
+            aria-label={`Theme: ${themeLabel}. Click to cycle theme.`}
+            title={`Theme: ${themeLabel}`}
           >
-            {theme === "dark" ? (
+            {themePreference === "system" ? (
+              <Monitor className="w-5 h-5" />
+            ) : themeMode === "dark" ? (
               <Moon className="w-5 h-5" />
             ) : (
               <Sun className="w-5 h-5" />

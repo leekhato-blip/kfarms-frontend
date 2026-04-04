@@ -12,11 +12,12 @@ import GuidedFormModal, {
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createFishHatch, updateFishHatch } from "../services/fishHatchService";
+import { todayDateInputValue, toDateInputValue } from "../utils/formInputs";
 
 function defaultForm() {
   return {
     pondId: "",
-    hatchDate: "",
+    hatchDate: todayDateInputValue(),
     maleCount: "",
     femaleCount: "",
     quantityHatched: "",
@@ -25,16 +26,6 @@ function defaultForm() {
 }
 
 const Required = () => <span className="ml-0.5 text-red-500">*</span>;
-
-function toInputDate(value) {
-  if (!value) return "";
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-    return value.slice(0, 10);
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
-}
 
 const HATCH_STEPS = [
   {
@@ -72,7 +63,7 @@ export default function FishHatchFormModal({
 
       setForm({
         pondId: String(fallbackPondId || ""),
-        hatchDate: toInputDate(initialData.hatchDate),
+        hatchDate: toDateInputValue(initialData.hatchDate, todayDateInputValue()),
         maleCount: initialData.maleCount ?? "",
         femaleCount: initialData.femaleCount ?? "",
         quantityHatched: initialData.quantityHatched ?? "",

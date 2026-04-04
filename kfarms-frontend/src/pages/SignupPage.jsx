@@ -184,7 +184,7 @@ export default function SignupPage() {
     const frameId = window.requestAnimationFrame(() => {
       signupCardRef.current?.scrollIntoView({
         behavior: "smooth",
-        block: "start",
+        block: "center",
       });
     });
 
@@ -379,7 +379,7 @@ export default function SignupPage() {
           onClose={() => setToast({ message: "", type: "" })}
         />
 
-        <div className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 px-0 pb-8 pt-16 sm:px-2 sm:pb-10 sm:pt-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,44rem)] lg:items-start lg:gap-6 lg:px-4 lg:py-10">
+        <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 items-center gap-4 px-0 py-10 sm:px-2 sm:py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,44rem)] lg:gap-6 lg:px-4 lg:py-12">
           <div className="hidden lg:flex lg:flex-col lg:gap-5">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
               <Sparkles className="h-4 w-4" style={{ color: brandAccentColor }} />
@@ -452,7 +452,10 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <div ref={signupCardRef} className="flex items-center justify-center">
+          <div
+            ref={signupCardRef}
+            className="flex min-h-[calc(100vh-7rem)] items-center justify-center lg:min-h-0"
+          >
             <AuthCard
               title="Create your farm account"
               subtitle="Three simple steps. Phone and verification come after setup."
@@ -771,6 +774,14 @@ export default function SignupPage() {
                 <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-400 sm:items-center sm:text-xs">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />
                   Secure signup, farm-by-farm data separation, and module-based setup.
+                </div>
+
+                <div className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs">
+                  By creating an account, you agree to the{" "}
+                  <Link className="font-semibold text-accent-primary" to="/terms">
+                    Terms & Conditions
+                  </Link>
+                  .
                 </div>
               </form>
             </AuthCard>

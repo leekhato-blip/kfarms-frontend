@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { useNavigate } from "react-router-dom";
 import { formatFeedLabel, resolveFeedColor } from "../utils/feedChart";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -14,6 +15,7 @@ export default function FeedPie({
 }) {
   const [darkMode, setDarkMode] = useState(null);
   const [chartKey, setChartKey] = useState(0);
+  const navigate = useNavigate();
 
   /* Sync theme + resize */
   useEffect(() => {
@@ -112,7 +114,7 @@ export default function FeedPie({
       return;
     }
 
-    window.location.href = "/feeds";
+    navigate("/feeds");
   };
 
   const renderEmpty = () => (

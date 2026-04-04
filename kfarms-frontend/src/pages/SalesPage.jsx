@@ -21,6 +21,7 @@ import {
 } from "../services/salesService";
 import { exportReport } from "../services/reportService";
 import useQuickCreateModal from "../hooks/useQuickCreateModal";
+import { SALES_CATEGORY_OPTIONS } from "../constants/formOptions";
 
 import { Line } from "react-chartjs-2";
 import {
@@ -487,6 +488,9 @@ export default function SalesPage() {
     setRefreshing(true);
     try {
       await Promise.all([fetchSales(meta.page), fetchSummary()]);
+      setToast({ message: "Sales refreshed", type: "success" });
+    } catch {
+      setToast({ message: "Failed to refresh sales", type: "error" });
     } finally {
       setRefreshing(false);
     }
@@ -777,10 +781,11 @@ export default function SalesPage() {
               }
             >
               <option value="">All Categories</option>
-              <option value="LAYER">Layer</option>
-              <option value="FISH">Fish</option>
-              <option value="LIVESTOCK">Poultry</option>
-              <option value="OTHER">Other</option>
+              {SALES_CATEGORY_OPTIONS.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
             </select>
             <input
               type="date"

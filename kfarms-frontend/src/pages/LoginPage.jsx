@@ -341,6 +341,14 @@ export default function LoginPage() {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Verified access • Only you can view your account.
                 </div>
+
+                <div className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs">
+                  By using KFarms, you agree to the{" "}
+                  <Link className="font-semibold text-accent-primary" to="/terms">
+                    Terms & Conditions
+                  </Link>
+                  .
+                </div>
               </form>
             </AuthCard>
           </div>

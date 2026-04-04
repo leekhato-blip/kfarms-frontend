@@ -9,6 +9,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import SkeletonLoader from "./SkeletonLoader";
 
 ChartJS.register(
@@ -27,6 +28,8 @@ export default function ProductionChart({
   actionHref = "/productions",
   actionLabel = "Record Production",
 }) {
+  const navigate = useNavigate();
+
   // Helper to format "YYYY-MM" → "Jan '25"
   const formatMonth = (value) => {
     const [year, month] = value.split("-");
@@ -108,7 +111,11 @@ export default function ProductionChart({
                   onCreate();
                   return;
                 }
-                window.location.href = actionHref;
+                if (actionHref?.startsWith("/")) {
+                  navigate(actionHref);
+                  return;
+                }
+                window.location.assign(actionHref);
               }}
             >
               {actionLabel}

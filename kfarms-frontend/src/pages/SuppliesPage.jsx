@@ -22,6 +22,7 @@ import {
 import { exportReport } from "../services/reportService";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import { SUPPLY_CATEGORY_OPTIONS } from "../constants/formOptions";
 
 import { Line } from "react-chartjs-2";
 import {
@@ -434,6 +435,9 @@ export default function SuppliesPage() {
     setRefreshing(true);
     try {
       await Promise.all([fetchSupplies(meta.page), fetchSummary()]);
+      setToast({ message: "Supplies refreshed", type: "success" });
+    } catch {
+      setToast({ message: "Failed to refresh supplies", type: "error" });
     } finally {
       setRefreshing(false);
     }
@@ -702,12 +706,11 @@ export default function SuppliesPage() {
             }
           >
             <option value="">All Categories</option>
-            <option value="FEED">Feed</option>
-            <option value="LIVESTOCK">Poultry</option>
-            <option value="FISH">Fish</option>
-            <option value="MEDICINE">Medicine</option>
-            <option value="EQUIPMENT">Equipment</option>
-            <option value="OTHER">Other</option>
+            {SUPPLY_CATEGORY_OPTIONS.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
+              </option>
+            ))}
           </select>
           <input
             type="date"

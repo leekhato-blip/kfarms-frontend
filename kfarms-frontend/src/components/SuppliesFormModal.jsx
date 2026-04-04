@@ -11,6 +11,13 @@ import GuidedFormModal, {
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createSupply, updateSupply } from "../services/suppliesService";
+import { SUPPLY_CATEGORY_OPTIONS } from "../constants/formOptions";
+import {
+  formatCurrencyInput,
+  normalizeCurrencyOnBlur,
+  sanitizeCurrencyInput,
+  todayDateInputValue,
+} from "../utils/formInputs";
 
 function defaultForm() {
   return {
@@ -20,7 +27,7 @@ function defaultForm() {
     unitPrice: "",
     supplierName: "",
     note: "",
-    supplyDate: "",
+    supplyDate: todayDateInputValue(),
   };
 }
 
@@ -35,25 +42,7 @@ const SUPPLY_STEPS = [
   },
 ];
 
-const SUPPLY_CATEGORIES = [
-  "FEED",
-  "LIVESTOCK",
-  "FISH",
-  "MEDICINE",
-  "EQUIPMENT",
-  "OTHER",
-];
-
 const Required = () => <span className="ml-0.5 text-red-500">*</span>;
-
-function formatCurrencyInput(value) {
-  if (!value) return "";
-  return new Intl.NumberFormat("en-NG").format(value);
-}
-
-function parseCurrencyInput(value) {
-  return value.replace(/,/g, "");
-}
 
 export default function SuppliesFormModal({
   open,
@@ -78,7 +67,9 @@ export default function SuppliesFormModal({
         unitPrice: initialData.unitPrice ?? "",
         supplierName: initialData.supplierName ?? "",
         note: initialData.note ?? "",
-        supplyDate: initialData.supplyDate ? String(initialData.supplyDate).slice(0, 10) : "",
+        supplyDate: initialData.supplyDate
+          ? String(initialData.supplyDate).slice(0, 10)
+          : todayDateInputValue(),
       });
     } else {
       setForm(defaultForm());
@@ -226,25 +217,24 @@ export default function SuppliesFormModal({
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">
-                  Category
+                <label className={GUIDED_FORM_LABEL_CLASS}>
+                  <Package className={GUIDED_FORM_ICON_CLASS} />
+                  Category <Required />
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {SUPPLY_CATEGORIES.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setForm((current) => ({ ...current, category }))}
-                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                        form.category === category
-                          ? "border-accent-primary bg-accent-primary text-white"
-                          : "border-white/20 bg-white/50 text-slate-700 dark:bg-white/10 dark:text-slate-200"
-                      }`}
-                    >
-                      {category}
-                    </button>
+                <select
+                  value={form.category}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, category: event.target.value }))
+                  }
+                  className={GUIDED_FORM_FIELD_CLASS}
+                  required
+                >
+                  {SUPPLY_CATEGORY_OPTIONS.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -275,15 +265,14 @@ export default function SuppliesFormModal({
                     inputMode="numeric"
                     value={formatCurrencyInput(form.unitPrice)}
                     onChange={(event) => {
-                      const raw = parseCurrencyInput(event.target.value);
-                      if (!/^\d*$/.test(raw)) return;
+                      const raw = sanitizeCurrencyInput(event.target.value);
                       setForm((current) => ({ ...current, unitPrice: raw }));
                     }}
                     onBlur={() => {
                       if (form.unitPrice === "") return;
                       setForm((current) => ({
                         ...current,
-                        unitPrice: String(Number(current.unitPrice)),
+                        unitPrice: normalizeCurrencyOnBlur(current.unitPrice),
                       }));
                     }}
                     className={GUIDED_FORM_FIELD_CLASS}

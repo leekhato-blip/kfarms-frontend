@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   MessageSquareText,
+  Monitor,
   Moon,
   Plus,
   RefreshCw,
@@ -54,6 +55,7 @@ import {
   writePlatformNotificationReadIds,
 } from "./platformTopbarUtils";
 import { getUserDisplayName } from "../services/userProfileService";
+import { formatThemePreferenceLabel } from "../constants/settings";
 
 const COMPACT_NAV_ITEMS = [
   { to: "/platform", label: "Hub", icon: LayoutDashboard, end: true },
@@ -64,6 +66,10 @@ const COMPACT_NAV_ITEMS = [
   { to: "/platform/health", label: "Health", icon: Activity },
   { to: "/platform/settings", label: "Settings", icon: Settings },
 ];
+
+const MOBILE_NAV_ITEMS = COMPACT_NAV_ITEMS.filter(
+  (item) => item.to !== "/platform/health" && item.to !== "/platform/settings",
+);
 
 function cn(...values) {
   return values.filter(Boolean).join(" ");
@@ -246,7 +252,8 @@ export default function Topbar({
   title,
   onOpenMenu,
   onOpenCommandPalette,
-  theme = "dark",
+  theme = "system",
+  themeMode = "dark",
   onToggleTheme,
   onRequestLogout,
   dataMode = "live",
@@ -274,7 +281,8 @@ export default function Topbar({
   );
   const [profileOpen, setProfileOpen] = React.useState(false);
   const deferredSearchQuery = React.useDeferredValue(searchQuery.trim());
-  const isDark = theme === "dark";
+  const isDark = themeMode === "dark";
+  const themeLabel = formatThemePreferenceLabel(theme);
   const normalizedPathname = React.useMemo(
     () => normalizePlatformPathname(location.pathname),
     [location.pathname],
@@ -419,9 +427,9 @@ export default function Topbar({
           },
           {
             id: "theme",
-            title: isDark ? "Switch to light mode" : "Switch to dark mode",
-            description: "Update the current platform appearance.",
-            icon: isDark ? Sun : Moon,
+            title: `Theme: ${themeLabel}`,
+            description: "Cycle between system, dark, and light mode.",
+            icon: theme === "system" ? Monitor : isDark ? Moon : Sun,
             tone: "blue",
             onSelect: onToggleTheme,
           },
@@ -454,6 +462,8 @@ export default function Topbar({
     onOpenCreateApp,
     onRequestLogout,
     onToggleTheme,
+    theme,
+    themeLabel,
   ]);
 
   const loadNotifications = React.useCallback(async () => {
@@ -828,6 +838,9 @@ export default function Topbar({
   const currentLabel = getUserDisplayName(currentUser, "Platform");
   const currentEmail = currentUser?.email || "No account email";
   const dataModeLabel = dataMode === "demo" ? "Demo" : "Live";
+  const isCompactNotificationView = Boolean(
+    notificationPopoverStyle && notificationPopoverStyle.width < 360,
+  );
 
   const searchPanel =
     searchOpen &&
@@ -927,25 +940,39 @@ export default function Topbar({
           >
             <Card className="w-full overflow-hidden border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/96 p-0 shadow-[0_28px_88px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
               <div className="relative z-10">
-                <div className="border-b border-[color:var(--atlas-border)]/85 px-3.5 py-3.5 sm:px-4 sm:py-4">
+                <div
+                  className={cn(
+                    "border-b border-[color:var(--atlas-border)]/85",
+                    isCompactNotificationView ? "px-3 py-3" : "px-3.5 py-3.5 sm:px-4 sm:py-4",
+                  )}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-300/30 bg-violet-500/12 text-violet-700 shadow-[0_14px_34px_rgba(124,58,237,0.12)] dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-100">
+                      <span
+                        className={cn(
+                          "inline-flex shrink-0 items-center justify-center border border-violet-300/30 bg-violet-500/12 text-violet-700 shadow-[0_14px_34px_rgba(124,58,237,0.12)] dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-100",
+                          isCompactNotificationView ? "h-9 w-9 rounded-xl" : "h-10 w-10 rounded-2xl",
+                        )}
+                      >
                         <Bell size={17} />
                       </span>
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                          Platform alerts
+                          {isCompactNotificationView ? "Alerts" : "Platform alerts"}
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--atlas-muted)]">
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                            Live
+                            {dataModeLabel}
                           </span>
                           <span>
                             {unreadNotifications.length > 0
-                              ? `${unreadNotifications.length} unread platform alert${unreadNotifications.length === 1 ? "" : "s"}`
-                              : "Everything is read for now."}
+                              ? isCompactNotificationView
+                                ? `${unreadNotifications.length} unread`
+                                : `${unreadNotifications.length} unread platform alert${unreadNotifications.length === 1 ? "" : "s"}`
+                              : isCompactNotificationView
+                                ? "All caught up"
+                                : "Everything is read for now."}
                           </span>
                         </div>
                       </div>
@@ -963,11 +990,21 @@ export default function Topbar({
                         <button
                           type="button"
                           onClick={() => markNotificationsRead(unreadNotifications.map((item) => item.id))}
-                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 px-3 text-xs font-semibold text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
+                          className={cn(
+                            "inline-flex h-9 items-center gap-1.5 rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 text-xs font-semibold text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]",
+                            isCompactNotificationView ? "w-9 justify-center px-0" : "px-3",
+                          )}
+                          aria-label="Mark all notifications as read"
                         >
                           <CheckCheck size={13} />
-                          <span className="hidden sm:inline">Mark all</span>
-                          <span className="sm:hidden">Clear</span>
+                          {isCompactNotificationView ? (
+                            <span className="sr-only">Mark all</span>
+                          ) : (
+                            <>
+                              <span className="hidden sm:inline">Mark all</span>
+                              <span className="sm:hidden">Clear</span>
+                            </>
+                          )}
                         </button>
                       ) : null}
                     </div>
@@ -981,7 +1018,12 @@ export default function Topbar({
                 ) : null}
 
                 <div
-                  className="mt-3 space-y-2.5 overflow-y-auto px-3.5 pb-3.5 pr-2 sm:px-4 sm:pb-4"
+                  className={cn(
+                    "mt-3 overflow-y-auto pr-2",
+                    isCompactNotificationView
+                      ? "space-y-2 px-3 pb-3"
+                      : "space-y-2.5 px-3.5 pb-3.5 sm:px-4 sm:pb-4",
+                  )}
                   style={{
                     maxHeight: `${Math.min(
                       notificationPopoverStyle.maxHeight,
@@ -1015,19 +1057,24 @@ export default function Topbar({
                       return (
                         <div
                           key={notification.id}
-                          className={`relative overflow-hidden rounded-[1.15rem] border border-[color:var(--atlas-border)] p-3 transition sm:p-3.5 ${
+                          className={`relative overflow-hidden border border-[color:var(--atlas-border)] transition ${
                             isUnread
                               ? "bg-[color:var(--atlas-surface-soft)]/88 shadow-[0_14px_34px_rgba(15,23,42,0.08)]"
                               : "bg-[color:var(--atlas-surface-soft)]/58"
-                          }`}
+                          } ${isCompactNotificationView ? "rounded-[1rem] p-2.5" : "rounded-[1.15rem] p-3 sm:p-3.5"}`}
                         >
                           <div className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r ${visual.railClass}`} />
-                          <div className="flex items-start gap-3">
-                            <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${visual.iconClass}`}>
+                          <div className={cn("flex items-start", isCompactNotificationView ? "gap-2.5" : "gap-3")}>
+                            <span
+                              className={cn(
+                                `inline-flex shrink-0 items-center justify-center border ${visual.iconClass}`,
+                                isCompactNotificationView ? "h-8 w-8 rounded-xl" : "h-10 w-10 rounded-2xl",
+                              )}
+                            >
                               <VisualIcon size={16} />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-3">
+                              <div className={cn("flex items-start gap-3", isCompactNotificationView && "justify-between")}>
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <span
@@ -1038,14 +1085,14 @@ export default function Topbar({
                                     {isUnread ? (
                                       <span className="inline-flex items-center gap-1 rounded-full border border-violet-300/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-100">
                                         <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden="true" />
-                                        New
+                                        {isCompactNotificationView ? "Unread" : "New"}
                                       </span>
                                     ) : null}
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => handleNotificationSelect(notification)}
-                                    className="mt-2 block text-left"
+                                    className={cn("block text-left", isCompactNotificationView ? "mt-1.5" : "mt-2")}
                                   >
                                     <div className="text-[13px] font-semibold leading-5 text-[var(--atlas-text-strong)] sm:text-sm">
                                       {notification.title}
@@ -1060,12 +1107,19 @@ export default function Topbar({
                                 </div>
                               </div>
 
-                              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                                <span
-                                  className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${notificationLevelClasses(notification.level)}`}
-                                >
-                                  {formatNotificationLevelLabel(notification.level)}
-                                </span>
+                              <div
+                                className={cn(
+                                  "flex flex-wrap items-center gap-2",
+                                  isCompactNotificationView ? "mt-2 justify-end" : "mt-3 justify-between",
+                                )}
+                              >
+                                {!isCompactNotificationView ? (
+                                  <span
+                                    className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${notificationLevelClasses(notification.level)}`}
+                                  >
+                                    {formatNotificationLevelLabel(notification.level)}
+                                  </span>
+                                ) : null}
                                 <div className="flex items-center gap-2">
                                   {isUnread ? (
                                     <button
@@ -1073,7 +1127,7 @@ export default function Topbar({
                                       onClick={() => markNotificationsRead([notification.id])}
                                       className="rounded-full px-2 py-1 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-500/10 hover:text-violet-800 dark:text-violet-200 dark:hover:bg-violet-400/10 dark:hover:text-violet-100"
                                     >
-                                      Mark read
+                                      {isCompactNotificationView ? "Read" : "Mark read"}
                                     </button>
                                   ) : null}
                                   <button
@@ -1081,8 +1135,8 @@ export default function Topbar({
                                     onClick={() => handleNotificationSelect(notification)}
                                     className="inline-flex items-center gap-1 rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/85 px-2.5 py-1 text-[11px] font-semibold text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
                                   >
-                                    Open
-                                    <ChevronRight size={13} />
+                                    {isCompactNotificationView ? "View" : "Open"}
+                                    {!isCompactNotificationView ? <ChevronRight size={13} /> : null}
                                   </button>
                                 </div>
                               </div>
@@ -1352,31 +1406,11 @@ export default function Topbar({
                 {title}
               </h2>
             </div>
-            <span
-              className={`hidden items-center gap-2 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.18em] md:inline-flex ${
-                limitedLiveAccess
-                  ? "border-emerald-300/30 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-200"
-                  : dataMode === "demo"
-                  ? "border-blue-300/25 bg-blue-500/10 text-blue-700 dark:border-blue-400/25 dark:bg-blue-400/10 dark:text-blue-200"
-                  : "border-violet-400/20 bg-violet-500/10 text-violet-700 dark:border-violet-400/25 dark:bg-violet-400/10 dark:text-violet-200"
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  limitedLiveAccess
-                    ? "bg-emerald-500 dark:bg-emerald-300"
-                    : dataMode === "demo"
-                    ? "bg-blue-500 dark:bg-blue-300"
-                    : "bg-violet-500 dark:bg-fuchsia-300"
-                }`}
-              />
-              {dataMode === "demo" ? "Demo" : "Live"}
-            </span>
           </div>
 
-          <div className="flex w-full min-w-0 items-center gap-2 md:min-w-[360px] md:flex-1 md:justify-end">
-            <div ref={searchRef} className="relative min-w-0 flex-1 md:max-w-xl">
-              <label className="atlas-command-chrome atlas-glow-rail flex h-10 w-full items-center gap-2 rounded-2xl px-3 text-[var(--atlas-text)] sm:h-11 sm:px-3.5">
+          <div className="flex w-full min-w-0 flex-col gap-2 md:min-w-[360px] md:flex-1 md:flex-row md:flex-wrap md:items-center md:justify-end">
+            <div ref={searchRef} className="relative min-w-0 w-full md:flex-1 md:max-w-xl">
+              <label className="atlas-command-chrome flex h-10 w-full items-center gap-2 rounded-2xl px-3 text-[var(--atlas-text)] sm:h-11 sm:px-3.5">
                 <Search size={15} />
                 <input
                   type="text"
@@ -1393,13 +1427,13 @@ export default function Topbar({
                     setProfileOpen(false);
                   }}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Search pages, apps, tenants..."
+                  placeholder="Search apps, tenants, users..."
                   className="h-full w-full bg-transparent text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)]"
                 />
                 <button
                   type="button"
                   onClick={handleCreateAppClick}
-                  className="atlas-icon-button rounded-xl p-1.5 text-[var(--atlas-text)] shadow-[0_0_14px_rgba(96,165,250,0.25)] hover:bg-[color:var(--atlas-surface-hover)]"
+                  className="atlas-icon-button rounded-xl p-1.5 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
                   aria-label={canManagePortfolio ? "Create planned app" : "Open quick actions"}
                   title={canManagePortfolio ? "Create planned app" : "Open quick actions"}
                 >
@@ -1408,94 +1442,113 @@ export default function Topbar({
               </label>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={openQuickActions}
-              className="hidden shrink-0 rounded-2xl px-3.5 lg:inline-flex"
+            <div
+              className={cn(
+                "flex w-full items-center gap-2 md:w-auto md:flex-none md:justify-end",
+                onChangeDataMode ? "justify-between" : "justify-end",
+              )}
             >
-              <Sparkles size={15} />
-              Quick Actions
-            </Button>
+              {onChangeDataMode ? (
+                <div className="inline-flex items-center rounded-xl border border-[color:var(--atlas-border)]/70 bg-[color:var(--atlas-surface-soft)]/78 p-0.5 sm:rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => onChangeDataMode?.("demo")}
+                    className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition sm:rounded-xl sm:px-3 sm:text-[11px] sm:tracking-[0.14em] ${
+                      dataMode === "demo"
+                        ? "bg-blue-500/12 text-blue-700 dark:bg-blue-400/18 dark:text-blue-100"
+                        : "text-[var(--atlas-muted)] hover:bg-[color:var(--atlas-surface-hover)]"
+                    }`}
+                  >
+                    Demo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onChangeDataMode?.("live")}
+                    className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition sm:rounded-xl sm:px-3 sm:text-[11px] sm:tracking-[0.14em] ${
+                      dataMode === "live"
+                        ? "bg-violet-500/12 text-violet-700 dark:bg-violet-400/18 dark:text-violet-100"
+                        : "text-[var(--atlas-muted)] hover:bg-[color:var(--atlas-surface-hover)]"
+                    }`}
+                  >
+                    Live
+                  </button>
+                </div>
+              ) : null}
 
-            <Button variant="ghost" className="hidden md:inline-flex" onClick={onOpenCommandPalette}>
-              <Command size={15} />
-              Ctrl+K
-            </Button>
-
-            {onChangeDataMode ? (
-              <div className="hidden items-center rounded-2xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/85 p-1 md:flex">
+              <div className="flex items-center gap-2 sm:gap-2.5">
                 <button
                   type="button"
-                  onClick={() => onChangeDataMode?.("demo")}
-                  className={`rounded-xl px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
-                    dataMode === "demo"
-                      ? "bg-blue-500/15 text-blue-700 dark:bg-blue-400/20 dark:text-blue-100"
-                      : "text-[var(--atlas-muted)] hover:bg-[color:var(--atlas-surface-hover)]"
-                  }`}
+                  onClick={openQuickActions}
+                  className="atlas-icon-button hidden shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)] md:inline-flex"
+                  aria-label="Open quick actions"
+                  title="Quick actions"
                 >
-                  Demo
+                  <Sparkles size={15} />
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => onChangeDataMode?.("live")}
-                  className={`rounded-xl px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
-                    dataMode === "live"
-                      ? "bg-violet-500/15 text-violet-700 dark:bg-violet-400/20 dark:text-violet-100"
-                      : "text-[var(--atlas-muted)] hover:bg-[color:var(--atlas-surface-hover)]"
-                  }`}
+                  onClick={onOpenCommandPalette}
+                  className="atlas-icon-button hidden shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)] md:inline-flex"
+                  aria-label="Open command palette"
+                  title="Command palette"
                 >
-                  Live
+                  <Command size={15} />
                 </button>
+
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className="atlas-icon-button inline-flex shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
+                  aria-label={`Theme: ${themeLabel}. Click to cycle theme.`}
+                  title={`Theme: ${themeLabel}`}
+                >
+                  {theme === "system" ? (
+                    <Monitor size={15} />
+                  ) : isDark ? (
+                    <Moon size={15} />
+                  ) : (
+                    <Sun size={15} />
+                  )}
+                </button>
+
+                <div ref={notificationRef} className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={toggleNotifications}
+                    className="atlas-icon-button relative inline-flex shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
+                    aria-label="Notifications"
+                  >
+                    <Bell size={15} />
+                    {unreadNotifications.length > 0 ? (
+                      <span className="absolute -right-0.5 -top-0.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-semibold text-white">
+                        {Math.min(unreadNotifications.length, 9)}
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
+
+                <div ref={profileRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={toggleProfile}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/85 px-2.5 py-2 text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)] sm:px-3"
+                    aria-label="Account"
+                  >
+                    <UserCircle2 size={15} />
+                    <span className="hidden max-w-[8rem] truncate text-xs font-semibold tracking-[0.12em] text-[var(--atlas-text-strong)] xl:inline">
+                      {getUserDisplayName(currentUser, "Platform")}
+                    </span>
+                  </button>
+                </div>
               </div>
-            ) : null}
-
-            <div className="hidden h-5 w-px bg-[color:var(--atlas-border-strong)] md:block" />
-
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className="atlas-icon-button inline-flex shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
-              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {isDark ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-
-            <div ref={notificationRef} className="relative shrink-0">
-              <button
-                type="button"
-                onClick={toggleNotifications}
-                className="atlas-icon-button relative inline-flex shrink-0 rounded-xl p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
-                aria-label="Notifications"
-              >
-                <Bell size={15} />
-                {unreadNotifications.length > 0 ? (
-                  <span className="absolute -right-0.5 -top-0.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-violet-500 px-1 text-[10px] font-semibold text-white">
-                    {Math.min(unreadNotifications.length, 9)}
-                  </span>
-                ) : null}
-              </button>
-            </div>
-
-            <div ref={profileRef} className="relative">
-              <button
-                type="button"
-                onClick={toggleProfile}
-                className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/85 px-2.5 py-2 text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)] sm:px-3"
-                aria-label="Account"
-              >
-                <UserCircle2 size={15} />
-                <span className="hidden max-w-[8rem] truncate text-xs font-semibold tracking-[0.12em] text-[var(--atlas-text-strong)] lg:inline">
-                  {getUserDisplayName(currentUser, "Platform")}
-                </span>
-              </button>
             </div>
           </div>
         </div>
 
         <div className="mt-3 xl:hidden">
-          <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
-            {COMPACT_NAV_ITEMS.map((item) => {
+          <div className="hide-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
+            {MOBILE_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = isCompactNavItemActive(normalizedPathname, item);
               const showUnread = item.to === "/platform/messages" && messageMenuHasNew;
@@ -1506,7 +1559,7 @@ export default function Topbar({
                   type="button"
                   onClick={() => navigate(item.to)}
                   className={cn(
-                    "relative inline-flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition",
+                    "relative inline-flex shrink-0 items-center gap-1.5 rounded-2xl border px-2.5 py-2 text-[11px] font-semibold transition",
                     isActive
                       ? "border-violet-400/45 bg-violet-500/15 text-violet-800 shadow-[0_10px_26px_rgba(124,58,237,0.18)] ring-1 ring-violet-300/15 dark:border-violet-300/30 dark:bg-violet-400/16 dark:text-violet-50"
                       : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/78 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]",

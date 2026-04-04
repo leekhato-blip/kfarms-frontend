@@ -7,14 +7,18 @@ import { AuthProvider } from "./hooks/useAuth.jsx";
 import { TenantProvider } from "./tenant/TenantContext.jsx";
 import { PlatformAuthProvider } from "./auth/AuthProvider.jsx";
 import { initializeOfflineSync } from "./offline/offlineSync.js";
-import { getStoredThemeMode } from "./constants/settings.js";
+import { getStoredThemeMode, resolveThemeScopeFromPath } from "./constants/settings.js";
 
 const SPA_REDIRECT_STORAGE_KEY = "kf_spa_redirect";
 const SERVICE_WORKER_CLEANUP_SESSION_KEY = "kf_sw_cleanup_v3";
 const root = document.getElementById("root");
 
 if (typeof document !== "undefined") {
-  const initialThemeMode = getStoredThemeMode();
+  const initialThemeScope =
+    typeof window !== "undefined"
+      ? resolveThemeScopeFromPath(window.location.pathname)
+      : undefined;
+  const initialThemeMode = getStoredThemeMode(initialThemeScope);
   document.documentElement.classList.toggle("dark", initialThemeMode === "dark");
   document.body?.classList.toggle("dark", initialThemeMode === "dark");
   document.documentElement.style.colorScheme = initialThemeMode;

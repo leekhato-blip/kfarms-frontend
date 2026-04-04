@@ -11,13 +11,19 @@ import GuidedFormModal, {
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createFeed, updateFeed } from "../services/feedService";
+import {
+  formatCurrencyInput,
+  normalizeCurrencyOnBlur,
+  sanitizeCurrencyInput,
+  todayDateInputValue,
+} from "../utils/formInputs";
 
 function defaultForm() {
   return {
     batchType: "LAYER",
     quantity: "",
     unitCost: "",
-    date: "",
+    date: todayDateInputValue(),
     note: "",
   };
 }
@@ -46,15 +52,6 @@ const FEED_STEPS = [
 
 const Required = () => <span className="ml-0.5 text-red-500">*</span>;
 
-function formatCurrencyInput(value) {
-  if (!value) return "";
-  return new Intl.NumberFormat("en-NG").format(value);
-}
-
-function parseCurrencyInput(value) {
-  return value.replace(/,/g, "");
-}
-
 export default function FeedFormModal({ open, onClose, initialData = null, onSuccess }) {
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
@@ -74,7 +71,7 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
           ? String(initialData.date).slice(0, 10)
           : initialData.feedDate
             ? String(initialData.feedDate).slice(0, 10)
-            : "",
+            : todayDateInputValue(),
         note: initialData.note ?? "",
       });
     } else {
@@ -249,15 +246,14 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
                     inputMode="numeric"
                     value={formatCurrencyInput(form.unitCost)}
                     onChange={(event) => {
-                      const raw = parseCurrencyInput(event.target.value);
-                      if (!/^\d*$/.test(raw)) return;
+                      const raw = sanitizeCurrencyInput(event.target.value);
                       setForm((current) => ({ ...current, unitCost: raw }));
                     }}
                     onBlur={() => {
                       if (form.unitCost === "") return;
                       setForm((current) => ({
                         ...current,
-                        unitCost: String(Number(current.unitCost)),
+                        unitCost: normalizeCurrencyOnBlur(current.unitCost),
                       }));
                     }}
                     className={GUIDED_FORM_FIELD_CLASS}

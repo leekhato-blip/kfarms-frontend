@@ -18,6 +18,7 @@ import {
   writeStoredPlatformApps,
 } from "../pages/platform/platformWorkbench";
 import { resolvePlatformAccessTier } from "../pages/platform/platformInsights";
+import { THEME_SCOPES } from "../constants/settings";
 
 const PAGE_TITLES = {
   "/platform": "Hub",
@@ -92,7 +93,7 @@ function PlatformShell() {
   const location = useLocation();
   const { logout, user } = usePlatformAuth();
   const { notify } = useToast();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, themeMode, toggleTheme } = useTheme(THEME_SCOPES.PLATFORM);
 
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [commandOpen, setCommandOpen] = React.useState(false);
@@ -322,6 +323,7 @@ function PlatformShell() {
             onOpenMenu={() => setMobileOpen(true)}
             onOpenCommandPalette={() => setCommandOpen(true)}
             theme={theme}
+            themeMode={themeMode}
             onToggleTheme={toggleTheme}
             onRequestLogout={requestLogout}
             dataMode={effectivePlatformDataMode}

@@ -11,11 +11,12 @@ import GuidedFormModal, {
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createEggRecord, updateEggRecord } from "../services/eggProductionService";
+import { todayDateInputValue } from "../utils/formInputs";
 
 function defaultForm(layerBatches = []) {
   return {
     batchId: layerBatches[0]?.id ? String(layerBatches[0].id) : "",
-    collectionDate: "",
+    collectionDate: todayDateInputValue(),
     goodEggs: "",
     damagedEggs: "",
     note: "",
@@ -60,7 +61,7 @@ export default function EggProductionFormModal({
         batchId: initialData.batchId ? String(initialData.batchId) : "",
         collectionDate: initialData.collectionDate
           ? String(initialData.collectionDate).slice(0, 10)
-          : "",
+          : todayDateInputValue(),
         goodEggs: String(initialData.goodEggs ?? ""),
         damagedEggs: String(initialData.damagedEggs ?? ""),
         note: initialData.note ?? "",

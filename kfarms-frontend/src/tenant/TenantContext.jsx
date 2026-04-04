@@ -114,9 +114,18 @@ export function TenantProvider({ children }) {
       setTenantPlanOverrides(readTenantPlanOverrides());
     };
 
+    const handleStorage = (event) => {
+      if (event?.key && event.key !== TENANT_PLAN_OVERRIDE_STORAGE_KEY) {
+        return;
+      }
+      handleOverridesChanged();
+    };
+
     window.addEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
+    window.addEventListener("storage", handleStorage);
     return () => {
       window.removeEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
+      window.removeEventListener("storage", handleStorage);
     };
   }, []);
 

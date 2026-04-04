@@ -156,7 +156,7 @@ export default function TrashModal({
               />
             ) : (
               <>
-                <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/40 dark:bg-white/5">
+                <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/40 text-slate-700 dark:bg-white/5 dark:text-slate-100">
                   <table className="w-full min-w-[750px] text-sm">
                     <thead className="border-b border-white/10 text-slate-500 dark:text-slate-400">
                       <tr>
@@ -191,7 +191,7 @@ export default function TrashModal({
                           {columns.map((column) => (
                             <td
                               key={column.key}
-                              className={`px-3 py-2.5 ${getAlignClass(column.align)}`}
+                              className={`px-3 py-2.5 text-slate-700 dark:text-slate-100 ${getAlignClass(column.align)}`}
                             >
                               {formatCell ? formatCell(item, column.key) : item[column.key]}
                             </td>

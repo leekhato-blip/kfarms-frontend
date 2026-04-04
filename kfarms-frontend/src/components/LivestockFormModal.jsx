@@ -22,6 +22,7 @@ import GuidedFormModal, {
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
 import { createLivestock, updateLivestock } from "../services/livestockService";
+import { todayDateInputValue } from "../utils/formInputs";
 
 const LIVESTOCK_TYPES = [
   "LAYER",
@@ -44,12 +45,11 @@ const KEEPING_METHODS = [
 ];
 
 function defaultForm() {
-  const today = new Date().toISOString().slice(0, 10);
   return {
     batchName: "",
     type: "LAYER",
     currentStock: "",
-    arrivalDate: today,
+    arrivalDate: todayDateInputValue(),
     sourceType: "FARM_BIRTH",
     keepingMethod: "DEEP_LITTER",
     startingAgeInWeeks: "",
@@ -79,6 +79,7 @@ export default function LivestockFormModal({
 }) {
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [step, setStep] = useState(0);
 
   const editing = Boolean(initialData?.id);
@@ -93,7 +94,7 @@ export default function LivestockFormModal({
         currentStock: initialData.currentStock ?? "",
         arrivalDate: initialData.arrivalDate
           ? String(initialData.arrivalDate).slice(0, 10)
-          : "",
+          : todayDateInputValue(),
         sourceType: initialData.sourceType ?? "FARM_BIRTH",
         keepingMethod: initialData.keepingMethod ?? "DEEP_LITTER",
         startingAgeInWeeks:
@@ -105,11 +106,12 @@ export default function LivestockFormModal({
       setForm(defaultForm());
     }
 
+    setErrorMessage("");
     setStep(0);
   }, [initialData, open]);
 
   const stepOneComplete = Boolean(String(form.batchName || "").trim() && form.type && form.sourceType);
-  const stepTwoComplete = Boolean(form.arrivalDate);
+  const stepTwoComplete = Boolean(Number(form.currentStock) > 0 && form.arrivalDate);
 
   async function submit(event) {
     event.preventDefault();
@@ -121,11 +123,12 @@ export default function LivestockFormModal({
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
+    setErrorMessage("");
 
     const payload = {
       batchName: form.batchName.trim(),
       type: form.type || null,
-      currentStock: form.currentStock === "" ? null : Number(form.currentStock),
+      currentStock: Number(form.currentStock),
       arrivalDate: form.arrivalDate || null,
       sourceType: form.sourceType || null,
       keepingMethod:
@@ -143,6 +146,17 @@ export default function LivestockFormModal({
       onSuccess?.(saved);
     } catch (error) {
       console.error("Livestock submit failed", error);
+      if (error?.response?.status === 409) {
+        setErrorMessage(
+          "That poultry group name already exists. Rename it or restore the earlier flock before saving.",
+        );
+      } else {
+        setErrorMessage(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            `Failed to ${editing ? "update" : "save"} poultry flock.`,
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -213,6 +227,7 @@ export default function LivestockFormModal({
       steps={LIVESTOCK_STEPS}
       currentStep={step}
       maxWidth="max-w-2xl"
+      errorMessage={errorMessage}
       footer={footer}
     >
       {step === 0 ? (
@@ -293,17 +308,18 @@ export default function LivestockFormModal({
               <div>
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Users className={GUIDED_FORM_ICON_CLASS} />
-                  Current stock
+                  Current stock <Required />
                 </label>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   value={form.currentStock}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, currentStock: event.target.value }))
                   }
                   className={GUIDED_FORM_FIELD_CLASS}
                   placeholder="e.g. 1200"
+                  required
                 />
               </div>
 
@@ -346,7 +362,8 @@ export default function LivestockFormModal({
                     ))}
                   </select>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Choose how the birds are kept so reports and daily records reflect the right management method.
+                    Choose the keeping method that matches this flock, such as deep litter,
+                    battery cage, or free range, so housing and care records stay accurate.
                   </p>
                 </div>
               )}

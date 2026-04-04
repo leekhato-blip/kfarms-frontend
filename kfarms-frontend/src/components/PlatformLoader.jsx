@@ -23,43 +23,6 @@ function getPreferredTheme() {
   return "light";
 }
 
-const PALETTES = {
-  light: {
-    background:
-      "radial-gradient(640px 280px at 50% 18%, rgba(59, 130, 246, 0.1), transparent 62%), radial-gradient(420px 220px at 50% 78%, rgba(16, 185, 129, 0.08), transparent 58%), linear-gradient(180deg, #f4f7fd 0%, #f8fbff 56%, #ffffff 100%)",
-    surface: "rgba(255, 255, 255, 0.76)",
-    surfaceBorder: "rgba(148, 163, 184, 0.2)",
-    frame: "rgba(255, 255, 255, 0.72)",
-    frameBorder: "rgba(148, 163, 184, 0.18)",
-    frameGlow: "rgba(96, 165, 250, 0.16)",
-    overline: "rgba(79, 70, 229, 0.72)",
-    title: "#0f172a",
-    text: "rgba(71, 85, 105, 0.82)",
-    line: "rgba(203, 213, 225, 0.8)",
-    signal: "linear-gradient(90deg, #4f46e5 0%, #2563eb 60%, #06b6d4 100%)",
-    badge: "rgba(59, 130, 246, 0.1)",
-    badgeBorder: "rgba(59, 130, 246, 0.18)",
-    badgeText: "#1d4ed8",
-  },
-  dark: {
-    background:
-      "radial-gradient(640px 280px at 50% 18%, rgba(96, 165, 250, 0.12), transparent 62%), radial-gradient(420px 220px at 50% 78%, rgba(45, 212, 191, 0.08), transparent 58%), linear-gradient(180deg, #040813 0%, #07111d 56%, #0b1625 100%)",
-    surface: "rgba(8, 15, 29, 0.74)",
-    surfaceBorder: "rgba(100, 116, 139, 0.2)",
-    frame: "rgba(15, 23, 42, 0.72)",
-    frameBorder: "rgba(100, 116, 139, 0.18)",
-    frameGlow: "rgba(96, 165, 250, 0.22)",
-    overline: "rgba(147, 197, 253, 0.76)",
-    title: "#f8fafc",
-    text: "rgba(203, 213, 225, 0.8)",
-    line: "rgba(30, 41, 59, 0.9)",
-    signal: "linear-gradient(90deg, #818cf8 0%, #60a5fa 60%, #22d3ee 100%)",
-    badge: "rgba(59, 130, 246, 0.12)",
-    badgeBorder: "rgba(96, 165, 250, 0.22)",
-    badgeText: "#dbeafe",
-  },
-};
-
 export default function PlatformLoader({
   label = "Loading ROOTS platform...",
   portal = true,
@@ -67,7 +30,14 @@ export default function PlatformLoader({
 }) {
   const [theme, setTheme] = React.useState(getPreferredTheme);
   const isDark = theme === "dark";
-  const palette = isDark ? PALETTES.dark : PALETTES.light;
+  const background = isDark
+    ? "radial-gradient(980px 520px at 18% 0%, rgba(37, 99, 235, 0.14), transparent 58%), radial-gradient(760px 420px at 84% 18%, rgba(16, 185, 129, 0.14), transparent 54%), rgba(4, 10, 24, 0.94)"
+    : "radial-gradient(920px 480px at 12% 0%, rgba(37, 99, 235, 0.12), transparent 58%), radial-gradient(760px 420px at 88% 18%, rgba(16, 185, 129, 0.1), transparent 54%), rgba(248, 250, 252, 0.94)";
+  const cardSurface = isDark ? "rgba(10, 18, 35, 0.82)" : "rgba(255, 255, 255, 0.92)";
+  const cardBorder = isDark ? "rgba(100, 116, 139, 0.2)" : "rgba(148, 163, 184, 0.2)";
+  const cardShadow = isDark
+    ? "0 22px 56px rgba(2, 6, 23, 0.38)"
+    : "0 22px 56px rgba(15, 23, 42, 0.12)";
 
   React.useEffect(() => {
     if (typeof document === "undefined" || typeof window === "undefined") return undefined;
@@ -107,130 +77,111 @@ export default function PlatformLoader({
 
   const content = (
     <div
-      className={`${isDark ? "dark " : ""}fixed inset-0 z-[9990] overflow-hidden`}
+      className={`${isDark ? "dark " : ""}fixed inset-0 z-[9990]`}
       role="status"
       aria-live="polite"
     >
       <div
         className="flex min-h-screen items-center justify-center px-6 py-10"
         style={{
-          background: palette.background,
+          background,
           colorScheme: isDark ? "dark" : "light",
+          backdropFilter: "blur(8px)",
         }}
       >
         <style>{`
-          @keyframes platform-loader-signal {
-            0% { transform: translateX(-120%); }
-            100% { transform: translateX(285%); }
+          @keyframes roots-loader-spin {
+            to { transform: rotate(360deg); }
           }
-          @keyframes platform-loader-breathe {
-            0%, 100% { transform: scale(0.98); opacity: 0.72; }
-            50% { transform: scale(1.02); opacity: 1; }
+
+          @keyframes roots-loader-slide {
+            0% { transform: translateX(-135%); }
+            100% { transform: translateX(235%); }
           }
-          @keyframes platform-loader-pulse {
-            0%, 100% { transform: scale(0.94); opacity: 0.55; }
-            50% { transform: scale(1.06); opacity: 0.9; }
+
+          @keyframes roots-loader-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
           }
         `}</style>
 
-        <div className="w-full max-w-[19rem]">
-          <div
-            className="relative overflow-hidden rounded-[1.8rem] border px-7 py-7 text-center backdrop-blur-xl sm:px-8 sm:py-8"
-            style={{
-              background: palette.surface,
-              borderColor: palette.surfaceBorder,
-              boxShadow: isDark
-                ? "0 18px 50px rgba(2, 6, 23, 0.35)"
-                : "0 18px 48px rgba(15, 23, 42, 0.08)",
-            }}
-          >
+        <div
+          className="w-full max-w-[20rem] rounded-[1.55rem] border p-5 backdrop-blur-xl"
+          style={{
+            background: cardSurface,
+            borderColor: cardBorder,
+            boxShadow: cardShadow,
+          }}
+        >
+          <div className="flex items-center gap-4">
             <div
-              className="pointer-events-none absolute left-1/2 top-[5.35rem] h-[6.25rem] w-[6.25rem] -translate-x-1/2 rounded-full"
+              className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.1rem]"
               style={{
-                background: palette.frameGlow,
-                filter: "blur(18px)",
-                animation: "platform-loader-pulse 2.6s ease-in-out infinite",
+                background: isDark
+                  ? "linear-gradient(145deg, rgba(37,99,235,0.24), rgba(16,185,129,0.2))"
+                  : "linear-gradient(145deg, rgba(37,99,235,0.14), rgba(16,185,129,0.14))",
               }}
-            />
-
-            <div className="relative z-10">
-              <span
-                className="inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+            >
+              <div
+                className="absolute inset-[7px] rounded-[0.9rem] border"
                 style={{
-                  background: palette.badge,
-                  borderColor: palette.badgeBorder,
-                  color: palette.badgeText,
+                  borderColor: isDark ? "rgba(148,163,184,0.2)" : "rgba(148,163,184,0.18)",
+                  background: isDark ? "rgba(7, 12, 24, 0.84)" : "rgba(255,255,255,0.9)",
+                  animation: "roots-loader-float 2.4s ease-in-out infinite",
                 }}
+              />
+              <span
+                className="absolute h-8 w-8 rounded-full"
+                style={{
+                  border: isDark
+                    ? "2px solid rgba(255,255,255,0.24)"
+                    : "2px solid rgba(15,23,42,0.12)",
+                  borderTopColor: isDark ? "#93c5fd" : "#2563eb",
+                  animation: "roots-loader-spin 1.1s linear infinite",
+                }}
+              />
+              <img
+                src={rootsLogo}
+                alt="ROOTS"
+                className="relative z-[1] h-7 w-auto object-contain"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <div
+                className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                style={{ color: isDark ? "rgba(110, 231, 183, 0.92)" : "#047857" }}
               >
                 ROOTS Platform
-              </span>
-
-              <div
-                className="mx-auto mt-5 flex h-[5rem] w-[5rem] items-center justify-center rounded-[1.6rem] border"
-                style={{
-                  borderColor: palette.frameBorder,
-                  background: palette.frame,
-                  boxShadow: `0 0 0 1px ${palette.frameBorder}, 0 18px 40px ${palette.frameGlow}`,
-                  animation: "platform-loader-breathe 2.6s ease-in-out infinite",
-                }}
-              >
-                <div
-                  className="flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-[1.25rem] border"
-                  style={{
-                    borderColor: palette.frameBorder,
-                    background: palette.surface,
-                  }}
-                >
-                  <img
-                    src={rootsLogo}
-                    alt="ROOTS"
-                    className="h-10 w-auto object-contain"
-                  />
-                </div>
               </div>
-
               <div
-                className="mx-auto mt-5 h-[2px] w-12 rounded-full"
-                style={{ background: palette.overline }}
-              />
-
-              <div
-                className="mt-4 font-header text-[1.38rem] font-semibold tracking-[0.16em] sm:text-[1.55rem]"
-                style={{ color: palette.title }}
+                className="mt-1 font-header text-[1.05rem] font-semibold"
+                style={{ color: isDark ? "#e2e8f0" : "#0f172a" }}
               >
                 ROOTS
               </div>
-
-              <p
-                className="mx-auto mt-2 max-w-[14rem] text-sm leading-6"
-                style={{ color: palette.text }}
+              <div
+                className="mt-1 text-xs leading-5"
+                style={{ color: isDark ? "rgba(226, 232, 240, 0.72)" : "rgba(51, 65, 85, 0.78)" }}
               >
                 {label}
-              </p>
-
-              <div
-                className="mx-auto mt-6 h-1.5 w-24 overflow-hidden rounded-full"
-                style={{ background: palette.line }}
-              >
-                <span
-                  className="block h-full w-10 rounded-full"
-                  style={{
-                    background: palette.signal,
-                    animation: "platform-loader-signal 1.35s ease-in-out infinite",
-                  }}
-                />
-              </div>
-
-              <div className="mt-3 flex items-center justify-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: palette.overline }} />
-                <span
-                  className="text-[11px] font-medium tracking-[0.08em]"
-                  style={{ color: palette.text }}
-                >
-                  Preparing your platform workspace
-                </span>
               </div>
             </div>
+          </div>
+
+          <div
+            className="mt-4 h-1.5 overflow-hidden rounded-full"
+            style={{
+              background: isDark ? "rgba(30, 41, 59, 0.9)" : "rgba(226, 232, 240, 0.96)",
+            }}
+          >
+            <span
+              className="block h-full w-16 rounded-full"
+              style={{
+                background: "linear-gradient(90deg, #16a34a 0%, #2563eb 52%, #38bdf8 100%)",
+                animation: "roots-loader-slide 1.25s ease-in-out infinite",
+              }}
+            />
           </div>
         </div>
       </div>

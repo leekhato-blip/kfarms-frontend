@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Activity,
-  BellRing,
   Copy,
   ExternalLink,
   Mail,
@@ -21,6 +20,11 @@ import Button from "../../components/Button";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import EmptyState from "../../components/EmptyState";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
+import PlatformMobileSheet from "../../components/PlatformMobileSheet";
+import {
+  PlatformInspectSection,
+  PlatformInspectStatCard,
+} from "../../components/PlatformInspectPrimitives";
 import { usePlatformAuth } from "../../auth/AuthProvider";
 import { useToast } from "../../components/ToastProvider";
 import { PLATFORM_ENDPOINTS, cleanQueryParams } from "../../api/endpoints";
@@ -169,12 +173,17 @@ export default function PlatformUsersPage() {
   const [createUserOpen, setCreateUserOpen] = React.useState(false);
   const [creatingUser, setCreatingUser] = React.useState(false);
   const [latestInvite, setLatestInvite] = React.useState(null);
+  const [mobileInspectOpen, setMobileInspectOpen] = React.useState(false);
 
   const selectUser = React.useCallback((userId) => {
     React.startTransition(() => {
       setSelectedUserId(userId);
     });
   }, []);
+  const openMobileInspect = React.useCallback((userId) => {
+    selectUser(userId);
+    setMobileInspectOpen(true);
+  }, [selectUser]);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -342,6 +351,12 @@ export default function PlatformUsersPage() {
   React.useEffect(() => {
     setRootsFunctionDraft(selectedRootsFunction);
   }, [selectedRootsFunction]);
+
+  React.useEffect(() => {
+    if (!selectedUser && !loading) {
+      setMobileInspectOpen(false);
+    }
+  }, [loading, selectedUser]);
 
   const isCurrentPlatformUser = React.useCallback(
     (user) => Number(getUserId(user)) === Number(currentPlatformUser?.id),
@@ -618,6 +633,319 @@ export default function PlatformUsersPage() {
     { key: "actions", label: "Actions", className: "min-w-[230px] text-right", align: "right" },
   ];
 
+  const renderSelectedUserInspectContent = () => {
+    if (!selectedUser && !loading) {
+      return (
+        <div className="mt-4">
+          <EmptyState
+            title="Select a ROOTS operator"
+            message="Pick a user to review access and actions."
+          />
+        </div>
+      );
+    }
+
+    if (loading) {
+      return (
+        <div className="mt-4 flex-1 overflow-y-auto">
+          <UserDetailSkeleton />
+        </div>
+      );
+    }
+
+    if (!selectedUser) return null;
+
+    return (
+      <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex flex-wrap gap-2">
+          <RootsFunctionBadge value={selectedRootsFunction} />
+          <Badge kind="platform-role" value={selectedAccessTier} />
+          <Badge kind="active" value={selectedEnabled ? "ENABLED" : "DISABLED"} />
+          {isCurrentPlatformUser(selectedUser) ? (
+            <span className="inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--atlas-text-strong)]">
+              Current session
+            </span>
+          ) : null}
+        </div>
+
+        <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <PlatformInspectSection
+            title="Profile"
+          >
+            <div className="sm:hidden">
+              <div className="rounded-[1.08rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/58 p-2">
+                <div className="space-y-2">
+                  <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                    <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                      Email address
+                    </div>
+                    <div className="mt-1 break-all text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                      {selectedUser.email || "No email on record"}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                      <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                        Workspaces
+                      </div>
+                      <div className="mt-1 text-lg font-semibold leading-none text-[var(--atlas-text-strong)]">
+                        {formatNumber(selectedTenantCount)}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                      <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                        Created
+                      </div>
+                      <div className="mt-1 text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                        {selectedCreatedAt}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                    <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                      Last updated
+                    </div>
+                    <div className="mt-1 text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                      {selectedUpdatedAt}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden gap-3 sm:grid sm:grid-cols-2">
+              <PlatformInspectStatCard
+                label="Email address"
+                value={selectedUser.email || "No email on record"}
+                valueClassName="break-all text-sm leading-5"
+                badge={
+                  <span className="rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] px-2.5 py-1 text-[11px] text-[var(--atlas-muted)]">
+                    <Mail size={13} className="inline-block align-[-2px]" />
+                  </span>
+                }
+              />
+              <PlatformInspectStatCard
+                label="Connected workspaces"
+                value={formatNumber(selectedTenantCount)}
+                valueClassName="text-[1.75rem] leading-none"
+              />
+              <PlatformInspectStatCard
+                label="Created"
+                value={selectedCreatedAt}
+              />
+              <PlatformInspectStatCard
+                label="Last updated"
+                value={selectedUpdatedAt}
+              />
+            </div>
+          </PlatformInspectSection>
+
+          <PlatformInspectSection
+            title="Function"
+          >
+            <div className="sm:hidden space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/66 px-3 py-3">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                    Access level
+                  </div>
+                  <div className="mt-1 text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                    {getPlatformRoleLabel(selectedAccessTier)}
+                  </div>
+                </div>
+
+                <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/66 px-3 py-3">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                    Function
+                  </div>
+                  <div className="mt-1 text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                    {getRootsFunctionLabel(selectedRootsFunction) || "Not assigned"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/66 px-3 py-3">
+                <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
+                  <span>Choose a function lane</span>
+                  <select
+                    value={rootsFunctionDraft}
+                    onChange={(event) => setRootsFunctionDraft(event.target.value)}
+                    disabled={!canAssignPlatformFunction(currentPlatformUser, selectedUser)}
+                    className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
+                  >
+                    <option value="">Select ROOTS function</option>
+                    {ROOTS_FUNCTION_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <Button
+                  variant="outline"
+                  className="mt-3 w-full"
+                  onClick={saveRootsFunction}
+                  disabled={
+                    !canAssignPlatformFunction(currentPlatformUser, selectedUser) ||
+                    !rootsFunctionDraft ||
+                    rootsFunctionDraft === selectedRootsFunction
+                  }
+                >
+                  <Save size={14} />
+                  Save function
+                </Button>
+              </div>
+            </div>
+
+            <div className="hidden gap-3 sm:grid sm:grid-cols-2">
+              <PlatformInspectStatCard
+                label="Access level"
+                value={getPlatformRoleLabel(selectedAccessTier)}
+              />
+              <PlatformInspectStatCard
+                label="Current function"
+                value={getRootsFunctionLabel(selectedRootsFunction) || "Not assigned yet"}
+              />
+            </div>
+
+            <div className="mt-4 hidden gap-3 sm:grid sm:grid-cols-[minmax(0,1fr)_auto]">
+              <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
+                <span>Choose a function lane</span>
+                <select
+                  value={rootsFunctionDraft}
+                  onChange={(event) => setRootsFunctionDraft(event.target.value)}
+                  disabled={!canAssignPlatformFunction(currentPlatformUser, selectedUser)}
+                  className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
+                >
+                  <option value="">Select ROOTS function</option>
+                  {ROOTS_FUNCTION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto sm:self-end"
+                onClick={saveRootsFunction}
+                disabled={
+                  !canAssignPlatformFunction(currentPlatformUser, selectedUser) ||
+                  !rootsFunctionDraft ||
+                  rootsFunctionDraft === selectedRootsFunction
+                }
+              >
+                <Save size={14} />
+                Save function
+              </Button>
+            </div>
+
+            {!canAssignPlatformFunction(currentPlatformUser, selectedUser) ? (
+              <div className="mt-3 rounded-[1rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/70 px-3 py-3 text-sm leading-6 text-[var(--atlas-muted)]">
+                {describeFunctionRestriction(selectedUser)}
+              </div>
+            ) : null}
+          </PlatformInspectSection>
+
+          <PlatformInspectSection
+            title="Focus"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[0.96rem] bg-[color:var(--atlas-surface)]/66 px-3.5 py-3">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                  Primary focus
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {functionExperience.focusAreas.map((item) => (
+                    <div
+                      key={item}
+                      className="inline-flex rounded-full bg-[color:var(--atlas-surface-strong)]/40 px-3 py-2 text-xs font-medium text-[var(--atlas-text-strong)]"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[0.96rem] bg-[color:var(--atlas-surface)]/66 px-3.5 py-3">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                  Notification flow
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {functionExperience.notificationTopics.map((item) => (
+                    <div
+                      key={item}
+                      className="inline-flex rounded-full bg-[color:var(--atlas-surface-strong)]/40 px-3 py-2 text-xs font-medium text-[var(--atlas-text-strong)]"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </PlatformInspectSection>
+
+          <PlatformInspectSection
+            title="Access controls"
+          >
+            {isCurrentPlatformUser(selectedUser) ||
+            !canManagePlatformRole(currentPlatformUser, selectedUser) ? (
+              <div className="mb-3 text-sm leading-6 text-[var(--atlas-muted)]">
+                {describeAccessRestriction(selectedUser)}
+              </div>
+            ) : null}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[0.96rem] bg-[color:var(--atlas-surface)]/66 px-3.5 py-3">
+                <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                  ROOTS admin access
+                </div>
+                <Button
+                  variant="outline"
+                  className="mt-3 w-full"
+                  disabled={
+                    isCurrentPlatformUser(selectedUser) ||
+                    !canManagePlatformRole(currentPlatformUser, selectedUser)
+                  }
+                  onClick={() => askToggleAdmin(selectedUser)}
+                >
+                  {selectedAccessTier === "PLATFORM_ADMIN"
+                    ? "Remove ROOTS admin"
+                    : "Promote to ROOTS admin"}
+                </Button>
+              </div>
+
+              <div className="rounded-[0.96rem] bg-[color:var(--atlas-surface)]/66 px-3.5 py-3">
+                <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                  Sign-in access
+                </div>
+                <Button
+                  variant="outline"
+                  className="mt-3 w-full"
+                  disabled={
+                    isCurrentPlatformUser(selectedUser) ||
+                    !canManagePlatformAvailability(currentPlatformUser, selectedUser)
+                  }
+                  onClick={() => askToggleEnabled(selectedUser)}
+                >
+                  {selectedEnabled ? "Disable sign-in" : "Enable sign-in"}
+                </Button>
+              </div>
+            </div>
+          </PlatformInspectSection>
+
+          <div className="rounded-[1.05rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/64 px-4 py-3 text-sm leading-6 text-[var(--atlas-muted)]">
+            Higher lanes can manage lower lanes.
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <Card className="atlas-stage-card p-5">
@@ -807,11 +1135,11 @@ export default function PlatformUsersPage() {
                         tabIndex={0}
                         aria-pressed={isSelected}
                         className="space-y-4 outline-none"
-                        onClick={() => selectUser(userId)}
+                        onClick={() => openMobileInspect(userId)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-                            selectUser(userId);
+                            openMobileInspect(userId);
                           }
                         }}
                       >
@@ -830,10 +1158,10 @@ export default function PlatformUsersPage() {
                             className="w-full shrink-0 sm:w-auto sm:min-w-[7rem]"
                             onClick={(event) => {
                               event.stopPropagation();
-                              selectUser(userId);
+                              openMobileInspect(userId);
                             }}
                           >
-                            {isSelected ? "Selected" : "Select"}
+                            {isSelected ? "Inspecting" : "Inspect"}
                           </Button>
                         </div>
 
@@ -1061,7 +1389,7 @@ export default function PlatformUsersPage() {
           </Card>
         </div>
 
-        <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+        <div className="hidden xl:block xl:sticky xl:top-4 xl:self-start">
           <Card className="atlas-data-shell flex min-h-[34rem] flex-col overflow-hidden xl:max-h-[calc(100vh-8.5rem)]">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -1088,231 +1416,35 @@ export default function PlatformUsersPage() {
                 Reload
               </Button>
             </div>
-
-            {!selectedUser && !loading ? (
-              <div className="mt-4">
-                <EmptyState
-                  title="Select a ROOTS operator"
-                  message="Pick a user to review access and actions."
-                />
-              </div>
-            ) : null}
-
-            {loading ? (
-              <div className="mt-4 flex-1 overflow-y-auto">
-                <UserDetailSkeleton />
-              </div>
-            ) : null}
-
-            {selectedUser && !loading ? (
-              <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div className="flex flex-wrap gap-2">
-                  <RootsFunctionBadge value={selectedRootsFunction} />
-                  <Badge kind="platform-role" value={selectedAccessTier} />
-                  <Badge kind="active" value={selectedEnabled ? "ENABLED" : "DISABLED"} />
-                  {isCurrentPlatformUser(selectedUser) ? (
-                    <span className="inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--atlas-text-strong)]">
-                      Current session
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                        <Mail size={13} />
-                        Email
-                      </div>
-                      <div className="mt-3 break-all text-sm font-semibold text-[var(--atlas-text-strong)]">
-                        {selectedUser.email || "No email on record"}
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                        Tenant reach
-                      </div>
-                      <div className="mt-3 text-2xl font-semibold leading-none text-[var(--atlas-text-strong)]">
-                        {formatNumber(selectedTenantCount)}
-                      </div>
-                      <div className="mt-2 text-xs text-[var(--atlas-muted)]">
-                        Workspaces currently connected to this operator.
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                        Created
-                      </div>
-                      <div className="mt-3 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                        {selectedCreatedAt}
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                      <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                        Last change
-                      </div>
-                      <div className="mt-3 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                        {selectedUpdatedAt}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                    <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      ROOTS function
-                    </div>
-                    <div className="mt-1 text-xs leading-6 text-[var(--atlas-muted)]">
-                      Assign the operator's working lane separately from their access tier. This is
-                      stored locally now and is ready for future live sync.
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                      <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
-                        <span>Function lane</span>
-                        <select
-                          value={rootsFunctionDraft}
-                          onChange={(event) => setRootsFunctionDraft(event.target.value)}
-                          disabled={!canAssignPlatformFunction(currentPlatformUser, selectedUser)}
-                          className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-                        >
-                          <option value="">Select ROOTS function</option>
-                          {ROOTS_FUNCTION_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <Button
-                        variant="outline"
-                        className="w-full sm:w-auto sm:self-end"
-                        onClick={saveRootsFunction}
-                        disabled={
-                          !canAssignPlatformFunction(currentPlatformUser, selectedUser) ||
-                          !rootsFunctionDraft ||
-                          rootsFunctionDraft === selectedRootsFunction
-                        }
-                      >
-                        <Save size={14} />
-                        Save function
-                      </Button>
-                    </div>
-
-                    <div className="mt-3 rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/70 px-3 py-3 text-xs leading-6 text-[var(--atlas-muted)]">
-                      {!canAssignPlatformFunction(currentPlatformUser, selectedUser)
-                        ? describeFunctionRestriction(selectedUser)
-                        : previewRootsFunctionMeta
-                        ? previewRootsFunctionMeta.description
-                        : "Pick a ROOTS function to clarify what this operator owns."}
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                          Function fit
-                        </div>
-                        <div className="mt-1 text-xs leading-6 text-[var(--atlas-muted)]">
-                          {functionExperience.summary}
-                        </div>
-                      </div>
-                      {previewRootsFunctionMeta ? (
-                        <RootsFunctionBadge value={previewRootsFunctionMeta.value} />
-                      ) : null}
-                    </div>
-
-                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/70 p-3">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                          Primary focus
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {functionExperience.focusAreas.map((item) => (
-                            <div
-                              key={item}
-                              className="rounded-[0.9rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/90 px-3 py-2 text-xs font-medium text-[var(--atlas-text-strong)]"
-                            >
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/70 p-3">
-                        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                          <BellRing size={13} />
-                          Notification flow
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {functionExperience.notificationTopics.map((item) => (
-                            <div
-                              key={item}
-                              className="rounded-[0.9rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/90 px-3 py-2 text-xs font-medium text-[var(--atlas-text-strong)]"
-                            >
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                    <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      Access controls
-                    </div>
-                    <div className="mt-1 text-xs leading-6 text-[var(--atlas-muted)]">
-                      {isCurrentPlatformUser(selectedUser) ||
-                      !canManagePlatformRole(currentPlatformUser, selectedUser)
-                        ? describeAccessRestriction(selectedUser)
-                        : "Adjust access safely without leaving the operator list."}
-                    </div>
-
-                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                      <Button
-                        variant="outline"
-                        className="w-full sm:flex-1"
-                        disabled={
-                          isCurrentPlatformUser(selectedUser) ||
-                          !canManagePlatformRole(currentPlatformUser, selectedUser)
-                        }
-                        onClick={() => askToggleAdmin(selectedUser)}
-                      >
-                        {selectedAccessTier === "PLATFORM_ADMIN"
-                          ? "Remove ROOTS admin"
-                          : "Promote to ROOTS admin"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full sm:flex-1"
-                        disabled={
-                          isCurrentPlatformUser(selectedUser) ||
-                          !canManagePlatformAvailability(currentPlatformUser, selectedUser)
-                        }
-                        onClick={() => askToggleEnabled(selectedUser)}
-                      >
-                        {selectedEnabled ? "Disable sign-in" : "Enable sign-in"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Card className="atlas-data-shell">
-                    <div className="text-sm leading-6 text-[var(--atlas-muted)]">
-                      ROOTS safety is active here. Higher lanes manage lower lanes, and ROOTS Ops
-                      cannot change ROOTS Prime or ROOTS Admin controls from this screen.
-                    </div>
-                  </Card>
-                </div>
-              </div>
-            ) : null}
+            {renderSelectedUserInspectContent()}
           </Card>
         </div>
       </div>
+
+      <PlatformMobileSheet
+        open={mobileInspectOpen}
+        title={selectedDisplayName}
+        subtitle={selectedUser?.email || "Review access and actions."}
+        onClose={() => setMobileInspectOpen(false)}
+      >
+        {selectedUser || loading ? (
+          <div className="pt-1">
+            <div className="mb-3 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={fetchUsers}
+                disabled={loading}
+              >
+                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                Reload
+              </Button>
+            </div>
+            {renderSelectedUserInspectContent()}
+          </div>
+        ) : null}
+      </PlatformMobileSheet>
 
       <ConfirmDialog
         open={confirm.open}

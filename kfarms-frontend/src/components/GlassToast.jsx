@@ -100,7 +100,7 @@ export default function GlassToast({
 
   return createPortal(
     <div className={isDark ? "dark" : ""} data-theme={isDark ? "dark" : "light"}>
-      <div className="pointer-events-none fixed inset-x-0 top-4 z-[140] flex justify-center px-4 sm:top-5">
+      <div className="pointer-events-none fixed inset-x-0 top-4 z-[14000] flex justify-center px-4 sm:top-5">
         <div
           role="status"
           aria-live="polite"

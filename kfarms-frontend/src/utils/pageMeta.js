@@ -59,6 +59,7 @@ const DOCUMENT_TITLE_MAP = Object.freeze({
   "/": "KFarms Product Profile",
   "/product-profile": "KFarms Product Profile",
   "/company-profile": "ROOTS Company Profile",
+  "/terms": "Terms & Conditions | KFarms",
   "/auth/login": "Login | KFarms",
   "/auth/signup": "Sign Up | KFarms",
   "/auth/verify-contact": "Verify Contact | KFarms",

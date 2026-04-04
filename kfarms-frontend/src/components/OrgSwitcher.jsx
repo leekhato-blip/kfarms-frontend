@@ -72,7 +72,6 @@ export default function OrgSwitcher({ dropUp = false, fullWidth = false }) {
         detail: { tenantId },
       }),
     );
-    window.location.reload();
   };
 
   const menuPositionClass = dropUp

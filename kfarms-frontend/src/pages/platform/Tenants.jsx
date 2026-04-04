@@ -15,6 +15,11 @@ import Badge from "../../components/Badge";
 import Button from "../../components/Button";
 import EmptyState from "../../components/EmptyState";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
+import PlatformMobileSheet from "../../components/PlatformMobileSheet";
+import {
+  PlatformInspectSection,
+  PlatformInspectStatCard,
+} from "../../components/PlatformInspectPrimitives";
 import { useToast } from "../../components/ToastProvider";
 import { cleanQueryParams, PLATFORM_ENDPOINTS } from "../../api/endpoints";
 import {
@@ -43,6 +48,35 @@ import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platform
 
 const PLAN_OPTIONS = ["", ...PLAN_IDS];
 const STATUS_OPTIONS = ["", "ACTIVE", "SUSPENDED"];
+const TENANT_PLAN_OVERRIDE_STORAGE_KEY = "kf-placeholder-tenant-plan-overrides";
+
+function syncTenantPlanOverride(tenantId, planId) {
+  if (typeof window === "undefined") return;
+
+  const parsedTenantId = Number(tenantId);
+  if (!Number.isFinite(parsedTenantId) || parsedTenantId <= 0) return;
+
+  try {
+    const raw = window.localStorage.getItem(TENANT_PLAN_OVERRIDE_STORAGE_KEY);
+    const current =
+      raw && typeof raw === "string"
+        ? JSON.parse(raw)
+        : {};
+    const nextOverrides =
+      current && typeof current === "object"
+        ? { ...current }
+        : {};
+
+    nextOverrides[String(parsedTenantId)] = String(planId || "FREE").trim().toUpperCase();
+    window.localStorage.setItem(
+      TENANT_PLAN_OVERRIDE_STORAGE_KEY,
+      JSON.stringify(nextOverrides),
+    );
+    window.dispatchEvent(new Event("kf-tenant-plan-overrides-changed"));
+  } catch {
+    // Ignore storage sync failures and keep the server write as the source of truth.
+  }
+}
 
 function paginateItems(items, page, size) {
   const safePage = Math.max(Number(page) || 0, 0);
@@ -132,20 +166,20 @@ function DetailTabButton({ active = false, label, count, onClick }) {
 function getTenantMemberRolePillClass(role) {
   switch (normalizeWorkspaceRole(role, "STAFF")) {
     case "OWNER":
-      return "border-amber-300/45 bg-amber-400/14 text-amber-200";
+      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-300/45 dark:bg-amber-400/14 dark:text-amber-200";
     case "ADMIN":
-      return "border-fuchsia-300/35 bg-fuchsia-400/12 text-fuchsia-200";
+      return "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-300/35 dark:bg-fuchsia-400/12 dark:text-fuchsia-200";
     case "MANAGER":
-      return "border-emerald-300/35 bg-emerald-400/12 text-emerald-200";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/35 dark:bg-emerald-400/12 dark:text-emerald-200";
     default:
-      return "border-sky-300/35 bg-sky-400/12 text-sky-200";
+      return "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-300/35 dark:bg-sky-400/12 dark:text-sky-200";
   }
 }
 
 function getTenantMemberStatusPillClass(active) {
   return active
-    ? "border-emerald-300/35 bg-emerald-400/18 text-emerald-100"
-    : "border-rose-300/35 bg-rose-400/16 text-rose-100";
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/35 dark:bg-emerald-400/18 dark:text-emerald-100"
+    : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-300/35 dark:bg-rose-400/16 dark:text-rose-100";
 }
 
 export default function PlatformTenantsPage() {
@@ -190,6 +224,7 @@ export default function PlatformTenantsPage() {
   const [savingStatus, setSavingStatus] = React.useState(false);
   const [detailTab, setDetailTab] = React.useState("overview");
   const [memberSearchInput, setMemberSearchInput] = React.useState("");
+  const [mobileInspectOpen, setMobileInspectOpen] = React.useState(false);
   const deferredMemberSearch = React.useDeferredValue(memberSearchInput.trim());
 
   const selectTenant = React.useCallback((tenantId) => {
@@ -199,6 +234,10 @@ export default function PlatformTenantsPage() {
       setMemberSearchInput("");
     });
   }, []);
+  const openMobileInspect = React.useCallback((tenantId) => {
+    selectTenant(tenantId);
+    setMobileInspectOpen(true);
+  }, [selectTenant]);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -344,6 +383,12 @@ export default function PlatformTenantsPage() {
     loadTenantDetails(selectedTenantId);
   }, [loadTenantDetails, selectedTenantId]);
 
+  React.useEffect(() => {
+    if (!selectedTenantId && !loading) {
+      setMobileInspectOpen(false);
+    }
+  }, [loading, selectedTenantId]);
+
   const savePlan = React.useCallback(async () => {
     if (!selectedTenantId || !planDraft) return;
     if (platformDataMode === "demo") {
@@ -358,6 +403,7 @@ export default function PlatformTenantsPage() {
         { plan: planDraft },
       );
       unwrapApiResponse(response.data, "Failed to update tenant plan");
+      syncTenantPlanOverride(selectedTenantId, planDraft);
       notify("Tenant plan updated", "success");
       await Promise.all([fetchTenants(), loadTenantDetails(selectedTenantId)]);
     } catch (mutationError) {
@@ -469,6 +515,355 @@ export default function PlatformTenantsPage() {
     : selectedSeatUsage.nearLimit
       ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200"
       : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200";
+
+  const renderSelectedTenantInspectContent = () => {
+    if (!selectedTenantId) {
+      return (
+        <div className="mt-4">
+          <EmptyState
+            title="Select a tenant"
+            message="Pick a workspace to review members, plan, and modules."
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="rounded-[1.15rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/72 p-1">
+          <div className="grid grid-cols-2 gap-1">
+            <DetailTabButton
+              active={detailTab === "overview"}
+              label="Overview"
+              onClick={() => setDetailTab("overview")}
+            />
+            <DetailTabButton
+              active={detailTab === "members"}
+              label="Members"
+              count={memberRows.length}
+              onClick={() => setDetailTab("members")}
+            />
+          </div>
+        </div>
+
+        {detailsLoading ? (
+          <div className="mt-4 flex-1 overflow-y-auto">
+            <TenantDetailSkeleton />
+          </div>
+        ) : null}
+
+        {detailsError ? (
+          <div className="mt-4 rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
+            {detailsError}
+          </div>
+        ) : null}
+
+        {!detailsLoading && !detailsError && selectedTenant ? (
+          <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-700 dark:border-indigo-400/50 dark:bg-indigo-500/20 dark:text-indigo-200">
+                {selectedTenant.appName || "KFarms"}
+              </span>
+              <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-700 dark:border-violet-400/50 dark:bg-violet-500/20 dark:text-violet-200">
+                {String(selectedTenant.appLifecycle || "LIVE").toUpperCase()}
+              </span>
+              <Badge kind="plan" value={selectedTenant.plan || "FREE"} />
+              <Badge kind="status" value={selectedTenant.status || "ACTIVE"} />
+            </div>
+
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+              {detailTab === "overview" ? (
+                <div className="space-y-4 pb-1">
+                  <PlatformInspectSection
+                    title="Overview"
+                  >
+                    <div className="sm:hidden">
+                      <div className="rounded-[1.08rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/58 p-2">
+                        <div className="space-y-2">
+                          <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                              Workspace owner
+                            </div>
+                            <div className="mt-1 break-all text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                              {selectedTenant.ownerEmail || "Not available"}
+                            </div>
+                          </div>
+
+                          <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                                  Team space
+                                </div>
+                                <div className="mt-1 text-sm font-semibold text-[var(--atlas-text-strong)]">
+                                  {selectedSeatUsage.label} in use
+                                </div>
+                              </div>
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${seatHealthClasses}`}>
+                                {seatHealthLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                              <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                                Members
+                              </div>
+                              <div className="mt-1 text-lg font-semibold leading-none text-[var(--atlas-text-strong)]">
+                                {formatNumber(selectedTenant.memberCount ?? memberRows.length)}
+                              </div>
+                            </div>
+
+                            <div className="rounded-[0.96rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-strong)]/30 px-3 py-3">
+                              <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                                Activity
+                              </div>
+                              <div className="mt-1 text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                                {formatDateTime(selectedTenant.lastActivityAt)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="hidden gap-3 sm:grid sm:grid-cols-2">
+                      <PlatformInspectStatCard
+                        label="Workspace owner"
+                        value={selectedTenant.ownerEmail || "Not available"}
+                        hint={`Created ${formatDateTime(selectedTenant.createdAt)}`}
+                        valueClassName="break-all text-sm leading-5"
+                      />
+                      <PlatformInspectStatCard
+                        label="Team space"
+                        value={`${selectedSeatUsage.label} in use`}
+                        hint={selectedSeatUsage.hasFiniteLimit ? formatPercentLabel(selectedSeatUsage.usageRatio, 0) : ""}
+                        badge={
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${seatHealthClasses}`}>
+                            {seatHealthLabel}
+                          </span>
+                        }
+                      />
+                      <PlatformInspectStatCard
+                        label="People in this workspace"
+                        value={formatNumber(selectedTenant.memberCount ?? memberRows.length)}
+                        valueClassName="text-[1.75rem] leading-none"
+                      />
+                      <PlatformInspectStatCard
+                        label="Latest activity"
+                        value={formatDateTime(selectedTenant.lastActivityAt)}
+                      />
+                    </div>
+                  </PlatformInspectSection>
+
+                  <PlatformInspectSection
+                    title="Workspace setup"
+                  >
+                    <div className="rounded-[1.08rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/72 p-3.5">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--atlas-muted)]">
+                        <span className="font-semibold text-[var(--atlas-text-strong)]">
+                          {selectedTenant.appName || "KFarms"}
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span>{selectedTenant.slug || "No workspace slug yet"}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{String(selectedTenant.appLifecycle || "LIVE").toUpperCase()}</span>
+                      </div>
+                    </div>
+
+                    {selectedModuleOptions.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {selectedModuleOptions.map((moduleOption) => (
+                          <span
+                            key={moduleOption.id}
+                            className="inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--atlas-text-strong)]"
+                          >
+                            {moduleOption.shortLabel}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[1.05rem] border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-3 text-sm text-[var(--atlas-muted)]">
+                        No enabled modules were returned for this workspace yet.
+                      </div>
+                    )}
+                  </PlatformInspectSection>
+
+                  <PlatformInspectSection
+                    title="Admin controls"
+                  >
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-[1.08rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/72 p-3.5">
+                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                          Billing plan
+                        </div>
+                        <label className="mt-3 block space-y-2 text-sm text-[var(--atlas-muted)]">
+                          <span>Current plan</span>
+                          <select
+                            value={planDraft}
+                            onChange={(event) => setPlanDraft(event.target.value)}
+                            className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
+                          >
+                            {PLAN_IDS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 w-full"
+                          onClick={savePlan}
+                          disabled={
+                            savingPlan ||
+                            planDraft === String(selectedTenant.plan || "FREE").toUpperCase()
+                          }
+                        >
+                          <Save size={14} />
+                          {savingPlan ? "Saving..." : "Save plan"}
+                        </Button>
+                      </div>
+
+                      <div className="rounded-[1.08rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/72 p-3.5">
+                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                          Workspace status
+                        </div>
+                        <label className="mt-3 block space-y-2 text-sm text-[var(--atlas-muted)]">
+                          <span>Current status</span>
+                          <select
+                            value={statusDraft}
+                            onChange={(event) => setStatusDraft(event.target.value)}
+                            className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
+                          >
+                            {STATUS_OPTIONS.filter(Boolean).map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 w-full"
+                          onClick={saveStatus}
+                          disabled={
+                            savingStatus ||
+                            statusDraft === String(selectedTenant.status || "ACTIVE").toUpperCase()
+                          }
+                        >
+                          <Save size={14} />
+                          {savingStatus ? "Saving..." : "Save status"}
+                        </Button>
+                      </div>
+                    </div>
+                  </PlatformInspectSection>
+                </div>
+              ) : (
+                <div className="space-y-4 pb-1">
+                  <PlatformInspectSection
+                    title="Members"
+                  >
+                    <div className="grid grid-cols-3 gap-2">
+                      <PlatformInspectStatCard
+                        label="Total members"
+                        value={formatNumber(memberRows.length)}
+                        className="p-3 text-center"
+                        valueClassName="text-[1.45rem] leading-none"
+                      />
+                      <PlatformInspectStatCard
+                        label="Enabled"
+                        value={formatNumber(enabledMemberCount)}
+                        className="p-3 text-center"
+                        valueClassName="text-[1.45rem] leading-none"
+                      />
+                      <PlatformInspectStatCard
+                        label="Disabled"
+                        value={formatNumber(disabledMemberCount)}
+                        className="p-3 text-center"
+                        valueClassName="text-[1.45rem] leading-none"
+                      />
+                    </div>
+                  </PlatformInspectSection>
+
+                  <PlatformInspectSection
+                    title="Team list"
+                  >
+                    <label className="relative block">
+                      <Search
+                        size={15}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--atlas-muted)]"
+                      />
+                      <input
+                        type="text"
+                        value={memberSearchInput}
+                        onChange={(event) => setMemberSearchInput(event.target.value)}
+                        placeholder="Find a member by name, email, or role"
+                        className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] pl-9 pr-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
+                      />
+                    </label>
+
+                    {memberRows.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-5 text-center text-sm text-[var(--atlas-muted)]">
+                        No member records were returned for this workspace yet.
+                      </div>
+                    ) : filteredMemberRows.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-5 text-center text-sm text-[var(--atlas-muted)]">
+                        No members match the current search.
+                      </div>
+                    ) : (
+                      <div className="rounded-[1.15rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/52 p-2.5">
+                        <div className="mb-2 flex items-center justify-between gap-3 px-1 py-1 text-xs text-[var(--atlas-muted)]">
+                          <span>Showing workspace members</span>
+                          <span>
+                            {formatNumber(filteredMemberRows.length)} of {formatNumber(memberRows.length)}
+                          </span>
+                        </div>
+                        <div className="max-h-[25rem] space-y-2 overflow-y-auto pr-1">
+                          {filteredMemberRows.map((member) => (
+                            <div
+                              key={member.id}
+                              className="rounded-[1rem] border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/84 px-3.5 py-3.5"
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="break-words text-sm font-semibold text-[var(--atlas-text-strong)]">
+                                    {member.fullName || member.email || "Workspace member"}
+                                  </div>
+                                <div className="mt-1 break-all text-xs text-[var(--atlas-muted)]">
+                                  {member.email || "No email"}
+                                </div>
+                                </div>
+                                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                  <span
+                                    className={`inline-flex min-h-[1.9rem] items-center rounded-full border px-3 py-1 text-[11px] font-semibold leading-none ${getTenantMemberRolePillClass(member.role)}`}
+                                  >
+                                    {getWorkspaceRoleLabel(member.role || "STAFF")}
+                                  </span>
+                                  <span
+                                    className={`inline-flex min-h-[1.9rem] items-center rounded-full border px-3 py-1 text-[11px] font-semibold leading-none ${getTenantMemberStatusPillClass(member.active)}`}
+                                  >
+                                    {member.active ? "ENABLED" : "DISABLED"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </PlatformInspectSection>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -623,11 +1018,11 @@ export default function PlatformTenantsPage() {
                         tabIndex={0}
                         aria-pressed={isSelected}
                         className="space-y-4 outline-none"
-                        onClick={() => selectTenant(tenantId)}
+                        onClick={() => openMobileInspect(tenantId)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-                            selectTenant(tenantId);
+                            openMobileInspect(tenantId);
                           }
                         }}
                       >
@@ -645,7 +1040,7 @@ export default function PlatformTenantsPage() {
                             size="sm"
                             onClick={(event) => {
                               event.stopPropagation();
-                              selectTenant(tenantId);
+                              openMobileInspect(tenantId);
                             }}
                           >
                             {isSelected ? "Inspecting" : "Inspect"}
@@ -855,7 +1250,7 @@ export default function PlatformTenantsPage() {
           </Card>
         </div>
 
-        <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+        <div className="hidden xl:block xl:sticky xl:top-4 xl:self-start">
           <Card className="atlas-data-shell flex min-h-[34rem] flex-col overflow-hidden xl:max-h-[calc(100vh-8.5rem)]">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -883,304 +1278,37 @@ export default function PlatformTenantsPage() {
                 </Button>
               ) : null}
             </div>
-
-            {selectedTenantId ? (
-              <div className="mt-4 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/72 p-1">
-                <div className="grid grid-cols-2 gap-1">
-                  <DetailTabButton
-                    active={detailTab === "overview"}
-                    label="Overview"
-                    onClick={() => setDetailTab("overview")}
-                  />
-                  <DetailTabButton
-                    active={detailTab === "members"}
-                    label="Members"
-                    count={memberRows.length}
-                    onClick={() => setDetailTab("members")}
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            {!selectedTenantId && (
-              <EmptyState
-                title="Select a tenant"
-                message="Pick a workspace to review members, plan, and modules."
-              />
-            )}
-
-            {selectedTenantId && detailsLoading && (
-              <div className="mt-4 flex-1 overflow-y-auto">
-                <TenantDetailSkeleton />
-              </div>
-            )}
-
-            {selectedTenantId && detailsError && (
-              <div className="mt-4 rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
-                {detailsError}
-              </div>
-            )}
-
-            {selectedTenantId && !detailsLoading && !detailsError && selectedTenant && (
-              <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-indigo-700 dark:border-indigo-400/50 dark:bg-indigo-500/20 dark:text-indigo-200">
-                    {selectedTenant.appName || "KFarms"}
-                  </span>
-                  <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-700 dark:border-violet-400/50 dark:bg-violet-500/20 dark:text-violet-200">
-                    {String(selectedTenant.appLifecycle || "LIVE").toUpperCase()}
-                  </span>
-                  <Badge kind="plan" value={selectedTenant.plan || "FREE"} />
-                    <Badge kind="status" value={selectedTenant.status || "ACTIVE"} />
-                </div>
-
-                <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-                  {detailTab === "overview" ? (
-                    <div className="space-y-4">
-                      <div className="rounded-[1.25rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--atlas-muted)]">
-                          <span className="font-semibold text-[var(--atlas-text-strong)]">
-                            {selectedTenant.appName || "KFarms"}
-                          </span>
-                          <span aria-hidden="true">·</span>
-                          <span>{selectedTenant.slug || "No slug"}</span>
-                          <span aria-hidden="true">·</span>
-                          <span>{String(selectedTenant.appLifecycle || "LIVE").toUpperCase()}</span>
-                        </div>
-
-                        {selectedModuleOptions.length > 0 ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {selectedModuleOptions.map((moduleOption) => (
-                              <span
-                                key={moduleOption.id}
-                                className="inline-flex rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--atlas-text-strong)]"
-                              >
-                                {moduleOption.shortLabel}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                            Owner
-                          </div>
-                          <div className="mt-2 break-all text-sm font-semibold leading-5 text-[var(--atlas-text-strong)]">
-                            {selectedTenant.ownerEmail || "Not available"}
-                          </div>
-                          <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                            Created {formatDateTime(selectedTenant.createdAt)}
-                          </div>
-                        </div>
-
-                        <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                                Team limit
-                              </div>
-                              <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                                {selectedSeatUsage.label} in use
-                              </div>
-                              <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                                {selectedSeatUsage.hasFiniteLimit
-                                  ? `${formatPercentLabel(selectedSeatUsage.usageRatio, 0)} of team limit used`
-                                  : "No team limit on this plan"}
-                              </div>
-                            </div>
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${seatHealthClasses}`}>
-                              {seatHealthLabel}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                            Members
-                          </div>
-                          <div className="mt-2 text-2xl font-semibold leading-none text-[var(--atlas-text-strong)]">
-                            {formatNumber(selectedTenant.memberCount ?? memberRows.length)}
-                          </div>
-                          <div className="mt-2 text-xs text-[var(--atlas-muted)]">
-                            Active people inside this workspace.
-                          </div>
-                        </div>
-
-                        <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                            Last activity
-                          </div>
-                          <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                            {formatDateTime(selectedTenant.lastActivityAt)}
-                          </div>
-                          <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                            Most recent tenant activity timestamp.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[1.25rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
-                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                          Admin controls
-                        </div>
-                        <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                          Update plan and status without leaving tenant inspection.
-                        </div>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
-                            <span>Plan</span>
-                            <select
-                              value={planDraft}
-                              onChange={(event) => setPlanDraft(event.target.value)}
-                              className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-                            >
-                              {PLAN_IDS.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={savePlan}
-                              disabled={savingPlan || planDraft === String(selectedTenant.plan || "FREE").toUpperCase()}
-                            >
-                              <Save size={14} />
-                              {savingPlan ? "Saving..." : "Save plan"}
-                            </Button>
-                          </label>
-
-                          <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
-                            <span>Status</span>
-                            <select
-                              value={statusDraft}
-                              onChange={(event) => setStatusDraft(event.target.value)}
-                              className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-                            >
-                              {STATUS_OPTIONS.filter(Boolean).map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={saveStatus}
-                              disabled={
-                                savingStatus ||
-                                statusDraft === String(selectedTenant.status || "ACTIVE").toUpperCase()
-                              }
-                            >
-                              <Save size={14} />
-                              {savingStatus ? "Saving..." : "Save status"}
-                            </Button>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-[1.1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                            Total members
-                          </div>
-                          <div className="mt-2 text-2xl font-semibold leading-none text-[var(--atlas-text-strong)]">
-                            {formatNumber(memberRows.length)}
-                          </div>
-                        </div>
-                        <div className="rounded-[1.1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                            Enabled
-                          </div>
-                          <div className="mt-2 text-2xl font-semibold leading-none text-[var(--atlas-text-strong)]">
-                            {formatNumber(enabledMemberCount)}
-                          </div>
-                        </div>
-                        <div className="rounded-[1.1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-3">
-                          <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-                            Disabled
-                          </div>
-                          <div className="mt-2 text-2xl font-semibold leading-none text-[var(--atlas-text-strong)]">
-                            {formatNumber(disabledMemberCount)}
-                          </div>
-                        </div>
-                      </div>
-
-                      <label className="relative block">
-                        <Search
-                          size={15}
-                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--atlas-muted)]"
-                        />
-                        <input
-                          type="text"
-                          value={memberSearchInput}
-                          onChange={(event) => setMemberSearchInput(event.target.value)}
-                          placeholder="Search member name, email, or role"
-                          className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] pl-9 pr-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
-                        />
-                      </label>
-
-                      {memberRows.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-5 text-center text-sm text-[var(--atlas-muted)]">
-                          No member records were returned for this tenant yet.
-                        </div>
-                      ) : filteredMemberRows.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-5 text-center text-sm text-[var(--atlas-muted)]">
-                          No members match the current search.
-                        </div>
-                      ) : (
-                        <div className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/55 p-2">
-                          <div className="mb-2 flex items-center justify-between gap-3 px-2 py-1 text-xs text-[var(--atlas-muted)]">
-                            <span>Tenant members</span>
-                            <span>{formatNumber(filteredMemberRows.length)} shown</span>
-                          </div>
-                          <div className="max-h-[25rem] space-y-2 overflow-y-auto pr-1">
-                            {filteredMemberRows.map((member) => (
-                              <div
-                                key={member.id}
-                                className="rounded-[1rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/78 px-3 py-3"
-                              >
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="break-words text-sm font-semibold text-[var(--atlas-text-strong)]">
-                                      {member.fullName || member.email || "Member"}
-                                    </div>
-                                    <div className="mt-1 break-all text-xs text-[var(--atlas-muted)]">
-                                      {member.email || "No email"}
-                                    </div>
-                                  </div>
-                                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                                    <span
-                                      className={`inline-flex min-h-[1.9rem] items-center rounded-full border px-3 py-1 text-[11px] font-semibold leading-none ${getTenantMemberRolePillClass(member.role)}`}
-                                    >
-                                      {getWorkspaceRoleLabel(member.role || "STAFF")}
-                                    </span>
-                                    <span
-                                      className={`inline-flex min-h-[1.9rem] items-center rounded-full border px-3 py-1 text-[11px] font-semibold leading-none ${getTenantMemberStatusPillClass(member.active)}`}
-                                    >
-                                      {member.active ? "ENABLED" : "DISABLED"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            {renderSelectedTenantInspectContent()}
           </Card>
         </div>
       </div>
+
+      <PlatformMobileSheet
+        open={mobileInspectOpen}
+        title={selectedTenantName}
+        subtitle={
+          selectedTenant?.slug || selectedTenantSummary?.slug || "Review members, plan, and controls."
+        }
+        onClose={() => setMobileInspectOpen(false)}
+      >
+        <div className="pt-1">
+          {selectedTenantId ? (
+            <div className="mb-3 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => loadTenantDetails(selectedTenantId)}
+                disabled={detailsLoading}
+              >
+                <RefreshCw size={14} className={detailsLoading ? "animate-spin" : ""} />
+                Reload
+              </Button>
+            </div>
+          ) : null}
+          {renderSelectedTenantInspectContent()}
+        </div>
+      </PlatformMobileSheet>
     </div>
   );
 }

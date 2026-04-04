@@ -26,8 +26,17 @@ function extractPayload(response) {
   return response?.data ?? response ?? {};
 }
 
+function hasVerificationPreview(preview) {
+  return Boolean(
+    preview &&
+      typeof preview === "object" &&
+      (preview.emailCode || preview.phoneCode),
+  );
+}
+
 function readLocationPayload(state) {
   if (!state || typeof state !== "object") return {};
+  const preview = state.preview && typeof state.preview === "object" ? state.preview : null;
   return {
     email: String(state.email || "").trim(),
     maskedEmail: String(state.maskedEmail || "").trim(),
@@ -35,7 +44,8 @@ function readLocationPayload(state) {
     emailVerified: Boolean(state.emailVerified),
     phoneVerified: Boolean(state.phoneVerified),
     verificationRequired: Boolean(state.verificationRequired),
-    preview: state.preview && typeof state.preview === "object" ? state.preview : null,
+    preview,
+    previewMode: Boolean(state.previewMode ?? hasVerificationPreview(preview)),
   };
 }
 
@@ -68,6 +78,9 @@ export default function VerifyContactPage() {
     phoneVerified:
       locationPayload.phoneVerified ?? Boolean(storedDraft?.phoneVerified),
     preview: locationPayload.preview || storedDraft?.preview || null,
+    previewMode: Boolean(
+      locationPayload.previewMode ?? hasVerificationPreview(locationPayload.preview || storedDraft?.preview),
+    ),
   }));
 
   React.useEffect(() => {
@@ -194,6 +207,9 @@ export default function VerifyContactPage() {
         maskedEmail: payload.maskedEmail || current.maskedEmail,
         maskedPhoneNumber: payload.maskedPhoneNumber || current.maskedPhoneNumber,
         preview: payload.preview || current.preview || null,
+        previewMode: Boolean(
+          payload.previewMode ?? hasVerificationPreview(payload.preview || current.preview),
+        ),
       }));
 
       writePendingContactVerification({
@@ -204,6 +220,9 @@ export default function VerifyContactPage() {
         emailVerified: Boolean(payload.emailVerified),
         phoneVerified: Boolean(payload.phoneVerified),
         preview: payload.preview || verificationState.preview || null,
+        previewMode: Boolean(
+          payload.previewMode ?? hasVerificationPreview(payload.preview || verificationState.preview),
+        ),
       });
 
       await finishSignupProvisioning();
@@ -236,6 +255,9 @@ export default function VerifyContactPage() {
         maskedEmail: payload.maskedEmail || current.maskedEmail,
         maskedPhoneNumber: payload.maskedPhoneNumber || current.maskedPhoneNumber,
         preview: payload.preview || current.preview || null,
+        previewMode: Boolean(
+          payload.previewMode ?? hasVerificationPreview(payload.preview || current.preview),
+        ),
       }));
 
       writePendingContactVerification({
@@ -246,11 +268,17 @@ export default function VerifyContactPage() {
         emailVerified: verificationState.emailVerified,
         phoneVerified: verificationState.phoneVerified,
         preview: payload.preview || verificationState.preview || null,
+        previewMode: Boolean(
+          payload.previewMode ?? hasVerificationPreview(payload.preview || verificationState.preview),
+        ),
       });
 
       setToast({
-        message:
-          channel === "EMAIL"
+        message: Boolean(
+          payload.previewMode ?? hasVerificationPreview(payload.preview || verificationState.preview),
+        )
+          ? "Preview mode is active. The latest verification code is shown on this page because live email and SMS delivery are not configured yet."
+          : channel === "EMAIL"
             ? "A fresh email verification code has been sent."
             : "A fresh SMS verification code has been sent.",
         type: "success",
@@ -271,6 +299,9 @@ export default function VerifyContactPage() {
   const emailLabel = verificationState.maskedEmail || pendingEmail || "your email";
   const phoneLabel = verificationState.maskedPhoneNumber || "your phone number";
   const preview = verificationState.preview;
+  const previewMode = verificationState.previewMode;
+  const emailDeliveryLabel = previewMode ? "Email code ready" : "Email code sent";
+  const phoneDeliveryLabel = previewMode ? "SMS code ready" : "SMS code sent";
 
   return (
     <PageWrapper>
@@ -326,7 +357,7 @@ export default function VerifyContactPage() {
                 <div className="flex items-start gap-3">
                   <MailCheck className="mt-0.5 h-5 w-5 text-accent-primary" />
                   <div>
-                    <div className="font-semibold">Email code sent</div>
+                    <div className="font-semibold">{emailDeliveryLabel}</div>
                     <div className="text-sm text-slate-600 dark:text-slate-300">{emailLabel}</div>
                   </div>
                 </div>
@@ -335,7 +366,7 @@ export default function VerifyContactPage() {
                 <div className="flex items-start gap-3">
                   <MessageSquareMore className="mt-0.5 h-5 w-5 text-emerald-500" />
                   <div>
-                    <div className="font-semibold">SMS code sent</div>
+                    <div className="font-semibold">{phoneDeliveryLabel}</div>
                     <div className="text-sm text-slate-600 dark:text-slate-300">{phoneLabel}</div>
                   </div>
                 </div>
@@ -437,12 +468,20 @@ export default function VerifyContactPage() {
                   </div>
                 </div>
 
-                {preview?.emailCode || preview?.phoneCode ? (
+                {previewMode ? (
                   <div className="rounded-2xl border border-sky-300/50 bg-sky-50 px-3.5 py-3 text-sm text-sky-800 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-200">
-                    Preview mode:
-                    {preview?.emailCode ? ` email code ${preview.emailCode}` : ""}
-                    {preview?.emailCode && preview?.phoneCode ? " · " : ""}
-                    {preview?.phoneCode ? `SMS code ${preview.phoneCode}` : ""}
+                    <div className="font-semibold">Preview mode is enabled</div>
+                    <div className="mt-1 leading-6">
+                      Live email and SMS delivery are not configured yet, so this environment is
+                      showing the current verification codes on-screen instead.
+                    </div>
+                    {preview?.emailCode || preview?.phoneCode ? (
+                      <div className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-sky-700 dark:text-sky-100/80">
+                        {preview?.emailCode ? `Email code ${preview.emailCode}` : ""}
+                        {preview?.emailCode && preview?.phoneCode ? " · " : ""}
+                        {preview?.phoneCode ? `SMS code ${preview.phoneCode}` : ""}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 

@@ -42,6 +42,7 @@ const UsersPage = React.lazy(() => import("../pages/UsersPage"));
 const SettingsPage = React.lazy(() => import("../pages/SettingsPage"));
 const CompanyProfilePage = React.lazy(() => import("../pages/CompanyProfilePage"));
 const ProductProfilePage = React.lazy(() => import("../pages/ProductProfilePage"));
+const TermsPage = React.lazy(() => import("../pages/TermsPage"));
 const CreateTenant = React.lazy(() => import("../pages/CreateTenant"));
 const AcceptInvite = React.lazy(() => import("../pages/AcceptInvite"));
 
@@ -352,6 +353,7 @@ export default function AppRoutes() {
           <Route path="/" element={<ProductProfilePage />} />
           <Route path="/product-profile" element={<ProductProfilePage />} />
           <Route path="/company-profile" element={<CompanyProfilePage />} />
+          <Route path="/terms" element={<TermsPage />} />
 
           <Route path={KFARMS_BASE_PATH} element={<WorkspaceRedirect />} />
           {KFARMS_APP_ROUTES.map(({ route, element }) => (

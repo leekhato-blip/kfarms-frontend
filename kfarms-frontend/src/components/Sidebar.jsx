@@ -36,10 +36,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-  Menu,
   Palette,
-  PanelLeftClose,
-  PanelLeftOpen,
   UserCircle2,
   Users,
   X,
@@ -157,6 +154,41 @@ function getInitials(label) {
 function isSettingsSection(pathname, section, expectedSection) {
   if (pathname !== KFARMS_ROUTE_REGISTRY.settings.appPath) return false;
   return section === expectedSection;
+}
+
+function SidebarToggleButton({
+  open = false,
+  onClick,
+  className = "",
+  label = "Toggle sidebar",
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/88 text-slate-700 shadow-[0_18px_36px_rgba(15,23,42,0.16)] ring-1 ring-white/70 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/88 dark:text-slate-100 dark:ring-white/10 dark:hover:bg-slate-900 ${className}`}
+      aria-label={label}
+    >
+      <span className="sr-only">{label}</span>
+      <span className="relative h-4 w-4" aria-hidden="true">
+        <span
+          className={`absolute left-0 top-0.5 h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+            open ? "translate-y-[5px] rotate-45" : ""
+          }`}
+        />
+        <span
+          className={`absolute left-0 top-[7px] h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+            open ? "opacity-0" : ""
+          }`}
+        />
+        <span
+          className={`absolute left-0 top-[13px] h-[2px] w-4 rounded-full bg-current transition-all duration-200 ${
+            open ? "-translate-y-[7px] -rotate-45" : ""
+          }`}
+        />
+      </span>
+    </button>
+  );
 }
 
 function ProfileMenuPanel({
@@ -608,23 +640,16 @@ export default function Sidebar() {
     ? "pointer-events-auto fixed left-0 top-0 z-[90] h-[100dvh] w-[18rem] max-w-[84vw] translate-x-0 p-3 shadow-[0_32px_64px_rgba(2,6,23,0.38)]"
     : "pointer-events-none fixed left-0 top-0 z-[90] h-[100dvh] w-[18rem] max-w-[84vw] -translate-x-full p-3 shadow-none";
   const shouldRenderSidebarBody = !isMobile || open;
-  const mobileSidebarTriggerClass =
-    "inline-flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white/84 px-3 text-[13px] font-semibold text-slate-700 shadow-[0_18px_34px_rgba(15,23,42,0.18)] ring-1 ring-white/60 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/84 dark:text-slate-100 dark:ring-white/10 dark:hover:bg-slate-900";
-  const mobileSidebarCloseClass =
-    "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white px-3 text-[13px] font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800";
 
   return (
     <>
       {isMobile && !open ? (
-        <button
-          type="button"
+        <SidebarToggleButton
+          open={false}
           onClick={() => setOpen(true)}
-          className={`fixed right-3 top-3 z-[70] ${mobileSidebarTriggerClass} sm:right-4 sm:top-4`}
-          aria-label="Open sidebar"
-        >
-          <Menu className="h-4 w-4" />
-          <span>Menu</span>
-        </button>
+          className="fixed right-3 top-3 z-[70] sm:right-4 sm:top-4"
+          label="Open sidebar"
+        />
       ) : null}
 
       {isMobile && open ? (
@@ -651,13 +676,12 @@ export default function Sidebar() {
       {/* Toggle Button */}
       {!open && (
         <div className="flex justify-center mb-4 font-body">
-          <button
+          <SidebarToggleButton
+            open={false}
             onClick={() => setOpen(true)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300/70 bg-white/70 text-slate-700 transition hover:bg-accent-primary/20 sm:h-9 sm:w-9 dark:border-slate-700 dark:bg-darkCard dark:text-gray-200 dark:hover:bg-accent-primary/25"
-            aria-label="Expand sidebar"
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
+            className="h-10 w-10 rounded-xl shadow-[0_12px_24px_rgba(15,23,42,0.12)] dark:shadow-none"
+            label="Expand sidebar"
+          />
         </div>
       )}
 
@@ -698,23 +722,12 @@ export default function Sidebar() {
               </div>
             </div>
 
-            <button
-              type="button"
+            <SidebarToggleButton
+              open
               onClick={closeSidebar}
-              className={isMobile
-                ? mobileSidebarCloseClass
-                : "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-300/70 bg-white/70 text-slate-700 transition hover:bg-accent-primary/20 sm:h-9 sm:w-9 dark:border-slate-700 dark:bg-darkCard dark:text-gray-200 dark:hover:bg-accent-primary/25"}
-              aria-label={isMobile ? "Close menu" : "Collapse sidebar"}
-            >
-              {isMobile ? (
-                <>
-                  <X className="h-4 w-4" />
-                  <span>Close</span>
-                </>
-              ) : (
-                <PanelLeftClose className="w-4 h-4" />
-              )}
-            </button>
+              className="h-10 w-10 shrink-0 rounded-xl shadow-none"
+              label={isMobile ? "Close menu" : "Collapse sidebar"}
+            />
           </div>
         </div>
       </div>

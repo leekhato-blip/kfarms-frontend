@@ -7,6 +7,7 @@ import {
   KeyRound,
   Link2,
   LogIn,
+  Monitor,
   Moon,
   ShieldCheck,
   Sun,
@@ -22,6 +23,7 @@ import { ToastProvider, useToast } from "../../components/ToastProvider";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import { useTheme } from "../../hooks/useTheme";
+import { formatThemePreferenceLabel, THEME_SCOPES } from "../../constants/settings";
 import { readTokenFromPayload } from "../../utils/formatters";
 import rootsLogo from "../../assets/roots-logo-trimmed.png";
 
@@ -35,7 +37,8 @@ function InviteSetupContent() {
   const [searchParams] = useSearchParams();
   const { login } = usePlatformAuth();
   const { notify } = useToast();
-  const { isDark, toggleTheme } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme(THEME_SCOPES.PLATFORM);
+  const themeLabel = formatThemePreferenceLabel(theme);
 
   const inviteToken = React.useMemo(() => String(searchParams.get("token") || "").trim(), [searchParams]);
   const [loadingInvite, setLoadingInvite] = React.useState(true);
@@ -164,9 +167,10 @@ function InviteSetupContent() {
                 type="button"
                 onClick={toggleTheme}
                 className="shrink-0 rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)]/88 p-2 text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]"
-                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={`Theme: ${themeLabel}. Click to cycle theme.`}
+                title={`Theme: ${themeLabel}`}
               >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                {theme === "system" ? <Monitor size={16} /> : isDark ? <Moon size={16} /> : <Sun size={16} />}
               </button>
             </div>
 
