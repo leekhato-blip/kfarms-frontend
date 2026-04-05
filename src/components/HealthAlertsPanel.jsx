@@ -1,0 +1,400 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle,
+  Phone,
+  ChevronDown,
+  RefreshCw,
+} from "lucide-react";
+
+export default function HealthAlertsPanel({
+  alerts = [],
+  onRefresh,
+  refreshing = false,
+  onAcknowledge = () => {},
+  onHandle = () => {},
+  onCall = () => {},
+  processingId = null,
+}) {
+  const MOBILE_LIMIT = 3;
+
+  const [filter, setFilter] = useState("ALL");
+  const [isMobile, setIsMobile] = useState(false);
+  const [showAllMobile, setShowAllMobile] = useState(false);
+
+  /* Responsive detection */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mq = window.matchMedia("(max-width: 639px)");
+    const handler = (e) => setIsMobile(e.matches);
+
+    setIsMobile(mq.matches);
+    mq.addEventListener("change", handler);
+
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  /* Reset mobile expansion on filter change */
+  useEffect(() => {
+    setShowAllMobile(false);
+  }, [filter]);
+
+  const severityMap = {
+    CRITICAL: {
+      label: "Critical",
+      colorClass:
+        "bg-gradient-to-br from-[#FF0078] via-[#FF3D00] to-[#FFB74D] text-white",
+      icon: <AlertTriangle className="w-4 h-4" />,
+    },
+    WARNING: {
+      label: "Warning",
+      colorClass:
+        "bg-gradient-to-br from-[#FFD54F] via-[#FFB300] to-[#FF6D00] text-black",
+      icon: <Bell className="w-4 h-4" />,
+    },
+    INFO: {
+      label: "Info",
+      colorClass:
+        "bg-gradient-to-br from-[#7EE7FF] via-[#4FC3F7] to-[#3B82F6] text-black",
+      icon: <CheckCircle className="w-4 h-4" />,
+    },
+  };
+
+  const filtered = useMemo(() => {
+    if (filter === "ALL") return alerts;
+    return alerts.filter((a) => a.severity === filter || a.category === filter);
+  }, [alerts, filter]);
+
+  const visibleAlerts = useMemo(() => {
+    if (!isMobile) return filtered;
+    if (showAllMobile) return filtered;
+    return filtered.slice(0, MOBILE_LIMIT);
+  }, [filtered, isMobile, showAllMobile]);
+
+  /* Empty State */
+  const renderEmpty = () => (
+    <div className="flex min-h-[220px] w-full flex-col items-center justify-center gap-3 px-4 text-center font-body">
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-xl">
+        ⚠️
+      </div>
+      <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
+        No alerts
+      </h4>
+      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+        Any info alerts will appear here.
+      </p>
+    </div>
+  );
+
+  return (
+    <div className="bg-white dark:bg-darkCard dark:shadow-dark shadow-neo p-4 rounded-xl w-full">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-md bg-gradient-to-br from-[#FF0078] via-[#FF3D00] to-[#FFB74D]">
+            <AlertTriangle className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold font-header">Health Alerts</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Diagnoses issues and recommends actions
+            </p>
+          </div>
+        </div>
+
+        {/* Filters + Refresh */}
+        <div className="flex gap-2 overflow-x-auto pb-1 font-body">
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              title="Refresh health alerts"
+              aria-label="Refresh health alerts"
+              className={`inline-flex shrink-0 items-center justify-center rounded-md border border-slate-200 p-1.5 text-xs text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 ${
+                refreshing ? "cursor-not-allowed opacity-70" : ""
+              }`}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          )}
+          <FilterChip
+            label="All"
+            active={filter === "ALL"}
+            onClick={() => setFilter("ALL")}
+          />
+          <FilterChip
+            label="Critical"
+            active={filter === "CRITICAL"}
+            onClick={() => setFilter("CRITICAL")}
+          />
+          <FilterChip
+            label="Warning"
+            active={filter === "WARNING"}
+            onClick={() => setFilter("WARNING")}
+          />
+          <FilterChip
+            label="Info"
+            active={filter === "INFO"}
+            onClick={() => setFilter("INFO")}
+          />
+        </div>
+      </div>
+
+      {/* Alerts */}
+      {filtered.length === 0 ? (
+        renderEmpty()
+      ) : (
+        <>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-start">
+            {visibleAlerts.map((alert) => (
+              <AlertItem
+                key={alert.id}
+                alert={alert}
+                meta={severityMap[alert.severity] || severityMap.INFO}
+                onAcknowledge={onAcknowledge}
+                onHandle={onHandle}
+                onCall={onCall}
+                processingId={processingId}
+              />
+            ))}
+          </div>
+
+          {/* Mobile toggle */}
+          {isMobile && filtered.length > MOBILE_LIMIT && (
+            <div className="flex justify-center mt-4 font-body">
+              <button
+                onClick={() => setShowAllMobile((v) => !v)}
+                className={`text-xs px-3 py-1 rounded ${
+                  showAllMobile
+                    ? "bg-slate-200 dark:bg-slate-800"
+                    : "bg-accent-primary text-white"
+                }`}
+              >
+                {showAllMobile ? "Show less" : `View all (${filtered.length})`}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* Alert Item */
+function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId }) {
+<<<<<<< HEAD
+  const MAX_STEPS_HEIGHT = 176;
+  const [open, setOpen] = useState(false);
+  const [stepsHeight, setStepsHeight] = useState(0);
+  const stepsRef = useRef(null);
+  const normalizedStatus = String(alert.status || "NEW").toUpperCase();
+  const busy = String(processingId || "") === String(alert.id || "");
+  const isPreviewOnly = Boolean(alert.readOnly);
+  const hasAdviceSteps = Array.isArray(alert.adviceSteps) && alert.adviceSteps.length > 0;
+  const acknowledgementLocked =
+    isPreviewOnly || normalizedStatus === "ACKNOWLEDGED" || normalizedStatus === "HANDLED";
+  const handleLocked = isPreviewOnly || normalizedStatus === "HANDLED";
+
+  useEffect(() => {
+    const stepsElement = stepsRef.current;
+    if (!stepsElement || !open) {
+      setStepsHeight(0);
+      return undefined;
+    }
+
+    const syncStepsHeight = () => {
+      setStepsHeight(Math.min(stepsElement.scrollHeight, MAX_STEPS_HEIGHT));
+    };
+
+    syncStepsHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(syncStepsHeight);
+    observer.observe(stepsElement);
+
+    return () => observer.disconnect();
+  }, [MAX_STEPS_HEIGHT, alert.adviceSteps, open]);
+=======
+  const [open, setOpen] = useState(false);
+  const normalizedStatus = String(alert.status || "NEW").toUpperCase();
+  const busy = String(processingId || "") === String(alert.id || "");
+  const isPreviewOnly = Boolean(alert.readOnly);
+  const acknowledgementLocked =
+    isPreviewOnly || normalizedStatus === "ACKNOWLEDGED" || normalizedStatus === "HANDLED";
+  const handleLocked = isPreviewOnly || normalizedStatus === "HANDLED";
+>>>>>>> 0babf4d (Update frontend application)
+
+  return (
+    <div className="flex h-full w-full flex-col rounded-lg border border-slate-200 p-3 shadow-sm font-body dark:border-slate-700">
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-10 h-10 flex items-center justify-center rounded ${meta.colorClass}`}
+        >
+          {meta.icon}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold font-header text-sm truncate">
+            {alert.title}
+          </p>
+          <div className="text-xs text-slate-400">
+            {formatDate(alert.triggeredAt)}
+          </div>
+        </div>
+      </div>
+
+      {alert.contextNote && (
+<<<<<<< HEAD
+        <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+=======
+        <div className="mt-1 line-clamp-2 text-xs text-slate-500">
+>>>>>>> 0babf4d (Update frontend application)
+          {alert.contextNote}
+        </div>
+      )}
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${meta.colorClass}`}
+        >
+          {meta.icon}
+          {meta.label}
+        </span>
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {formatStatusLabel(normalizedStatus)}
+        </span>
+        {isPreviewOnly ? (
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            Demo scenario
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => onAcknowledge(alert.id)}
+          disabled={busy || acknowledgementLocked}
+          title={isPreviewOnly ? "Preview only in demo mode" : "Acknowledge alert"}
+          className="rounded bg-slate-100 px-2 py-1 text-xs transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800"
+        >
+          {busy
+            ? "Saving..."
+            : isPreviewOnly
+              ? "Preview"
+              : acknowledgementLocked
+                ? "Acknowledged"
+                : "Acknowledge"}
+        </button>
+
+        <button
+          onClick={() => onHandle(alert.id)}
+          disabled={busy || handleLocked}
+          title={isPreviewOnly ? "Preview only in demo mode" : "Mark alert handled"}
+          className="rounded bg-emerald-500 px-2 py-1 text-xs text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy
+            ? "Saving..."
+            : isPreviewOnly
+              ? "Preview"
+              : handleLocked
+                ? "Handled"
+                : "Mark handled"}
+        </button>
+
+        {alert.contact && (
+          <button
+            onClick={() => onCall(alert.contact)}
+            className="text-xs px-2 py-1 rounded bg-green-500 text-white flex items-center gap-1"
+          >
+            <Phone className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {hasAdviceSteps && (
+        <button
+          onClick={() => setOpen(!open)}
+          className="mt-2 inline-flex items-center gap-1 self-start text-xs font-medium text-accent-primary"
+        >
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+          {open ? "Close steps" : "Recommended steps"}
+        </button>
+      )}
+
+      {hasAdviceSteps && (
+        <div
+          aria-hidden={!open}
+          className={`mt-2 overflow-hidden transition-[max-height,opacity] duration-300 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            maxHeight: open ? `${stepsHeight}px` : "0px",
+          }}
+        >
+          <ul ref={stepsRef} className="max-h-44 space-y-2 overflow-y-auto pb-1 pr-1">
+            {alert.adviceSteps.map((step, i) => (
+              <li
+                key={i}
+                className="flex gap-2 text-xs leading-5 text-slate-600 dark:text-slate-300"
+              >
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-primary" />
+                <span>{step}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Filter Chip */
+function FilterChip({ label, active, onClick }) {
+  const tooltip =
+    label === "All" ? "Show all alerts" : `Show ${label.toLowerCase()} alerts`;
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      title={tooltip}
+      className={`text-xs px-3 py-1 rounded whitespace-nowrap font-body ${
+        active
+          ? "bg-accent-primary text-white"
+          : "bg-slate-100 dark:bg-slate-800 text-slate-600"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+/* Date Helper */
+function formatDate(iso) {
+  try {
+    const d = new Date(String(iso).replace(" ", "T"));
+    if (isNaN(d.getTime())) return iso || "—";
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(d);
+  } catch {
+    return iso || "—";
+  }
+}
+
+function formatStatusLabel(status) {
+  const normalized = String(status || "").trim().toUpperCase();
+  if (normalized === "ACKNOWLEDGED") return "Acknowledged";
+  if (normalized === "HANDLED") return "Handled";
+  if (normalized === "EXPIRED") return "Expired";
+  return "New";
+}

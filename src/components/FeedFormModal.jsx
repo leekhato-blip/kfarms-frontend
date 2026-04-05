@@ -1,0 +1,402 @@
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, Hash, Save, StickyNote, Wallet, Wheat } from "lucide-react";
+<<<<<<< HEAD
+import GuidedFormModal, {
+  GUIDED_FORM_FIELD_CLASS,
+  GUIDED_FORM_ICON_CLASS,
+  GUIDED_FORM_LABEL_CLASS,
+  GUIDED_FORM_PRIMARY_BUTTON_CLASS,
+  GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS,
+  GUIDED_FORM_SECONDARY_BUTTON_CLASS,
+  GuidedFormSection,
+  handleGuidedFormAdvanceClick,
+} from "./GuidedFormModal";
+=======
+import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
+>>>>>>> 0babf4d (Update frontend application)
+import { createFeed, updateFeed } from "../services/feedService";
+import {
+  formatCurrencyInput,
+  normalizeCurrencyOnBlur,
+  sanitizeCurrencyInput,
+  todayDateInputValue,
+} from "../utils/formInputs";
+
+function defaultForm() {
+  return {
+    batchType: "LAYER",
+    quantity: "",
+    unitCost: "",
+    date: todayDateInputValue(),
+    note: "",
+  };
+}
+
+const FEED_TYPES = [
+  "LAYER",
+  "BROILER",
+  "NOILER",
+  "DUCK",
+  "FISH",
+  "FOWL",
+  "TURKEY",
+  "OTHER",
+];
+
+const FEED_STEPS = [
+  {
+    title: "What feed was used?",
+    description: "Choose the feed type, quantity, and unit cost.",
+  },
+  {
+    title: "When was it used?",
+    description: "Add the date and any simple note.",
+  },
+];
+
+const Required = () => <span className="ml-0.5 text-red-500">*</span>;
+<<<<<<< HEAD
+=======
+
+function formatCurrencyInput(value) {
+  if (!value) return "";
+  return new Intl.NumberFormat("en-NG").format(value);
+}
+
+function parseCurrencyInput(value) {
+  return value.replace(/,/g, "");
+}
+>>>>>>> 0babf4d (Update frontend application)
+
+export default function FeedFormModal({ open, onClose, initialData = null, onSuccess }) {
+  const [form, setForm] = useState(defaultForm());
+  const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0);
+
+  const editing = Boolean(initialData?.id);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (initialData) {
+      setForm({
+        batchType: initialData.batchType ?? initialData.type ?? "LAYER",
+        quantity: initialData.quantity ?? initialData.quantityUsed ?? "",
+        unitCost: initialData.unitCost ?? "",
+        date: initialData.date
+          ? String(initialData.date).slice(0, 10)
+          : initialData.feedDate
+            ? String(initialData.feedDate).slice(0, 10)
+            : todayDateInputValue(),
+        note: initialData.note ?? "",
+      });
+    } else {
+      setForm(defaultForm());
+    }
+
+    setStep(0);
+  }, [initialData, open]);
+
+  const total = useMemo(
+    () => Number(form.quantity || 0) * Number(form.unitCost || 0),
+    [form.quantity, form.unitCost],
+  );
+
+  const stepOneComplete = Boolean(
+    form.batchType && Number(form.quantity) > 0 && Number(form.unitCost) >= 0,
+  );
+  const stepTwoComplete = Boolean(form.date);
+
+  async function submit(event) {
+    event.preventDefault();
+<<<<<<< HEAD
+    if (step < FEED_STEPS.length - 1) {
+      if (!stepOneComplete) return;
+      setStep((current) => Math.min(current + 1, FEED_STEPS.length - 1));
+      return;
+    }
+=======
+>>>>>>> 0babf4d (Update frontend application)
+    if (!stepOneComplete || !stepTwoComplete) return;
+
+    setSaving(true);
+
+    const payload = {
+      batchType: form.batchType,
+      quantity: Number(form.quantity),
+      unitCost: Number(form.unitCost),
+      date: form.date || null,
+      note: form.note.trim() || null,
+    };
+
+    try {
+      const saved = editing
+        ? await updateFeed(initialData.id, payload, { baseRecord: initialData })
+        : await createFeed(payload);
+      onSuccess?.(saved);
+    } catch (error) {
+      console.error("Feed submit failed", error);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const footer = (
+    <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500 dark:text-slate-300">
+        {step === 0 ? "Step 1 of 2: feed quantity and cost" : "Step 2 of 2: date and note"}
+      </p>
+
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((current) => Math.max(current - 1, 0))}
+<<<<<<< HEAD
+            className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
+=======
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+>>>>>>> 0babf4d (Update frontend application)
+          >
+            Back
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+<<<<<<< HEAD
+            className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
+=======
+            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+>>>>>>> 0babf4d (Update frontend application)
+          >
+            Cancel
+          </button>
+        )}
+
+        {step < FEED_STEPS.length - 1 ? (
+          <button
+            type="button"
+            disabled={!stepOneComplete}
+<<<<<<< HEAD
+            onClick={(event) =>
+              handleGuidedFormAdvanceClick(event, () => {
+                setStep(1);
+              })
+            }
+            className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
+=======
+            onClick={() => setStep(1)}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+>>>>>>> 0babf4d (Update frontend application)
+          >
+            Continue
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={saving || !stepOneComplete || !stepTwoComplete}
+<<<<<<< HEAD
+            className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
+=======
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+>>>>>>> 0babf4d (Update frontend application)
+          >
+            <Save className="h-4 w-4" />
+            {saving ? "Saving..." : editing ? "Save changes" : "Save feed entry"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <GuidedFormModal
+      open={open}
+      onClose={onClose}
+      onSubmit={submit}
+      saving={saving}
+      icon={Wheat}
+      title={editing ? "Edit feed entry" : "Record feed"}
+      description="Keep feed records simple. Start with the feed type and cost, then add the date."
+      editing={editing}
+      steps={FEED_STEPS}
+      currentStep={step}
+      maxWidth="max-w-2xl"
+      footer={footer}
+    >
+      {step === 0 ? (
+        <>
+          <GuidedFormSection
+            title="Feed details"
+            description="These are the main details for the feed record."
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">
+                  Feed type <Required />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {FEED_TYPES.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, batchType: type }))}
+                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                        form.batchType === type
+                          ? "border-accent-primary bg-accent-primary text-white"
+                          : "border-white/20 bg-white/50 text-slate-700 dark:bg-white/10 dark:text-slate-200"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+<<<<<<< HEAD
+                  <label className={GUIDED_FORM_LABEL_CLASS}>
+                    <Hash className={GUIDED_FORM_ICON_CLASS} />
+=======
+                  <label className="mb-1 flex items-center gap-2 text-xs">
+                    <Hash className="h-4 w-4 text-slate-500" />
+>>>>>>> 0babf4d (Update frontend application)
+                    Quantity <Required />
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.quantity}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, quantity: event.target.value }))
+                    }
+<<<<<<< HEAD
+                    className={GUIDED_FORM_FIELD_CLASS}
+=======
+                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+>>>>>>> 0babf4d (Update frontend application)
+                    required
+                  />
+                </div>
+
+                <div>
+<<<<<<< HEAD
+                  <label className={GUIDED_FORM_LABEL_CLASS}>
+                    <Wallet className={GUIDED_FORM_ICON_CLASS} />
+=======
+                  <label className="mb-1 flex items-center gap-2 text-xs">
+                    <Wallet className="h-4 w-4 text-slate-500" />
+>>>>>>> 0babf4d (Update frontend application)
+                    Unit cost (Naira) <Required />
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={formatCurrencyInput(form.unitCost)}
+                    onChange={(event) => {
+<<<<<<< HEAD
+                      const raw = sanitizeCurrencyInput(event.target.value);
+=======
+                      const raw = parseCurrencyInput(event.target.value);
+                      if (!/^\d*$/.test(raw)) return;
+>>>>>>> 0babf4d (Update frontend application)
+                      setForm((current) => ({ ...current, unitCost: raw }));
+                    }}
+                    onBlur={() => {
+                      if (form.unitCost === "") return;
+                      setForm((current) => ({
+                        ...current,
+<<<<<<< HEAD
+                        unitCost: normalizeCurrencyOnBlur(current.unitCost),
+                      }));
+                    }}
+                    className={GUIDED_FORM_FIELD_CLASS}
+=======
+                        unitCost: String(Number(current.unitCost)),
+                      }));
+                    }}
+                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+>>>>>>> 0babf4d (Update frontend application)
+                    placeholder="0"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </GuidedFormSection>
+
+          <GuidedFormSection
+            title="Quick total"
+            description="This updates automatically so you can confirm the amount."
+          >
+            <div className="flex items-center justify-between rounded-xl bg-white/50 px-4 py-3 dark:bg-white/[0.04]">
+              <span className="text-sm text-slate-600 dark:text-slate-300">Estimated total</span>
+              <span className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                ₦{total.toLocaleString()}
+              </span>
+            </div>
+          </GuidedFormSection>
+        </>
+      ) : (
+        <>
+          <GuidedFormSection
+            title="Date"
+            description="Add the day this feed entry happened."
+          >
+<<<<<<< HEAD
+            <label className={GUIDED_FORM_LABEL_CLASS}>
+              <CalendarDays className={GUIDED_FORM_ICON_CLASS} />
+=======
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <CalendarDays className="h-4 w-4 text-slate-500" />
+>>>>>>> 0babf4d (Update frontend application)
+              Date <Required />
+            </label>
+            <input
+              type="date"
+              value={form.date}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, date: event.target.value }))
+              }
+<<<<<<< HEAD
+              className={GUIDED_FORM_FIELD_CLASS}
+=======
+              className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+>>>>>>> 0babf4d (Update frontend application)
+              required
+            />
+          </GuidedFormSection>
+
+          <GuidedFormSection
+            title="Optional note"
+            description="Use this only if there is anything helpful to remember later."
+          >
+<<<<<<< HEAD
+            <label className={GUIDED_FORM_LABEL_CLASS}>
+              <StickyNote className={GUIDED_FORM_ICON_CLASS} />
+=======
+            <label className="mb-1 flex items-center gap-2 text-xs">
+              <StickyNote className="h-4 w-4 text-slate-500" />
+>>>>>>> 0babf4d (Update frontend application)
+              Note
+            </label>
+            <textarea
+              value={form.note}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, note: event.target.value }))
+              }
+<<<<<<< HEAD
+              className={`${GUIDED_FORM_FIELD_CLASS} h-24 resize-none`}
+=======
+              className="h-24 w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
+>>>>>>> 0babf4d (Update frontend application)
+              placeholder="Optional details about this feed entry"
+            />
+          </GuidedFormSection>
+        </>
+      )}
+    </GuidedFormModal>
+  );
+}
