@@ -1,9 +1,6 @@
 import { PLAN_IDS, PLAN_TIER_CONFIG, normalizePlanId } from "../../constants/plans";
 import { formatDateTime } from "../../utils/formatters";
-<<<<<<< HEAD
 import { getUserDisplayName } from "../../services/userProfileService";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 export const PLAN_MEMBER_LIMITS = Object.freeze({
   FREE: 2,
@@ -24,7 +21,6 @@ export function resolvePlatformUserRole(user) {
   return user?.platformAdmin ? "PLATFORM_ADMIN" : "USER";
 }
 
-<<<<<<< HEAD
 export function hasPlatformAccess(user) {
   if (typeof user?.platformAccess === "boolean") {
     return user.platformAccess;
@@ -111,15 +107,12 @@ export function canAssignPlatformFunction(actor, target) {
   return false;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function resolvePlatformUserEnabled(user) {
   if (typeof user?.enabled === "boolean") return user.enabled;
   if (typeof user?.active === "boolean") return user.active;
   return true;
 }
 
-<<<<<<< HEAD
 export function isPlatformUser(user) {
   return hasPlatformAccess(user);
 }
@@ -150,8 +143,6 @@ export function comparePlatformUsersByAuthority(left, right) {
   });
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function getTenantMemberLimit(planId) {
   const normalizedPlan = normalizePlanId(planId, "FREE");
   return PLAN_MEMBER_LIMITS[normalizedPlan];
@@ -283,15 +274,9 @@ export function buildPlatformTimeline(tenants = [], users = []) {
         id: `tenant-capacity-${tenantId}`,
         category: "Plan guardrail",
         tone: seatUsage.overLimit ? "rose" : "amber",
-<<<<<<< HEAD
         title: seatUsage.overLimit ? "Team limit exceeded" : "Team limit nearing cap",
         subject: name,
         detail: `Using ${seatUsage.label} team members`,
-=======
-        title: seatUsage.overLimit ? "Seat limit exceeded" : "Seat limit nearing cap",
-        subject: name,
-        detail: `Using ${seatUsage.label} team seats`,
->>>>>>> 0babf4d (Update frontend application)
         when: tenant?.lastActivityAt || tenant?.createdAt,
       });
     }
@@ -301,11 +286,7 @@ export function buildPlatformTimeline(tenants = [], users = []) {
     const userId = getUserId(user) ?? index;
     const role = resolvePlatformUserRole(user);
     const enabled = resolvePlatformUserEnabled(user);
-<<<<<<< HEAD
     const label = getUserDisplayName(user, "User");
-=======
-    const label = user?.username || user?.email || "User";
->>>>>>> 0babf4d (Update frontend application)
     const email = user?.email || "No email";
 
     if (user?.createdAt) {
@@ -313,11 +294,7 @@ export function buildPlatformTimeline(tenants = [], users = []) {
         id: `user-created-${userId}`,
         category: "Access",
         tone: role === "PLATFORM_ADMIN" ? "violet" : "blue",
-<<<<<<< HEAD
         title: role === "PLATFORM_ADMIN" ? "ROOTS admin onboarded" : "Operator onboarded",
-=======
-        title: role === "PLATFORM_ADMIN" ? "Platform admin onboarded" : "Operator onboarded",
->>>>>>> 0babf4d (Update frontend application)
         subject: label,
         detail: `${role} · ${email}`,
         when: user.createdAt,

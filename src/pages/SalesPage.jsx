@@ -21,10 +21,7 @@ import {
 } from "../services/salesService";
 import { exportReport } from "../services/reportService";
 import useQuickCreateModal from "../hooks/useQuickCreateModal";
-<<<<<<< HEAD
 import { SALES_CATEGORY_OPTIONS } from "../constants/formOptions";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 import { Line } from "react-chartjs-2";
 import {
@@ -491,12 +488,9 @@ export default function SalesPage() {
     setRefreshing(true);
     try {
       await Promise.all([fetchSales(meta.page), fetchSummary()]);
-<<<<<<< HEAD
       setToast({ message: "Sales refreshed", type: "success" });
     } catch {
       setToast({ message: "Failed to refresh sales", type: "error" });
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setRefreshing(false);
     }
@@ -645,7 +639,6 @@ export default function SalesPage() {
             description="Open this chart when you want to review how revenue is moving."
             icon={<Wallet className="h-4 w-4" />}
           >
-<<<<<<< HEAD
             <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
               {loading ? (
                 <>
@@ -692,43 +685,6 @@ export default function SalesPage() {
                         </div>
                       </div>
                     )}
-=======
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
-              This chart uses the sales that have been recorded on this page.
-            </p>
-            <div className="h-[220px] sm:h-[260px] md:h-[300px]">
-              {hasSalesData ? (
-                isDark !== null && <Line data={chartData} options={chartOptions} />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center p-4 font-body"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <div className="flex flex-col items-center text-center gap-3 w-full max-w-sm">
-                    <div
-                      className="flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 shadow-sm"
-                      aria-hidden="true"
-                    >
-                      <Wallet className="w-9 h-9 text-emerald-600 dark:text-emerald-200" />
-                    </div>
-                    <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
-                      {hasActiveFilters
-                        ? "No sales match what you selected"
-                        : "No sales recorded yet"}
-                    </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      {hasActiveFilters
-                        ? "Show everything to see more results."
-                        : "Record your first sale to see the revenue trend here."}
-                    </p>
-                    <button
-                      className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
-                      onClick={hasActiveFilters ? clearFilters : openCreate}
-                    >
-                      {hasActiveFilters ? "Show everything" : "Record Sale"}
-                    </button>
->>>>>>> 0babf4d (Update frontend application)
                   </div>
                 </>
               )}
@@ -825,18 +781,11 @@ export default function SalesPage() {
               }
             >
               <option value="">All Categories</option>
-<<<<<<< HEAD
               {SALES_CATEGORY_OPTIONS.map((category) => (
                 <option key={category.value} value={category.value}>
                   {category.label}
                 </option>
               ))}
-=======
-              <option value="LAYER">Layer</option>
-              <option value="FISH">Fish</option>
-              <option value="LIVESTOCK">Poultry</option>
-              <option value="OTHER">Other</option>
->>>>>>> 0babf4d (Update frontend application)
             </select>
             <input
               type="date"
@@ -1060,12 +1009,9 @@ export default function SalesPage() {
                 ? `"${sale.itemName}" saved offline. It will sync automatically.`
                 : `"${sale.itemName}" ${editing ? "updated" : "created"} successfully`,
               type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
               actionLabel: pendingOffline ? "" : "View item",
               onAction: pendingOffline ? undefined : () => openDetails(sale),
               duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
             });
 
             if (editing) {

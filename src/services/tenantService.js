@@ -1,5 +1,4 @@
 import apiClient from "../api/apiClient";
-<<<<<<< HEAD
 import { FARM_MODULES, normalizeFarmModuleId } from "../tenant/tenantModules";
 
 function normalizeTenantCreationModules(modules) {
@@ -20,12 +19,6 @@ function normalizeTenantCreationModules(modules) {
 
 export function buildTenantModulePayload(modules) {
   const selectedModules = normalizeTenantCreationModules(modules);
-=======
-import { FARM_MODULES, normalizeEnabledModules } from "../tenant/tenantModules";
-
-export function buildTenantModulePayload(modules) {
-  const selectedModules = normalizeEnabledModules(modules);
->>>>>>> 0babf4d (Update frontend application)
   return {
     poultryEnabled: selectedModules.includes(FARM_MODULES.POULTRY),
     fishEnabled: selectedModules.includes(FARM_MODULES.FISH_FARMING),

@@ -8,10 +8,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
 import ExportModal from "../components/ExportModal";
-<<<<<<< HEAD
 import MobileAccordionCard from "../components/MobileAccordionCard";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Download, RefreshCw } from "lucide-react";
 
 import {
@@ -25,10 +22,7 @@ import {
 import { exportReport } from "../services/reportService";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
-<<<<<<< HEAD
 import { SUPPLY_CATEGORY_OPTIONS } from "../constants/formOptions";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 import { Line } from "react-chartjs-2";
 import {
@@ -441,12 +435,9 @@ export default function SuppliesPage() {
     setRefreshing(true);
     try {
       await Promise.all([fetchSupplies(meta.page), fetchSummary()]);
-<<<<<<< HEAD
       setToast({ message: "Supplies refreshed", type: "success" });
     } catch {
       setToast({ message: "Failed to refresh supplies", type: "error" });
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setRefreshing(false);
     }
@@ -648,11 +639,7 @@ export default function SuppliesPage() {
           className="mt-4 hidden rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark md:block"
           style={{ minHeight: 260 }}
         >
-<<<<<<< HEAD
           <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
-=======
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
->>>>>>> 0babf4d (Update frontend application)
             This chart uses the purchases that have been recorded on this page.
           </p>
           <div className="h-[220px] sm:h-[260px] md:h-[300px]">
@@ -719,20 +706,11 @@ export default function SuppliesPage() {
             }
           >
             <option value="">All Categories</option>
-<<<<<<< HEAD
             {SUPPLY_CATEGORY_OPTIONS.map((category) => (
               <option key={category.value} value={category.value}>
                 {category.label}
               </option>
             ))}
-=======
-            <option value="FEED">Feed</option>
-            <option value="LIVESTOCK">Poultry</option>
-            <option value="FISH">Fish</option>
-            <option value="MEDICINE">Medicine</option>
-            <option value="EQUIPMENT">Equipment</option>
-            <option value="OTHER">Other</option>
->>>>>>> 0babf4d (Update frontend application)
           </select>
           <input
             type="date"
@@ -941,12 +919,9 @@ export default function SuppliesPage() {
                 ? `"${supply.itemName}" saved offline. It will sync automatically.`
                 : `"${supply.itemName}" ${editing ? "updated" : "created"} successfully`,
               type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
               actionLabel: pendingOffline ? "" : "View item",
               onAction: pendingOffline ? undefined : () => openDetails(supply),
               duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
             });
 
             if (editing) {

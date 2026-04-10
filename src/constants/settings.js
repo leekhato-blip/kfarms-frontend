@@ -1,14 +1,10 @@
 export const THEME_STORAGE_KEY = "kf_theme";
-<<<<<<< HEAD
 export const PLATFORM_THEME_STORAGE_KEY = "roots_theme";
 export const SETTINGS_THEME_EVENT = "kf-theme-changed";
 export const THEME_SCOPES = Object.freeze({
   KFARMS: "kfarms",
   PLATFORM: "platform",
 });
-=======
-export const SETTINGS_THEME_EVENT = "kf-theme-changed";
->>>>>>> 0babf4d (Update frontend application)
 
 export const DEFAULT_ORGANIZATION_SETTINGS = Object.freeze({
   organizationName: "",
@@ -17,10 +13,7 @@ export const DEFAULT_ORGANIZATION_SETTINGS = Object.freeze({
   currency: "NGN",
   contactEmail: "",
   contactPhone: "",
-<<<<<<< HEAD
   criticalSmsAlertsEnabled: false,
-=======
->>>>>>> 0babf4d (Update frontend application)
   address: "",
   watermarkEnabled: true,
   logoUrl: "",
@@ -51,11 +44,6 @@ export const TIMEZONE_OPTIONS = Object.freeze([
 export const CURRENCY_OPTIONS = Object.freeze([
   { value: "NGN", label: "Nigerian Naira (NGN)" },
   { value: "USD", label: "US Dollar (USD)" },
-<<<<<<< HEAD
-=======
-  { value: "EUR", label: "Euro (EUR)" },
-  { value: "GBP", label: "British Pound (GBP)" },
->>>>>>> 0babf4d (Update frontend application)
 ]);
 
 export const LANDING_PAGE_OPTIONS = Object.freeze([
@@ -79,19 +67,15 @@ export const THEME_OPTIONS = Object.freeze([
 ]);
 
 const VALID_THEME_PREFERENCES = new Set(THEME_OPTIONS.map((option) => option.value));
-<<<<<<< HEAD
 const THEME_SCOPE_DEFAULTS = Object.freeze({
   [THEME_SCOPES.KFARMS]: DEFAULT_USER_PREFERENCES.themePreference,
   [THEME_SCOPES.PLATFORM]: "DARK",
 });
-=======
->>>>>>> 0babf4d (Update frontend application)
 const VALID_LANDING_PAGES = new Set([
   ...LANDING_PAGE_OPTIONS.map((option) => option.value),
   "/livestock",
 ]);
 
-<<<<<<< HEAD
 function resolveThemeScopeConfig(scope = THEME_SCOPES.KFARMS) {
   const normalizedScope =
     String(scope || "")
@@ -130,8 +114,6 @@ export function resolveThemeScopeFromPath(pathname = "") {
     : THEME_SCOPES.KFARMS;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function normalizeThemePreference(value) {
   const normalized = String(value ?? "").trim().toUpperCase();
   return VALID_THEME_PREFERENCES.has(normalized)
@@ -139,7 +121,6 @@ export function normalizeThemePreference(value) {
     : DEFAULT_USER_PREFERENCES.themePreference;
 }
 
-<<<<<<< HEAD
 export function getStoredThemePreference(scope = THEME_SCOPES.KFARMS) {
   const { storageKey, defaultPreference } = resolveThemeScopeConfig(scope);
 
@@ -165,8 +146,6 @@ export function formatThemePreferenceLabel(themePreference) {
   return `${normalized.slice(0, 1).toUpperCase()}${normalized.slice(1)}`;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function normalizeLandingPage(value) {
   const normalized = String(value ?? "").trim();
   const canonicalValue = normalized === "/livestock" ? "/poultry" : normalized;
@@ -201,12 +180,9 @@ export function normalizeOrganizationSettings(settings = {}) {
     contactPhone: String(
       settings.contactPhone ?? DEFAULT_ORGANIZATION_SETTINGS.contactPhone,
     ).trim(),
-<<<<<<< HEAD
     criticalSmsAlertsEnabled:
       settings.criticalSmsAlertsEnabled ??
       DEFAULT_ORGANIZATION_SETTINGS.criticalSmsAlertsEnabled,
-=======
->>>>>>> 0babf4d (Update frontend application)
     address: String(settings.address ?? DEFAULT_ORGANIZATION_SETTINGS.address).trim(),
     watermarkEnabled:
       settings.watermarkEnabled ?? DEFAULT_ORGANIZATION_SETTINGS.watermarkEnabled,
@@ -253,7 +229,6 @@ export function resolveThemeMode(themePreference) {
   const preference = normalizeThemePreference(themePreference);
   if (preference === "LIGHT") return "light";
   if (preference === "DARK") return "dark";
-<<<<<<< HEAD
   return getSystemThemeMode();
 }
 
@@ -273,52 +248,19 @@ export function applyThemePreference(themePreference, scope = THEME_SCOPES.KFARM
   const { scope: normalizedScope, storageKey } = resolveThemeScopeConfig(scope);
   const preference = normalizeThemePreference(themePreference);
   const preferenceKey = preference.toLowerCase();
-=======
-
-  if (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
-    return "dark";
-  }
-
-  return "light";
-}
-
-export function getStoredThemeMode() {
-  if (typeof window === "undefined") return "dark";
-  const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (saved === "dark" || saved === "light") return saved;
-  return resolveThemeMode("SYSTEM");
-}
-
-export function applyThemePreference(themePreference) {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
-
-  const preference = normalizeThemePreference(themePreference);
->>>>>>> 0babf4d (Update frontend application)
   const mode = resolveThemeMode(preference);
 
   document.documentElement.classList.toggle("dark", mode === "dark");
   document.body?.classList.toggle("dark", mode === "dark");
   document.documentElement.style.colorScheme = mode;
-<<<<<<< HEAD
   window.localStorage.setItem(storageKey, preferenceKey);
-=======
-  window.localStorage.setItem(THEME_STORAGE_KEY, mode);
->>>>>>> 0babf4d (Update frontend application)
   window.dispatchEvent(
     new CustomEvent(SETTINGS_THEME_EVENT, {
       detail: {
         mode,
-<<<<<<< HEAD
         preference: preferenceKey,
         scope: normalizedScope,
         storageKey,
-=======
-        preference,
->>>>>>> 0babf4d (Update frontend application)
       },
     }),
   );

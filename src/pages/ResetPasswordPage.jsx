@@ -10,13 +10,10 @@ import FloatingInput from "../components/FloatingInput";
 import { getAuthTrustText } from "../constants/authCopy";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
-<<<<<<< HEAD
 import {
   ACCOUNT_PASSWORD_MIN_LENGTH,
   validateAccountPassword,
 } from "../utils/accountValidation";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -55,14 +52,9 @@ export default function ResetPasswordPage() {
       return;
     }
 
-<<<<<<< HEAD
     const passwordError = validateAccountPassword(newPassword, ACCOUNT_PASSWORD_MIN_LENGTH);
     if (passwordError) {
       setInlineError(passwordError);
-=======
-    if (newPassword.trim().length < 8) {
-      setInlineError("Use at least 8 characters for your new password.");
->>>>>>> 0babf4d (Update frontend application)
       return;
     }
 
@@ -103,11 +95,7 @@ export default function ResetPasswordPage() {
 
   return (
     <PageWrapper>
-<<<<<<< HEAD
       <div className="relative app-full overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
-=======
-      <div className="relative app-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
->>>>>>> 0babf4d (Update frontend application)
         <AuthWatermark />
         <AuthThemeSwitcher />
         {/* Toast for system messages */}
@@ -117,11 +105,7 @@ export default function ResetPasswordPage() {
           onClose={() => setToast({ message: "", type: "" })}
         />
 
-<<<<<<< HEAD
         <div className="relative z-10 mx-auto grid h-full w-full max-w-4xl grid-cols-1 items-center gap-5 px-1 pb-4 pt-16 sm:px-4 sm:pb-6 sm:pt-20 md:grid-cols-2 md:gap-8">
-=======
-        <div className="relative z-10 w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-4">
->>>>>>> 0babf4d (Update frontend application)
           {/* Left side info */}
           <div className="hidden md:flex flex-col items-start">
             <div className="flex items-center gap-3">
@@ -174,11 +158,7 @@ export default function ResetPasswordPage() {
                 />
 
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-<<<<<<< HEAD
                   Use at least 6 characters with letters and numbers, and choose something new.
-=======
-                  Use at least 8 characters and choose something new.
->>>>>>> 0babf4d (Update frontend application)
                 </p>
 
                 <div className="flex items-center justify-between">

@@ -11,7 +11,6 @@ import {
   StickyNote,
   Users,
 } from "lucide-react";
-<<<<<<< HEAD
 import GuidedFormModal, {
   GUIDED_FORM_FIELD_CLASS,
   GUIDED_FORM_ICON_CLASS,
@@ -22,9 +21,6 @@ import GuidedFormModal, {
   GuidedFormSection,
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
-=======
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
->>>>>>> 0babf4d (Update frontend application)
 import { createLivestock, updateLivestock } from "../services/livestockService";
 import { todayDateInputValue } from "../utils/formInputs";
 
@@ -83,10 +79,7 @@ export default function LivestockFormModal({
 }) {
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
-<<<<<<< HEAD
   const [errorMessage, setErrorMessage] = useState("");
-=======
->>>>>>> 0babf4d (Update frontend application)
   const [step, setStep] = useState(0);
 
   const editing = Boolean(initialData?.id);
@@ -113,15 +106,11 @@ export default function LivestockFormModal({
       setForm(defaultForm());
     }
 
-<<<<<<< HEAD
     setErrorMessage("");
-=======
->>>>>>> 0babf4d (Update frontend application)
     setStep(0);
   }, [initialData, open]);
 
   const stepOneComplete = Boolean(String(form.batchName || "").trim() && form.type && form.sourceType);
-<<<<<<< HEAD
   const stepTwoComplete = Boolean(Number(form.currentStock) > 0 && form.arrivalDate);
 
   async function submit(event) {
@@ -131,12 +120,6 @@ export default function LivestockFormModal({
       setStep((current) => Math.min(current + 1, LIVESTOCK_STEPS.length - 1));
       return;
     }
-=======
-  const stepTwoComplete = Boolean(form.arrivalDate);
-
-  async function submit(event) {
-    event.preventDefault();
->>>>>>> 0babf4d (Update frontend application)
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
@@ -163,7 +146,6 @@ export default function LivestockFormModal({
       onSuccess?.(saved);
     } catch (error) {
       console.error("Livestock submit failed", error);
-<<<<<<< HEAD
       if (error?.response?.status === 409) {
         setErrorMessage(
           "That poultry group name already exists. Rename it or restore the earlier flock before saving.",
@@ -175,8 +157,6 @@ export default function LivestockFormModal({
             `Failed to ${editing ? "update" : "save"} poultry flock.`,
         );
       }
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setSaving(false);
     }
@@ -193,11 +173,7 @@ export default function LivestockFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Back
           </button>
@@ -205,11 +181,7 @@ export default function LivestockFormModal({
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Cancel
           </button>
@@ -219,17 +191,12 @@ export default function LivestockFormModal({
           <button
             type="button"
             disabled={!stepOneComplete}
-<<<<<<< HEAD
             onClick={(event) =>
               handleGuidedFormAdvanceClick(event, () => {
                 setStep(1);
               })
             }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
-=======
-            onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             Continue
           </button>
@@ -237,11 +204,7 @@ export default function LivestockFormModal({
           <button
             type="submit"
             disabled={saving || !stepOneComplete || !stepTwoComplete}
-<<<<<<< HEAD
             className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
-=======
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save group"}
@@ -264,10 +227,7 @@ export default function LivestockFormModal({
       steps={LIVESTOCK_STEPS}
       currentStep={step}
       maxWidth="max-w-2xl"
-<<<<<<< HEAD
       errorMessage={errorMessage}
-=======
->>>>>>> 0babf4d (Update frontend application)
       footer={footer}
     >
       {step === 0 ? (
@@ -277,13 +237,8 @@ export default function LivestockFormModal({
         >
           <div className="space-y-4">
             <div>
-<<<<<<< HEAD
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <ClipboardList className={GUIDED_FORM_ICON_CLASS} />
-=======
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <ClipboardList className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                 Group name <Required />
               </label>
               <input
@@ -291,11 +246,7 @@ export default function LivestockFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, batchName: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 placeholder="e.g. Layer flock 3"
                 autoFocus
                 required
@@ -304,13 +255,8 @@ export default function LivestockFormModal({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Feather className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Feather className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Type <Required />
                 </label>
                 <select
@@ -318,11 +264,7 @@ export default function LivestockFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, type: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 >
                   {LIVESTOCK_TYPES.map((type) => (
@@ -334,13 +276,8 @@ export default function LivestockFormModal({
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <RotateCcw className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <RotateCcw className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Source <Required />
                 </label>
                 <select
@@ -348,11 +285,7 @@ export default function LivestockFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, sourceType: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 >
                   {SOURCE_TYPES.map((type) => (
@@ -373,7 +306,6 @@ export default function LivestockFormModal({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Users className={GUIDED_FORM_ICON_CLASS} />
                   Current stock <Required />
@@ -381,38 +313,19 @@ export default function LivestockFormModal({
                 <input
                   type="number"
                   min="1"
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Users className="h-4 w-4 text-slate-500" />
-                  Current stock
-                </label>
-                <input
-                  type="number"
-                  min="0"
->>>>>>> 0babf4d (Update frontend application)
                   value={form.currentStock}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, currentStock: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
                   placeholder="e.g. 1200"
                   required
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                  placeholder="e.g. 1200"
->>>>>>> 0babf4d (Update frontend application)
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Calendar className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Calendar className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Arrival date <Required />
                 </label>
                 <input
@@ -421,24 +334,15 @@ export default function LivestockFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, arrivalDate: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 />
               </div>
 
               {form.type === "LAYER" && (
                 <div>
-<<<<<<< HEAD
                   <label className={GUIDED_FORM_LABEL_CLASS}>
                     <House className={GUIDED_FORM_ICON_CLASS} />
-=======
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <House className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                     Method of keeping
                   </label>
                   <select
@@ -449,11 +353,7 @@ export default function LivestockFormModal({
                         keepingMethod: event.target.value,
                       }))
                     }
-<<<<<<< HEAD
                     className={GUIDED_FORM_FIELD_CLASS}
-=======
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   >
                     {KEEPING_METHODS.map((method) => (
                       <option key={method} value={method}>
@@ -462,24 +362,15 @@ export default function LivestockFormModal({
                     ))}
                   </select>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-<<<<<<< HEAD
                     Choose the keeping method that matches this flock, such as deep litter,
                     battery cage, or free range, so housing and care records stay accurate.
-=======
-                    Helpful for layer flocks so housing style stays visible in reports.
->>>>>>> 0babf4d (Update frontend application)
                   </p>
                 </div>
               )}
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Hash className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Starting age (weeks)
                 </label>
                 <input
@@ -492,23 +383,14 @@ export default function LivestockFormModal({
                       startingAgeInWeeks: event.target.value,
                     }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="e.g. 10"
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <AlertTriangle className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <AlertTriangle className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Mortality to add
                 </label>
                 <input
@@ -518,11 +400,7 @@ export default function LivestockFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, mortality: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="e.g. 5"
                 />
               </div>
@@ -533,13 +411,8 @@ export default function LivestockFormModal({
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <StickyNote className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Note
             </label>
             <textarea
@@ -548,11 +421,7 @@ export default function LivestockFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-<<<<<<< HEAD
               className={`${GUIDED_FORM_FIELD_CLASS} resize-none`}
-=======
-              className="w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               placeholder="Optional note about this poultry flock"
             />
           </GuidedFormSection>

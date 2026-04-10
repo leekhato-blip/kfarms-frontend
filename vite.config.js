@@ -26,7 +26,6 @@ import react from "@vitejs/plugin-react";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-<<<<<<< HEAD
   optimizeDeps: {
     force: true,
     include: [
@@ -77,8 +76,6 @@ export default defineConfig({
       },
     },
   },
-=======
->>>>>>> 0babf4d (Update frontend application)
   build: {
     rollupOptions: {
       output: {

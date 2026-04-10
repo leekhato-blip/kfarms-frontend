@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Package, Save, StickyNote, User, Wallet } from "lucide-react";
-<<<<<<< HEAD
 import GuidedFormModal, {
   GUIDED_FORM_FIELD_CLASS,
   GUIDED_FORM_ICON_CLASS,
@@ -11,9 +10,6 @@ import GuidedFormModal, {
   GuidedFormSection,
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
-=======
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
->>>>>>> 0babf4d (Update frontend application)
 import { createSale, updateSale } from "../services/salesService";
 import { SALES_CATEGORY_OPTIONS } from "../constants/formOptions";
 import {
@@ -47,18 +43,6 @@ const SALE_STEPS = [
 ];
 
 const Required = () => <span className="ml-0.5 text-red-500">*</span>;
-<<<<<<< HEAD
-=======
-
-function formatCurrencyInput(value) {
-  if (!value) return "";
-  return new Intl.NumberFormat("en-NG").format(value);
-}
-
-function parseCurrencyInput(value) {
-  return value.replace(/,/g, "");
-}
->>>>>>> 0babf4d (Update frontend application)
 
 export default function SalesFormModal({
   open,
@@ -83,13 +67,9 @@ export default function SalesFormModal({
         unitPrice: initialData.unitPrice ?? "",
         buyer: initialData.buyer ?? "",
         note: initialData.note ?? "",
-<<<<<<< HEAD
         salesDate: initialData.salesDate
           ? initialData.salesDate.slice(0, 10)
           : todayDateInputValue(),
-=======
-        salesDate: initialData.salesDate ? initialData.salesDate.slice(0, 10) : "",
->>>>>>> 0babf4d (Update frontend application)
       });
     } else {
       setForm(defaultForm());
@@ -113,14 +93,11 @@ export default function SalesFormModal({
 
   async function submit(event) {
     event.preventDefault();
-<<<<<<< HEAD
     if (step < SALE_STEPS.length - 1) {
       if (!stepOneComplete) return;
       setStep((current) => Math.min(current + 1, SALE_STEPS.length - 1));
       return;
     }
-=======
->>>>>>> 0babf4d (Update frontend application)
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
@@ -159,11 +136,7 @@ export default function SalesFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Back
           </button>
@@ -171,11 +144,7 @@ export default function SalesFormModal({
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Cancel
           </button>
@@ -185,17 +154,12 @@ export default function SalesFormModal({
           <button
             type="button"
             disabled={!stepOneComplete}
-<<<<<<< HEAD
             onClick={(event) =>
               handleGuidedFormAdvanceClick(event, () => {
                 setStep(1);
               })
             }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
-=======
-            onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             Continue
           </button>
@@ -203,11 +167,7 @@ export default function SalesFormModal({
           <button
             type="submit"
             disabled={saving || !stepOneComplete || !stepTwoComplete}
-<<<<<<< HEAD
             className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
-=======
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save sale"}
@@ -240,13 +200,8 @@ export default function SalesFormModal({
           >
             <div className="space-y-4">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Package className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Package className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Item <Required />
                 </label>
                 <input
@@ -254,11 +209,7 @@ export default function SalesFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, itemName: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="e.g. Layer eggs"
                   autoFocus
                   required
@@ -266,7 +217,6 @@ export default function SalesFormModal({
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Package className={GUIDED_FORM_ICON_CLASS} />
                   Category <Required />
@@ -303,55 +253,11 @@ export default function SalesFormModal({
                     className={GUIDED_FORM_FIELD_CLASS}
                     required
                   />
-=======
-                <label className="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">
-                  Category
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {["LAYER", "FISH", "LIVESTOCK", "MANURE", "OTHER"].map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setForm((current) => ({ ...current, category }))}
-                      className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                        form.category === category
-                          ? "border-accent-primary bg-accent-primary text-white"
-                          : "border-white/20 bg-white/50 text-slate-700 dark:bg-white/10 dark:text-slate-200"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
->>>>>>> 0babf4d (Update frontend application)
                 </div>
 
-<<<<<<< HEAD
                 <div>
                   <label className={GUIDED_FORM_LABEL_CLASS}>
                     <Wallet className={GUIDED_FORM_ICON_CLASS} />
-=======
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <Package className="h-4 w-4 text-slate-500" />
-                    Quantity <Required />
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.quantity}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, quantity: event.target.value }))
-                    }
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <Wallet className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                     Unit price (Naira) <Required />
                   </label>
                   <input
@@ -359,29 +265,17 @@ export default function SalesFormModal({
                     inputMode="numeric"
                     value={formatCurrencyInput(form.unitPrice)}
                     onChange={(event) => {
-<<<<<<< HEAD
                       const raw = sanitizeCurrencyInput(event.target.value);
-=======
-                      const raw = parseCurrencyInput(event.target.value);
-                      if (!/^\d*$/.test(raw)) return;
->>>>>>> 0babf4d (Update frontend application)
                       setForm((current) => ({ ...current, unitPrice: raw }));
                     }}
                     onBlur={() => {
                       if (form.unitPrice === "") return;
                       setForm((current) => ({
                         ...current,
-<<<<<<< HEAD
                         unitPrice: normalizeCurrencyOnBlur(current.unitPrice),
                       }));
                     }}
                     className={GUIDED_FORM_FIELD_CLASS}
-=======
-                        unitPrice: String(Number(current.unitPrice)),
-                      }));
-                    }}
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                     placeholder="0"
                     required
                   />
@@ -410,13 +304,8 @@ export default function SalesFormModal({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <User className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <User className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Buyer
                 </label>
                 <input
@@ -424,23 +313,14 @@ export default function SalesFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, buyer: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="Customer name"
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <CalendarDays className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <CalendarDays className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Sale date <Required />
                 </label>
                 <input
@@ -449,11 +329,7 @@ export default function SalesFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, salesDate: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 />
               </div>
@@ -464,13 +340,8 @@ export default function SalesFormModal({
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <StickyNote className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Note
             </label>
             <textarea
@@ -478,11 +349,7 @@ export default function SalesFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-<<<<<<< HEAD
               className={`${GUIDED_FORM_FIELD_CLASS} h-24 resize-none`}
-=======
-              className="h-24 w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               placeholder="Optional details about the sale"
             />
           </GuidedFormSection>

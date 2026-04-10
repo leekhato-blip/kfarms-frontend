@@ -1,5 +1,4 @@
 import React from "react";
-<<<<<<< HEAD
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -7,29 +6,18 @@ import {
   Building2,
   Users,
   MessageSquareText,
-=======
-import { NavLink } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
->>>>>>> 0babf4d (Update frontend application)
   Activity,
   Settings,
   LogOut,
   X,
   Sparkles,
-<<<<<<< HEAD
   RadioTower,
   Shield,
-=======
->>>>>>> 0babf4d (Update frontend application)
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
 import Button from "../components/Button";
 import rootsLogo from "../assets/roots-logo.png";
-<<<<<<< HEAD
 import { PLATFORM_ENDPOINTS } from "../api/endpoints";
 import { platformAxios, unwrapApiResponse } from "../api/platformClient";
 import {
@@ -42,18 +30,12 @@ const ATLAS_NAV_ITEMS = [
   { to: "/platform", label: "Hub", icon: LayoutDashboard, end: true },
   { to: "/platform/apps", label: "Apps", icon: Blocks },
   { to: "/platform/messages", label: "Messages", icon: MessageSquareText },
-=======
-
-const ATLAS_NAV_ITEMS = [
-  { to: "/platform", label: "Overview", icon: LayoutDashboard, end: true },
->>>>>>> 0babf4d (Update frontend application)
   { to: "/platform/tenants", label: "Tenants", icon: Building2 },
   { to: "/platform/users", label: "Users", icon: Users },
   { to: "/platform/health", label: "Health", icon: Activity },
   { to: "/platform/settings", label: "Settings", icon: Settings },
 ];
 
-<<<<<<< HEAD
 const SIDEBAR_PULSE_BARS = [26, 44, 62, 48, 72, 38];
 const SIDEBAR_PULSE_SIGNALS = [
   {
@@ -149,23 +131,17 @@ function buildSidebarPulseSignals(metrics = {}, pathname = "") {
   });
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function cn(...values) {
   return values.filter(Boolean).join(" ");
 }
 
 function SidebarBody({
-<<<<<<< HEAD
   onOpenPulseTarget,
-=======
->>>>>>> 0babf4d (Update frontend application)
   onNavigate,
   onLogout,
   collapsed = false,
   onToggleCollapse,
   showCollapseToggle = true,
-<<<<<<< HEAD
   showSupportPanels = true,
   messageMenuHasNew = false,
   pulseSignals = [],
@@ -190,15 +166,6 @@ function SidebarBody({
         className={cn(
           "atlas-dot-grid relative border-b border-[color:var(--atlas-border)]",
           collapsed ? "px-3 py-3" : "px-5 py-5",
-=======
-}) {
-  return (
-    <div className="flex h-full flex-col">
-      <div
-        className={cn(
-          "relative border-b border-[color:var(--atlas-border)]",
-          collapsed ? "px-3 py-3" : "px-5 py-4",
->>>>>>> 0babf4d (Update frontend application)
         )}
       >
         {showCollapseToggle && (
@@ -207,11 +174,7 @@ function SidebarBody({
               type="button"
               onClick={onToggleCollapse}
               className={cn(
-<<<<<<< HEAD
                 "atlas-icon-button inline-flex h-10 w-10 items-center justify-center rounded-xl text-[var(--atlas-text)] transition hover:bg-[color:var(--atlas-surface-hover)]",
-=======
-                "inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--atlas-surface-soft)]/75 text-[var(--atlas-text)] shadow-sm transition hover:bg-[color:var(--atlas-surface-hover)] dark:shadow-[0_10px_22px_rgba(0,0,0,0.2)]",
->>>>>>> 0babf4d (Update frontend application)
                 collapsed && "h-9 w-9",
               )}
               aria-label={collapsed ? "Expand sidebar" : "Toggle sidebar"}
@@ -223,7 +186,6 @@ function SidebarBody({
         )}
 
         <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}>
-<<<<<<< HEAD
           <div
             className={cn(
               "flex shrink-0 items-center justify-center rounded-[1.4rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/88",
@@ -246,53 +208,23 @@ function SidebarBody({
               </p>
               <p className="mt-1 text-[10px] uppercase tracking-[0.26em] text-[var(--atlas-muted)]">
                 Platform Console
-=======
-          <img
-            src={rootsLogo}
-            alt="ROOTS"
-            className={cn(
-              "shrink-0 object-contain saturate-125 contrast-125 brightness-110",
-              "drop-shadow-[0_8px_18px_rgba(2,6,23,0.22)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.42)]",
-              collapsed ? "h-11 w-11" : "h-14 w-14",
-            )}
-          />
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="font-header text-2xl font-black leading-none tracking-[0.14em] text-[var(--atlas-text-strong)]">
-                ROOTS
-              </p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.24em] text-[var(--atlas-muted)]">
-                Platform
->>>>>>> 0babf4d (Update frontend application)
               </p>
             </div>
           )}
         </div>
 
         {!collapsed && (
-<<<<<<< HEAD
           <div className="atlas-signal-chip mt-4">
             <Sparkles size={10} />
             ROOTS Platform
-=======
-          <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-200">
-            <Sparkles size={10} />
-            Control Plane
->>>>>>> 0babf4d (Update frontend application)
           </div>
         )}
       </div>
 
-<<<<<<< HEAD
       <nav className={cn("hide-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto", collapsed ? "px-2 py-3" : "px-3 py-4")}>
         {ATLAS_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const showMessageIndicator = item.to === "/platform/messages" && messageMenuHasNew;
-=======
-      <nav className={cn("flex-1 space-y-1.5", collapsed ? "px-2 py-3" : "px-3 py-4")}>
-        {ATLAS_NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
->>>>>>> 0babf4d (Update frontend application)
           return (
             <NavLink
               key={item.to}
@@ -300,19 +232,11 @@ function SidebarBody({
               end={item.end}
               onClick={onNavigate}
               className={({ isActive }) =>
-<<<<<<< HEAD
                 `group relative flex items-center overflow-hidden rounded-2xl py-3 text-sm transition-all duration-200 ${
                   collapsed ? "justify-center px-2.5" : "gap-2 px-3"
                 } ${
                   isActive
                     ? "bg-[color:var(--atlas-surface-soft)]/92 text-[var(--atlas-text-strong)]"
-=======
-                `group relative flex items-center overflow-hidden rounded-xl py-2.5 text-sm transition-all duration-200 ${
-                  collapsed ? "justify-center px-2.5" : "gap-2 px-3"
-                } ${
-                  isActive
-                    ? "bg-gradient-to-r from-violet-500/20 via-blue-500/10 to-emerald-500/10 text-[var(--atlas-text-strong)] shadow-[0_12px_24px_rgba(15,23,42,0.14)] dark:shadow-[0_14px_28px_rgba(0,0,0,0.24)]"
->>>>>>> 0babf4d (Update frontend application)
                     : "text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-soft)]/70 hover:text-[var(--atlas-text-strong)]"
                 }`
               }
@@ -325,11 +249,7 @@ function SidebarBody({
                       className={cn(
                         "absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full transition-all duration-200",
                         isActive
-<<<<<<< HEAD
                           ? "bg-gradient-to-b from-violet-300/90 via-indigo-300/85 to-blue-300/75 opacity-100"
-=======
-                          ? "bg-gradient-to-b from-violet-300/90 via-blue-300/80 to-emerald-300/75 opacity-100 shadow-[0_0_12px_rgba(96,165,250,0.35)]"
->>>>>>> 0babf4d (Update frontend application)
                           : "opacity-0",
                       )}
                     />
@@ -347,7 +267,6 @@ function SidebarBody({
 
                   {!collapsed && <span className="font-medium tracking-[0.01em]">{item.label}</span>}
 
-<<<<<<< HEAD
                   {showMessageIndicator ? (
                     <span
                       aria-label="New messages"
@@ -358,8 +277,6 @@ function SidebarBody({
                     />
                   ) : null}
 
-=======
->>>>>>> 0babf4d (Update frontend application)
                   {collapsed && (
                     <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-2 py-1 text-xs text-[var(--atlas-text-strong)] opacity-0 shadow-lg transition group-hover:opacity-100">
                       {item.label}
@@ -372,7 +289,6 @@ function SidebarBody({
         })}
       </nav>
 
-<<<<<<< HEAD
       {!collapsed && showSupportPanels && (
         <div className="space-y-3 px-3 pb-3">
           <div
@@ -535,29 +451,17 @@ function SidebarBody({
               ? "group relative h-12 w-12 border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-0 text-[var(--atlas-text-strong)] shadow-[0_16px_34px_rgba(15,23,42,0.18)]"
               : "w-full justify-start",
             "rounded-2xl bg-[color:var(--atlas-surface-soft)]/70 text-[var(--atlas-text-strong)] hover:bg-[color:var(--atlas-surface-hover)]",
-=======
-      <div className={cn("border-t border-[color:var(--atlas-border)] p-3", collapsed && "flex justify-center")}>
-        <Button
-          variant="ghost"
-          className={cn(
-            collapsed ? "h-10 w-10 px-0" : "w-full justify-start",
-            "rounded-xl bg-[color:var(--atlas-surface-soft)]/60 text-[var(--atlas-text-strong)] shadow-sm hover:bg-[color:var(--atlas-surface-hover)] dark:shadow-[0_12px_24px_rgba(0,0,0,0.16)]",
->>>>>>> 0babf4d (Update frontend application)
           )}
           onClick={onLogout}
           aria-label="Logout"
         >
           <LogOut size={15} />
-<<<<<<< HEAD
           {!collapsed ? "Logout" : null}
           {collapsed ? (
             <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)] px-2 py-1 text-xs text-[var(--atlas-text-strong)] opacity-0 shadow-lg transition group-hover:opacity-100">
               Logout
             </span>
           ) : null}
-=======
-          {!collapsed && "Logout"}
->>>>>>> 0babf4d (Update frontend application)
         </Button>
       </div>
     </div>
@@ -570,7 +474,6 @@ export default function Sidebar({
   onLogout,
   collapsed = false,
   onToggleCollapse,
-<<<<<<< HEAD
   messageMenuHasNew = false,
   platformDataMode = "live",
   customApps = [],
@@ -631,23 +534,15 @@ export default function Sidebar({
     [navigate, onCloseMobile],
   );
 
-=======
-}) {
->>>>>>> 0babf4d (Update frontend application)
   return (
     <>
       <aside
         className={cn(
-<<<<<<< HEAD
           "atlas-sidebar-shell hidden h-full shrink-0 border-r border-[color:var(--atlas-border)] backdrop-blur transition-[width] duration-300 xl:block",
-=======
-          "hidden shrink-0 border-r border-[color:var(--atlas-border)] backdrop-blur transition-[width] duration-300 xl:block",
->>>>>>> 0babf4d (Update frontend application)
           collapsed ? "w-20" : "w-72",
         )}
         style={{ background: "var(--atlas-sidebar-bg)" }}
       >
-<<<<<<< HEAD
         <SidebarBody
           onOpenPulseTarget={handleOpenPulseTarget}
           onNavigate={undefined}
@@ -660,20 +555,13 @@ export default function Sidebar({
           hoveredPulseId={hoveredPulseId}
           onHoverPulse={setHoveredPulseId}
         />
-=======
-        <SidebarBody onNavigate={undefined} onLogout={onLogout} collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
->>>>>>> 0babf4d (Update frontend application)
       </aside>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-[80] xl:hidden">
           <div className="absolute inset-0 bg-[color:var(--atlas-overlay)]" onClick={onCloseMobile} />
           <aside
-<<<<<<< HEAD
             className="atlas-sidebar-shell absolute left-0 top-0 h-full w-80 max-w-[88vw] border-r border-[color:var(--atlas-border)] shadow-2xl"
-=======
-            className="absolute left-0 top-0 h-full w-80 max-w-[88vw] border-r border-[color:var(--atlas-border)] shadow-2xl"
->>>>>>> 0babf4d (Update frontend application)
             style={{ background: "var(--atlas-sidebar-bg)" }}
           >
             <div className="flex items-center justify-end border-b border-[color:var(--atlas-border)] px-3 py-2">
@@ -687,24 +575,18 @@ export default function Sidebar({
               </button>
             </div>
             <SidebarBody
-<<<<<<< HEAD
               onOpenPulseTarget={handleOpenPulseTarget}
-=======
->>>>>>> 0babf4d (Update frontend application)
               onNavigate={onCloseMobile}
               onLogout={onLogout}
               collapsed={false}
               onToggleCollapse={undefined}
               showCollapseToggle={false}
-<<<<<<< HEAD
               showSupportPanels={false}
               messageMenuHasNew={messageMenuHasNew}
               pulseSignals={pulseSignals}
               pulseSource={pulseSource}
               hoveredPulseId={hoveredPulseId}
               onHoverPulse={setHoveredPulseId}
-=======
->>>>>>> 0babf4d (Update frontend application)
             />
           </aside>
         </div>

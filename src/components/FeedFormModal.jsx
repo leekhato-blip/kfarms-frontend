@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Hash, Save, StickyNote, Wallet, Wheat } from "lucide-react";
-<<<<<<< HEAD
 import GuidedFormModal, {
   GUIDED_FORM_FIELD_CLASS,
   GUIDED_FORM_ICON_CLASS,
@@ -11,9 +10,6 @@ import GuidedFormModal, {
   GuidedFormSection,
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
-=======
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
->>>>>>> 0babf4d (Update frontend application)
 import { createFeed, updateFeed } from "../services/feedService";
 import {
   formatCurrencyInput,
@@ -55,18 +51,6 @@ const FEED_STEPS = [
 ];
 
 const Required = () => <span className="ml-0.5 text-red-500">*</span>;
-<<<<<<< HEAD
-=======
-
-function formatCurrencyInput(value) {
-  if (!value) return "";
-  return new Intl.NumberFormat("en-NG").format(value);
-}
-
-function parseCurrencyInput(value) {
-  return value.replace(/,/g, "");
-}
->>>>>>> 0babf4d (Update frontend application)
 
 export default function FeedFormModal({ open, onClose, initialData = null, onSuccess }) {
   const [form, setForm] = useState(defaultForm());
@@ -109,14 +93,11 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
 
   async function submit(event) {
     event.preventDefault();
-<<<<<<< HEAD
     if (step < FEED_STEPS.length - 1) {
       if (!stepOneComplete) return;
       setStep((current) => Math.min(current + 1, FEED_STEPS.length - 1));
       return;
     }
-=======
->>>>>>> 0babf4d (Update frontend application)
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
@@ -152,11 +133,7 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Back
           </button>
@@ -164,11 +141,7 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Cancel
           </button>
@@ -178,17 +151,12 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
           <button
             type="button"
             disabled={!stepOneComplete}
-<<<<<<< HEAD
             onClick={(event) =>
               handleGuidedFormAdvanceClick(event, () => {
                 setStep(1);
               })
             }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
-=======
-            onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             Continue
           </button>
@@ -196,11 +164,7 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
           <button
             type="submit"
             disabled={saving || !stepOneComplete || !stepTwoComplete}
-<<<<<<< HEAD
             className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
-=======
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save feed entry"}
@@ -256,13 +220,8 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-<<<<<<< HEAD
                   <label className={GUIDED_FORM_LABEL_CLASS}>
                     <Hash className={GUIDED_FORM_ICON_CLASS} />
-=======
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <Hash className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                     Quantity <Required />
                   </label>
                   <input
@@ -272,23 +231,14 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
                     onChange={(event) =>
                       setForm((current) => ({ ...current, quantity: event.target.value }))
                     }
-<<<<<<< HEAD
                     className={GUIDED_FORM_FIELD_CLASS}
-=======
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                     required
                   />
                 </div>
 
                 <div>
-<<<<<<< HEAD
                   <label className={GUIDED_FORM_LABEL_CLASS}>
                     <Wallet className={GUIDED_FORM_ICON_CLASS} />
-=======
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <Wallet className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                     Unit cost (Naira) <Required />
                   </label>
                   <input
@@ -296,29 +246,17 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
                     inputMode="numeric"
                     value={formatCurrencyInput(form.unitCost)}
                     onChange={(event) => {
-<<<<<<< HEAD
                       const raw = sanitizeCurrencyInput(event.target.value);
-=======
-                      const raw = parseCurrencyInput(event.target.value);
-                      if (!/^\d*$/.test(raw)) return;
->>>>>>> 0babf4d (Update frontend application)
                       setForm((current) => ({ ...current, unitCost: raw }));
                     }}
                     onBlur={() => {
                       if (form.unitCost === "") return;
                       setForm((current) => ({
                         ...current,
-<<<<<<< HEAD
                         unitCost: normalizeCurrencyOnBlur(current.unitCost),
                       }));
                     }}
                     className={GUIDED_FORM_FIELD_CLASS}
-=======
-                        unitCost: String(Number(current.unitCost)),
-                      }));
-                    }}
-                    className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                     placeholder="0"
                     required
                   />
@@ -345,13 +283,8 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
             title="Date"
             description="Add the day this feed entry happened."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <CalendarDays className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <CalendarDays className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Date <Required />
             </label>
             <input
@@ -360,11 +293,7 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
               onChange={(event) =>
                 setForm((current) => ({ ...current, date: event.target.value }))
               }
-<<<<<<< HEAD
               className={GUIDED_FORM_FIELD_CLASS}
-=======
-              className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               required
             />
           </GuidedFormSection>
@@ -373,13 +302,8 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <StickyNote className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Note
             </label>
             <textarea
@@ -387,11 +311,7 @@ export default function FeedFormModal({ open, onClose, initialData = null, onSuc
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-<<<<<<< HEAD
               className={`${GUIDED_FORM_FIELD_CLASS} h-24 resize-none`}
-=======
-              className="h-24 w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               placeholder="Optional details about this feed entry"
             />
           </GuidedFormSection>

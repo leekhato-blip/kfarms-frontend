@@ -84,11 +84,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <PageWrapper>
-<<<<<<< HEAD
       <div className="relative app-full overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
-=======
-      <div className="relative app-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
->>>>>>> 0babf4d (Update frontend application)
         <AuthWatermark />
         <AuthThemeSwitcher />
         <GlassToast
@@ -97,11 +93,7 @@ export default function ForgotPasswordPage() {
           onClose={() => setToast({ message: "", type: "" })}
         />
 
-<<<<<<< HEAD
         <div className="relative z-10 mx-auto grid h-full w-full max-w-4xl grid-cols-1 items-center gap-5 px-1 pb-4 pt-16 sm:px-4 sm:pb-6 sm:pt-20 md:grid-cols-2 md:gap-8">
-=======
-        <div className="relative z-10 w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-4">
->>>>>>> 0babf4d (Update frontend application)
           {/* Left side info */}
           <div className="hidden md:flex flex-col items-start">
             <div className="flex items-center gap-3">

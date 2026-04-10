@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-<<<<<<< HEAD
 import { createPortal } from "react-dom";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import { ChevronLeft, ChevronRight, RotateCcw, Trash2, X } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import ItemDetailsModal from "./ItemDetailsModal";
@@ -120,11 +117,7 @@ export default function TrashModal({
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
-<<<<<<< HEAD
   return createPortal(
-=======
-  return (
->>>>>>> 0babf4d (Update frontend application)
     <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/55 backdrop-blur-md" onClick={onClose} />
 
@@ -148,11 +141,7 @@ export default function TrashModal({
               <button
                 type="button"
                 onClick={onClose}
-<<<<<<< HEAD
                 className="inline-flex aspect-square h-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-slate-200 dark:shadow-none dark:hover:bg-white/10"
-=======
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/50 text-slate-700 transition hover:bg-white/70 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
->>>>>>> 0babf4d (Update frontend application)
               >
                 <X className="h-5 w-5" />
               </button>
@@ -167,11 +156,7 @@ export default function TrashModal({
               />
             ) : (
               <>
-<<<<<<< HEAD
                 <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/40 text-slate-700 dark:bg-white/5 dark:text-slate-100">
-=======
-                <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/40 dark:bg-white/5">
->>>>>>> 0babf4d (Update frontend application)
                   <table className="w-full min-w-[750px] text-sm">
                     <thead className="border-b border-white/10 text-slate-500 dark:text-slate-400">
                       <tr>
@@ -206,11 +191,7 @@ export default function TrashModal({
                           {columns.map((column) => (
                             <td
                               key={column.key}
-<<<<<<< HEAD
                               className={`px-3 py-2.5 text-slate-700 dark:text-slate-100 ${getAlignClass(column.align)}`}
-=======
-                              className={`px-3 py-2.5 ${getAlignClass(column.align)}`}
->>>>>>> 0babf4d (Update frontend application)
                             >
                               {formatCell ? formatCell(item, column.key) : item[column.key]}
                             </td>
@@ -343,11 +324,7 @@ export default function TrashModal({
           ) : null}
         </>
       ) : null}
-<<<<<<< HEAD
     </div>,
     document.body,
-=======
-    </div>
->>>>>>> 0babf4d (Update frontend application)
   );
 }

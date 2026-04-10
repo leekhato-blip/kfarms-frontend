@@ -7,16 +7,12 @@ import { AuthProvider } from "./hooks/useAuth.jsx";
 import { TenantProvider } from "./tenant/TenantContext.jsx";
 import { PlatformAuthProvider } from "./auth/AuthProvider.jsx";
 import { initializeOfflineSync } from "./offline/offlineSync.js";
-<<<<<<< HEAD
 import { getStoredThemeMode, resolveThemeScopeFromPath } from "./constants/settings.js";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 const SPA_REDIRECT_STORAGE_KEY = "kf_spa_redirect";
 const SERVICE_WORKER_CLEANUP_SESSION_KEY = "kf_sw_cleanup_v3";
 const root = document.getElementById("root");
 
-<<<<<<< HEAD
 if (typeof document !== "undefined") {
   const initialThemeScope =
     typeof window !== "undefined"
@@ -60,13 +56,22 @@ if (typeof window !== "undefined" && window.location.pathname === "/") {
   }
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
-initializeOfflineSync();
+const scheduleIdleWork = (callback) => {
+  if (typeof window === "undefined") {
+    callback();
+    return;
+  }
+
+  const idle = window.requestIdleCallback ?? ((fn) => window.setTimeout(fn, 800));
+  idle(callback);
+};
+
+scheduleIdleWork(() => {
+  initializeOfflineSync();
+});
 
 if (typeof window !== "undefined" && "serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
-<<<<<<< HEAD
     disableLegacyServiceWorkers()
       .then((didCleanup) => {
         if (!didCleanup) {
@@ -84,11 +89,6 @@ if (typeof window !== "undefined" && "serviceWorker" in navigator && import.meta
       .catch((error) => {
         console.error("Legacy service worker cleanup failed", error);
       });
-=======
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.error("Service worker registration failed", error);
-    });
->>>>>>> 0babf4d (Update frontend application)
   });
 }
 

@@ -1,9 +1,5 @@
 import React from "react";
-<<<<<<< HEAD
 import { Link, useNavigate } from "react-router-dom";
-=======
-import { Link } from "react-router-dom";
->>>>>>> 0babf4d (Update frontend application)
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProductionChart from "../components/ProductionChart";
 import SummaryCard from "../components/SummaryCard";
@@ -11,24 +7,14 @@ import FeedPie from "../components/FeedPie";
 import RecentTable from "../components/RecentTable";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import GlassToast from "../components/GlassToast";
-<<<<<<< HEAD
 import MobileAccordionCard from "../components/MobileAccordionCard";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import ExportModal from "../components/ExportModal";
 import PlanUpgradePrompt from "../components/PlanUpgradePrompt";
 import ConfirmModal from "../components/ConfirmModal";
 import { useFetch } from "../hooks/useFetch";
-<<<<<<< HEAD
 import { detectFeedModule, resolveFeedColor } from "../utils/feedChart";
 import { GiChicken } from "react-icons/gi";
 import {
-=======
-import { resolveFeedColor } from "../utils/feedChart";
-import { GiChicken } from "react-icons/gi";
-import {
-  BarChart3,
->>>>>>> 0babf4d (Update frontend application)
   ChevronRight,
   Download,
   Droplets,
@@ -36,10 +22,6 @@ import {
   ListChecks,
   Package2,
   RefreshCw,
-<<<<<<< HEAD
-=======
-  ShieldCheck,
->>>>>>> 0babf4d (Update frontend application)
   Wallet,
   Wheat,
 } from "lucide-react";
@@ -187,7 +169,6 @@ function DashboardActionCard({
   );
 }
 
-<<<<<<< HEAD
 function isFeedLabelVisibleForWorkspace(label, { poultryEnabled, fishEnabled }) {
   const moduleId = detectFeedModule(label);
   if (moduleId === FARM_MODULES.FISH_FARMING) return fishEnabled;
@@ -223,60 +204,6 @@ export default function DashboardPage() {
   const { activeTenant } = useTenant();
   const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
-=======
-function ModuleFocusCard({
-  to,
-  icon,
-  eyebrow,
-  title,
-  value,
-  helper,
-  accentClassName,
-}) {
-  const IconComponent = icon;
-
-  return (
-    <Link
-      to={to}
-      className="group flex h-full flex-col justify-between rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-neo transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-darkCard/80 dark:shadow-dark"
-    >
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              {eyebrow}
-            </p>
-            <h3 className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-50">
-              {title}
-            </h3>
-          </div>
-          <div
-            className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg ${accentClassName}`}
-          >
-            <IconComponent className="h-5 w-5" />
-          </div>
-        </div>
-
-        <div className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-          {value}
-        </div>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          {helper}
-        </p>
-      </div>
-
-      <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-accent-primary">
-        Open module
-        <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-      </div>
-    </Link>
-  );
-}
-
-export default function DashboardPage() {
-  const { activeTenant } = useTenant();
-  const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
->>>>>>> 0babf4d (Update frontend application)
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
   const fishEnabled = hasFarmModule(activeTenant, FARM_MODULES.FISH_FARMING);
   const canUseAdvancedDashboard = isPlanAtLeast(currentPlan, "PRO");
@@ -331,7 +258,6 @@ export default function DashboardPage() {
 
   const totals = data || {};
   const feed = Array.isArray(data?.feedBreakdown) ? data.feedBreakdown : EMPTY_ARRAY;
-<<<<<<< HEAD
   const recent = React.useMemo(
     () =>
       (Array.isArray(data?.recentActivities) ? data.recentActivities : EMPTY_ARRAY).filter(
@@ -346,10 +272,6 @@ export default function DashboardPage() {
       ),
     [data?.watchlist, fishEnabled, poultryEnabled],
   );
-=======
-  const recent = Array.isArray(data?.recentActivities) ? data.recentActivities : EMPTY_ARRAY;
-  const watchlist = Array.isArray(data?.watchlist) ? data.watchlist : EMPTY_ARRAY;
->>>>>>> 0babf4d (Update frontend application)
   const alerts = Array.isArray(data?.alerts) ? data.alerts : [];
   const recommendedRestockQuantity = restockTarget
     ? getRecommendedRestockQuantity(restockTarget)
@@ -364,15 +286,11 @@ export default function DashboardPage() {
         label: String(item?.label || "Others"),
         value: Number(item?.value) || 0,
       }))
-<<<<<<< HEAD
       .filter(
         (item) =>
           item.value > 0 &&
           isFeedLabelVisibleForWorkspace(item.label, { poultryEnabled, fishEnabled }),
       );
-=======
-      .filter((item) => item.value > 0);
->>>>>>> 0babf4d (Update frontend application)
 
     const total = entries.reduce((sum, item) => sum + item.value, 0);
     return entries
@@ -382,11 +300,7 @@ export default function DashboardPage() {
         color: resolveFeedColor(item.label),
       }))
       .sort((a, b) => b.value - a.value);
-<<<<<<< HEAD
   }, [feed, fishEnabled, poultryEnabled]);
-=======
-  }, [feed]);
->>>>>>> 0babf4d (Update frontend application)
 
   const hasFeedConsumptionData = feedLegendItems.length > 0;
 
@@ -630,124 +544,6 @@ export default function DashboardPage() {
     watchlist.length,
   ]);
 
-<<<<<<< HEAD
-=======
-  const singleModuleFocus = React.useMemo(() => {
-    if (poultryEnabled && !fishEnabled) {
-      return {
-        eyebrow: "Poultry-first workspace",
-        title: "A tighter view for bird work",
-        description:
-          "Because this tenant only runs poultry, the dashboard leans into layers, flock care, and feed rhythm instead of leaving empty fish sections behind.",
-        cards: [
-          {
-            to: "/productions",
-            icon: BarChart3,
-            eyebrow: "Layers rhythm",
-            title: "Production pace",
-            value: productionInsights
-              ? `${formatMetricCount(productionInsights.averageMonthlyEggs)} eggs`
-              : formatMetricCount(totals.totalCratesProducedToday),
-            helper: productionInsights
-              ? `Average output across ${productionInsights.totalMonthsTracked} recorded month${productionInsights.totalMonthsTracked === 1 ? "" : "s"}.`
-              : "Start recording egg production to unlock a month-by-month layer rhythm here.",
-            accentClassName: "bg-gradient-to-br from-amber-400 to-orange-500",
-          },
-          {
-            to: "/poultry",
-            icon: ShieldCheck,
-            eyebrow: "Flock care",
-            title: "Bird welfare",
-            value: `${formatMetricCount(totals.totalLivestockCount)} birds`,
-            helper:
-              alerts.length > 0
-                ? `${alerts.length} health alert${alerts.length === 1 ? "" : "s"} need a quick look today.`
-                : "No health alerts are open right now, so you can focus on routine checks and clean records.",
-            accentClassName: "bg-gradient-to-br from-emerald-400 to-teal-500",
-          },
-          {
-            to: "/feeds",
-            icon: ListChecks,
-            eyebrow: "Daily routine",
-            title: "Feed + stock checks",
-            value:
-              watchlist.length > 0
-                ? `${watchlist.length} watch item${watchlist.length === 1 ? "" : "s"}`
-                : `${recent.length} recent update${recent.length === 1 ? "" : "s"}`,
-            helper:
-              watchlist.length > 0
-                ? "Low-stock feed or inventory items are waiting for attention before tomorrow's work begins."
-                : "Feed and stock records look calm. Keep logging purchases and usage to maintain the picture.",
-            accentClassName: "bg-gradient-to-br from-sky-400 to-indigo-500",
-          },
-        ],
-      };
-    }
-
-    if (!poultryEnabled && fishEnabled) {
-      return {
-        eyebrow: "Fish-first workspace",
-        title: "Built around pond operations",
-        description:
-          "Because this tenant only runs fish farming, the dashboard turns empty poultry space into pond rhythm, water checks, and hatch workflow context.",
-        cards: [
-          {
-            to: "/fish-ponds",
-            icon: Droplets,
-            eyebrow: "Pond rhythm",
-            title: "Active pond base",
-            value: `${formatMetricCount(totals.totalPondCount)} ponds`,
-            helper:
-              Number(totals.totalPondCount) > 0
-                ? "Use this as the anchor for water checks, stocking rounds, and survival monitoring."
-                : "Once ponds are added, this section will turn into a quick pond-operations compass.",
-            accentClassName: "bg-gradient-to-br from-cyan-400 to-sky-500",
-          },
-          {
-            to: "/feeds",
-            icon: ShieldCheck,
-            eyebrow: "Stock discipline",
-            title: "Feed pressure",
-            value:
-              watchlist.length > 0
-                ? `${watchlist.length} low-stock item${watchlist.length === 1 ? "" : "s"}`
-                : "Stock stable",
-            helper:
-              watchlist.length > 0
-                ? "Restocking feed early keeps ponds consistent and avoids avoidable stress on growth."
-                : "Feed and inventory are currently steady, which gives you room to focus on water quality and sales.",
-            accentClassName: "bg-gradient-to-br from-emerald-400 to-teal-500",
-          },
-          {
-            to: "/sales",
-            icon: ListChecks,
-            eyebrow: "Operating tempo",
-            title: "Recent activity pulse",
-            value: `${recent.length} fresh log${recent.length === 1 ? "" : "s"}`,
-            helper:
-              recent.length > 0
-                ? "Pond, feed, and sales records are flowing into the workspace. Keep that rhythm daily."
-                : "No recent records yet. Start with ponds, feed, or sales to make this workspace feel alive fast.",
-            accentClassName: "bg-gradient-to-br from-violet-400 to-fuchsia-500",
-          },
-        ],
-      };
-    }
-
-    return null;
-  }, [
-    alerts.length,
-    fishEnabled,
-    poultryEnabled,
-    productionInsights,
-    recent.length,
-    totals.totalCratesProducedToday,
-    totals.totalLivestockCount,
-    totals.totalPondCount,
-    watchlist.length,
-  ]);
-
->>>>>>> 0babf4d (Update frontend application)
   const feedSummaryText = poultryEnabled && fishEnabled
     ? "Share of feed usage across poultry and fish categories."
     : poultryEnabled
@@ -1051,7 +847,6 @@ export default function DashboardPage() {
             </p>
           </div>
 
-<<<<<<< HEAD
           <div className="space-y-4 md:hidden">
             {poultryEnabled ? (
               <MobileAccordionCard
@@ -1268,9 +1063,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="hidden gap-4 md:flex md:flex-row">
-=======
-          <div className="flex flex-col md:flex-row gap-4">
->>>>>>> 0babf4d (Update frontend application)
             {poultryEnabled && (
               <div className="flex flex-1 flex-col rounded-xl bg-white p-4 shadow-neo dark:bg-darkCard dark:shadow-dark">
               <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1431,13 +1223,7 @@ export default function DashboardPage() {
                     </p>
                     <button
                       className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
-<<<<<<< HEAD
                       onClick={() => navigate("/feeds")}
-=======
-                      onClick={() => {
-                        window.location.href = "/feeds";
-                      }}
->>>>>>> 0babf4d (Update frontend application)
                     >
                       Log Feed Consumption
                     </button>
@@ -1487,7 +1273,6 @@ export default function DashboardPage() {
 
           {/* Revenue + Upcoming Tasks */}
           {canUseAdvancedDashboard ? (
-<<<<<<< HEAD
             <>
               <div className="space-y-4 md:hidden">
                 <MobileAccordionCard
@@ -1536,9 +1321,6 @@ export default function DashboardPage() {
               </div>
 
               <div className="hidden grid-cols-1 gap-4 md:grid md:grid-cols-3">
-=======
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
->>>>>>> 0babf4d (Update frontend application)
               <div className="md:col-span-2">
                 {isInitialLoading ? (
                   <div className="bg-white/10 dark:bg-darkCard/70 rounded-xl shadow-neo dark:shadow-dark p-5 h-[320px] sm:h-[360px]">
@@ -1549,10 +1331,7 @@ export default function DashboardPage() {
                 ) : (
                   <RevenueExpenseChart
                     data={data?.monthlyFinance}
-<<<<<<< HEAD
                     currency={workspaceCurrency}
-=======
->>>>>>> 0babf4d (Update frontend application)
                     onRefresh={refreshDashboard}
                     refreshing={isRefreshing}
                   />
@@ -1582,12 +1361,8 @@ export default function DashboardPage() {
                   />
                 )}
               </div>
-<<<<<<< HEAD
               </div>
             </>
-=======
-            </div>
->>>>>>> 0babf4d (Update frontend application)
           ) : (
             <PlanUpgradePrompt
               title="Unlock Advanced Dashboard Widgets"

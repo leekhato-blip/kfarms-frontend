@@ -4,33 +4,10 @@ import {
   isTenantOnboardingPath,
   isTenantScopedPath,
 } from "./tenantRouting";
-<<<<<<< HEAD
 import {
   KFARMS_BASE_PATH,
   KFARMS_ROUTE_REGISTRY,
 } from "../apps/kfarms/paths";
-=======
->>>>>>> 0babf4d (Update frontend application)
-
-describe("tenantRouting", () => {
-  it("detects onboarding routes", () => {
-    expect(isTenantOnboardingPath("/onboarding/create-tenant")).toBe(true);
-    expect(isTenantOnboardingPath("/onboarding/accept-invite")).toBe(true);
-    expect(isTenantOnboardingPath("/dashboard")).toBe(false);
-  });
-
-  it("detects tenant-scoped paths and nested routes", () => {
-    expect(isTenantScopedPath("/dashboard")).toBe(true);
-<<<<<<< HEAD
-    expect(isTenantScopedPath(KFARMS_ROUTE_REGISTRY.dashboard.appPath)).toBe(true);
-    expect(isTenantScopedPath("/sales/123")).toBe(true);
-    expect(isTenantScopedPath(`${KFARMS_ROUTE_REGISTRY.sales.appPath}/123`)).toBe(true);
-    expect(isTenantScopedPath("/productions")).toBe(true);
-    expect(isTenantScopedPath(KFARMS_BASE_PATH)).toBe(true);
-=======
-    expect(isTenantScopedPath("/sales/123")).toBe(true);
-    expect(isTenantScopedPath("/productions")).toBe(true);
->>>>>>> 0babf4d (Update frontend application)
     expect(isTenantScopedPath("/platform/tenants")).toBe(false);
     expect(isTenantScopedPath("")).toBe(false);
   });
@@ -46,7 +23,6 @@ describe("tenantRouting", () => {
         "/livestock",
         "/feeds",
         "/productions",
-<<<<<<< HEAD
         "/inventory",
         "/billing",
         "/search",
@@ -56,9 +32,6 @@ describe("tenantRouting", () => {
         KFARMS_BASE_PATH,
         KFARMS_ROUTE_REGISTRY.dashboard.appPath,
         KFARMS_ROUTE_REGISTRY.billing.appPath,
-=======
-        "/settings",
->>>>>>> 0babf4d (Update frontend application)
       ]),
     );
   });

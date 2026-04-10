@@ -23,16 +23,11 @@ import { useTenant } from "../tenant/TenantContext";
 import { normalizePlanId } from "../constants/plans";
 import { formatDateTime, formatNumber } from "../utils/formatters";
 import {
-<<<<<<< HEAD
   canAssignWorkspaceRole,
   canManageWorkspaceMember,
   getManageableWorkspaceRoleOptions,
   getWorkspaceRoleLabel,
   getWorkspaceRoleRank,
-=======
-  MUTABLE_WORKSPACE_ROLE_OPTIONS,
-  getWorkspaceRoleLabel,
->>>>>>> 0babf4d (Update frontend application)
   normalizeWorkspaceRole,
 } from "../utils/workspaceRoles";
 import {
@@ -54,11 +49,7 @@ import {
   updateMemberRole,
 } from "../services/teamService";
 
-<<<<<<< HEAD
 const TABLE_PAGE_SIZE = 5;
-=======
-const TABLE_PAGE_SIZE = 10;
->>>>>>> 0babf4d (Update frontend application)
 const AUDIT_PAGE_SIZE = 10;
 const inputClassName =
   "h-10 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50";
@@ -78,7 +69,6 @@ const tableBodyClass =
   "divide-y-0 text-slate-700 dark:text-slate-200";
 const tableRowClass = "group";
 const premiumDesktopTableClass =
-<<<<<<< HEAD
   "border-separate [border-spacing:0_6px] [&_thead_th]:border-y [&_thead_th]:border-slate-700/70 [&_thead_th]:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.9))] [&_thead_th]:px-5 [&_thead_th]:py-3 [&_thead_th]:font-header [&_thead_th]:text-[10px] [&_thead_th]:font-semibold [&_thead_th]:uppercase [&_thead_th]:tracking-[0.2em] [&_thead_th]:text-slate-300 [&_thead_th]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&_thead_th]:first:rounded-l-[18px] [&_thead_th]:last:rounded-r-[18px] [&_tbody_td]:border-y [&_tbody_td]:border-slate-200/75 dark:[&_tbody_td]:border-slate-800/80 [&_tbody_td]:bg-white/82 dark:[&_tbody_td]:bg-slate-950/55 [&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] dark:[&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] [&_tbody_td]:backdrop-blur-xl [&_tbody_tr>td:first-child]:border-l [&_tbody_tr>td:last-child]:border-r [&_tbody_tr>td:first-child]:rounded-l-[22px] [&_tbody_tr>td:last-child]:rounded-r-[22px] [&_tbody_tr:hover>td]:border-sky-300/50 dark:[&_tbody_tr:hover>td]:border-sky-500/30 [&_tbody_tr:hover>td]:bg-sky-50/85 dark:[&_tbody_tr:hover>td]:bg-slate-900/80";
 const premiumTableScrollClass = "px-3 pt-1.5 pb-3";
 const premiumCellClass = "align-top px-5 py-2.5";
@@ -90,15 +80,6 @@ const premiumPermissionChipClass =
   "inline-flex items-center rounded-full border border-slate-200/80 bg-white/80 px-2 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-200";
 const accessActionButtonClass =
   "h-8 rounded-full border-slate-300/80 bg-white/90 px-3 text-[11px] text-slate-700 shadow-sm hover:bg-white dark:border-sky-400/30 dark:bg-slate-900/90 dark:text-sky-100 dark:hover:bg-slate-900";
-=======
-  "border-separate [border-spacing:0_10px] [&_thead_th]:border-y [&_thead_th]:border-slate-700/70 [&_thead_th]:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.9))] [&_thead_th]:px-5 [&_thead_th]:py-3 [&_thead_th]:font-header [&_thead_th]:text-[10px] [&_thead_th]:font-semibold [&_thead_th]:uppercase [&_thead_th]:tracking-[0.2em] [&_thead_th]:text-slate-300 [&_thead_th]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&_thead_th]:first:rounded-l-[18px] [&_thead_th]:last:rounded-r-[18px] [&_tbody_td]:border-y [&_tbody_td]:border-slate-200/75 dark:[&_tbody_td]:border-slate-800/80 [&_tbody_td]:bg-white/82 dark:[&_tbody_td]:bg-slate-950/55 [&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.38)] dark:[&_tbody_td]:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] [&_tbody_td]:backdrop-blur-xl [&_tbody_tr>td:first-child]:border-l [&_tbody_tr>td:last-child]:border-r [&_tbody_tr>td:first-child]:rounded-l-[22px] [&_tbody_tr>td:last-child]:rounded-r-[22px] [&_tbody_tr:hover>td]:border-sky-300/50 dark:[&_tbody_tr:hover>td]:border-sky-500/30 [&_tbody_tr:hover>td]:bg-sky-50/85 dark:[&_tbody_tr:hover>td]:bg-slate-900/80";
-const premiumTableScrollClass = "px-3 pt-1.5 pb-3";
-const premiumCellClass = "align-top px-5 py-4";
-const premiumMetaTextClass = "text-sm text-slate-600 dark:text-slate-300";
-const premiumHelperTextClass = "text-xs text-slate-500 dark:text-slate-400";
-const premiumInsetCardClass =
-  "rounded-2xl border border-slate-200/80 bg-white/72 px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:border-slate-800/80 dark:bg-slate-950/48 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]";
->>>>>>> 0babf4d (Update frontend application)
 const premiumAvatarClass =
   "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-200/70 bg-sky-50 text-sm font-semibold text-sky-700 shadow-sm dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-100";
 const secondaryButtonClass =
@@ -108,7 +89,6 @@ const mobileCardClass =
 const roleGuide = [
   {
     value: "OWNER",
-<<<<<<< HEAD
     eyebrow: "Protected",
     accentClass:
       "border-amber-300/35 bg-amber-500/10 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/12 dark:text-amber-100",
@@ -148,24 +128,6 @@ const roleGuideByValue = Object.freeze(
   }, {}),
 );
 
-=======
-    description: "Full farm control. Protected here and cannot be edited from this page.",
-  },
-  {
-    value: "ADMIN",
-    description: "Can invite teammates, update roles, disable access, and remove members.",
-  },
-  {
-    value: "MANAGER",
-    description: "Can review users and invitations without changing access.",
-  },
-  {
-    value: "STAFF",
-    description: "Handles daily farm records and operations without admin controls.",
-  },
-];
-
->>>>>>> 0babf4d (Update frontend application)
 const AUDIT_ACTION_OPTIONS = [
   { value: "", label: "All activity" },
   { value: "INVITATION_CREATED", label: "Invitation created" },
@@ -262,7 +224,6 @@ function toSentenceCase(value) {
     .join(" ");
 }
 
-<<<<<<< HEAD
 function normalizeRoleLabelText(value) {
   return String(value ?? "")
     .trim()
@@ -307,8 +268,6 @@ function getRoleDisplayMeta(role, customRoleName, roleLabel) {
   };
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function getAuditActionMeta(action) {
   const normalized = String(action ?? "").trim().toUpperCase();
   return (
@@ -360,7 +319,6 @@ function getSearchText(value) {
   return String(value ?? "").trim().toLowerCase();
 }
 
-<<<<<<< HEAD
 function compareTextValue(left, right) {
   return String(left ?? "").localeCompare(String(right ?? ""), undefined, {
     sensitivity: "base",
@@ -396,8 +354,6 @@ function compareWorkspaceInvitationsByAuthority(left, right) {
   return compareTextValue(left?.email, right?.email);
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function memberMatchesSearch(member, search) {
   const query = getSearchText(search);
   if (!query) return true;
@@ -511,7 +467,6 @@ function getInvitationState(invitation) {
   };
 }
 
-<<<<<<< HEAD
 function getRoleGuideMeta(role) {
   return roleGuideByValue[normalizeWorkspaceRole(role)] || roleGuideByValue.STAFF;
 }
@@ -520,11 +475,6 @@ function MetricCard({ icon, label, value, detail, iconTone }) {
   return (
     <article className={`${glassPanelClass} relative overflow-hidden p-4`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/60 to-transparent dark:via-sky-400/35" />
-=======
-function MetricCard({ icon, label, value, detail, iconTone }) {
-  return (
-    <article className={`${glassPanelClass} p-4`}>
->>>>>>> 0babf4d (Update frontend application)
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
@@ -547,7 +497,6 @@ function MetricCard({ icon, label, value, detail, iconTone }) {
   );
 }
 
-<<<<<<< HEAD
 function SidebarStat({ label, value, helper }) {
   return (
     <div className={`${insetPanelClass} px-3 py-3`}>
@@ -649,8 +598,6 @@ function WorkspaceRolePill({ role, className = "", compact = false }) {
   );
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function PageTabs({ activeTab, onChange, tabs }) {
   return (
     <div className="mt-4 flex flex-wrap gap-2 rounded-xl border border-slate-200/80 bg-white/65 p-2 dark:border-slate-800/80 dark:bg-slate-900/65">
@@ -747,10 +694,7 @@ function MobileEmptyState({ title, message }) {
 export default function UsersPage() {
   const { user } = useAuth();
   const { activeTenant, activeTenantId } = useTenant();
-<<<<<<< HEAD
   const invitePanelRef = React.useRef(null);
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   const tenantRole = normalizeWorkspaceRole(activeTenant?.myRole);
   const isEnterprisePlan = normalizePlanId(activeTenant?.plan, "FREE") === "ENTERPRISE";
@@ -764,13 +708,10 @@ export default function UsersPage() {
   const canManageTeam = hasAnyWorkspacePermission(activeTenant, [
     WORKSPACE_PERMISSIONS.USERS_MANAGE,
   ]);
-<<<<<<< HEAD
   const manageableRoleOptions = React.useMemo(
     () => getManageableWorkspaceRoleOptions(tenantRole),
     [tenantRole],
   );
-=======
->>>>>>> 0babf4d (Update frontend application)
   const canAccessPage = canViewUsers || canViewAudit;
   const currentUserId = Number(user?.id) || null;
   const currentUserEmail = String(user?.email ?? "").trim().toLowerCase();
@@ -818,7 +759,6 @@ export default function UsersPage() {
   const [toast, setToast] = React.useState({ message: "", type: "info" });
 
   React.useEffect(() => {
-<<<<<<< HEAD
     if (manageableRoleOptions.length === 0) return;
     if (manageableRoleOptions.some((option) => option.value === inviteForm.role)) return;
 
@@ -829,8 +769,6 @@ export default function UsersPage() {
   }, [inviteForm.role, manageableRoleOptions]);
 
   React.useEffect(() => {
-=======
->>>>>>> 0babf4d (Update frontend application)
     const timer = window.setTimeout(() => {
       setSearch(searchInput.trim());
       setMemberPage(0);
@@ -1037,7 +975,6 @@ export default function UsersPage() {
     return member?.role === "OWNER" || isCurrentUser(member);
   }
 
-<<<<<<< HEAD
   function canManageMemberAccess(member) {
     return (
       canManageTeam &&
@@ -1066,8 +1003,6 @@ export default function UsersPage() {
     return "";
   }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   function getPermissionDraft(member) {
     return (
       permissionDrafts[member.memberId] || {
@@ -1190,7 +1125,6 @@ export default function UsersPage() {
     event.preventDefault();
     if (!canManageTeam || submittingInvite) return;
 
-<<<<<<< HEAD
     if (manageableRoleOptions.length === 0) {
       setToast({
         message: "Your current role cannot send invitations from this workspace.",
@@ -1199,8 +1133,6 @@ export default function UsersPage() {
       return;
     }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
     const email = inviteForm.email.trim();
     if (!email) {
       setToast({ message: "Enter an email address to send an invitation.", type: "error" });
@@ -1258,7 +1190,6 @@ export default function UsersPage() {
     }
   }
 
-<<<<<<< HEAD
   function scrollToInvitePanel() {
     invitePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1283,22 +1214,6 @@ export default function UsersPage() {
         invitationMatchesStateFilter(invitation, invitationStateFilter),
     )
     .sort(compareWorkspaceInvitationsByAuthority);
-=======
-  const filteredMembers = members.filter(
-    (member) =>
-      memberMatchesSearch(member, search) &&
-      (!memberRoleFilter || normalizeWorkspaceRole(member.role) === memberRoleFilter) &&
-      (!memberStatusFilter ||
-        (memberStatusFilter === "enabled" ? Boolean(member.active) : !member.active)),
-  );
-  const filteredInvitations = invitations.filter(
-    (invitation) =>
-      invitationMatchesSearch(invitation, search) &&
-      (!invitationRoleFilter ||
-        normalizeWorkspaceRole(invitation.role) === invitationRoleFilter) &&
-      invitationMatchesStateFilter(invitation, invitationStateFilter),
-  );
->>>>>>> 0babf4d (Update frontend application)
   const totalMemberPages = Math.max(1, Math.ceil(filteredMembers.length / TABLE_PAGE_SIZE));
   const totalInvitationPages = Math.max(
     1,
@@ -1330,7 +1245,6 @@ export default function UsersPage() {
 
   const activeMemberCount = members.filter((member) => member.active).length;
   const disabledMemberCount = members.filter((member) => !member.active).length;
-<<<<<<< HEAD
   const adminCount = members.filter((member) => {
     const role = normalizeWorkspaceRole(member.role);
     return role === "OWNER" || role === "ADMIN";
@@ -1339,16 +1253,10 @@ export default function UsersPage() {
     const role = normalizeWorkspaceRole(member.role);
     return role === "OWNER" || role === "ADMIN" || role === "MANAGER";
   }).length;
-=======
-  const adminCount = members.filter((member) => member.role === "OWNER" || member.role === "ADMIN")
-    .length;
-  const managerCount = members.filter((member) => member.role === "MANAGER").length;
->>>>>>> 0babf4d (Update frontend application)
   const expiringSoonInviteCount = invitations.filter((invitation) => {
     const state = getInvitationState(invitation);
     return state.key === "today" || state.key === "soon";
   }).length;
-<<<<<<< HEAD
   const highestManageableRole = manageableRoleOptions[0]?.label || "None";
   const workspaceAccessSummary = canManageTeam
     ? "Invite teammates, adjust access, and keep team permissions clean from one place."
@@ -1360,8 +1268,6 @@ export default function UsersPage() {
     : canViewUsers
       ? "Review mode"
       : "Audit mode";
-=======
->>>>>>> 0babf4d (Update frontend application)
   const hasSearch = Boolean(search);
   const hasMemberFilters =
     hasSearch || Boolean(memberRoleFilter) || Boolean(memberStatusFilter);
@@ -1442,7 +1348,6 @@ export default function UsersPage() {
   ];
 
   const memberColumns = [
-<<<<<<< HEAD
     { key: "member", label: "Member", width: "240px" },
     { key: "role", label: "Role", width: "290px" },
     { key: "status", label: "Status", width: "140px" },
@@ -1451,23 +1356,12 @@ export default function UsersPage() {
       key: "actions",
       label: "Actions",
       width: "170px",
-=======
-    { key: "member", label: "Member", width: "260px" },
-    { key: "role", label: "Role", width: "300px" },
-    { key: "status", label: "Status", width: "170px" },
-    { key: "joined", label: "Joined", width: "190px" },
-    {
-      key: "actions",
-      label: "Actions",
-      width: "190px",
->>>>>>> 0babf4d (Update frontend application)
       align: "right",
       className: "text-right",
     },
   ];
 
   const invitationColumns = [
-<<<<<<< HEAD
     { key: "invitee", label: "Invitee", width: "230px" },
     { key: "role", label: "Role", width: "140px" },
     { key: "created", label: "Created", width: "180px" },
@@ -1477,17 +1371,6 @@ export default function UsersPage() {
       key: "actions",
       label: "Actions",
       width: "150px",
-=======
-    { key: "invitee", label: "Invitee", width: "250px" },
-    { key: "role", label: "Role", width: "150px" },
-    { key: "created", label: "Created", width: "220px" },
-    { key: "expires", label: "Expires", width: "250px" },
-    { key: "share", label: canManageTeam ? "Share" : "Status", width: "180px" },
-    {
-      key: "actions",
-      label: "Actions",
-      width: "170px",
->>>>>>> 0babf4d (Update frontend application)
       align: "right",
       className: "text-right",
     },
@@ -1510,11 +1393,7 @@ export default function UsersPage() {
       (accessEditorMember.role === "OWNER" || isProtectedMember(accessEditorMember)),
   );
   const accessEditorCanCustomize =
-<<<<<<< HEAD
     Boolean(accessEditorMember) && !accessEditorProtected && canManageMemberAccess(accessEditorMember);
-=======
-    Boolean(accessEditorMember) && canManageTeam && !accessEditorProtected;
->>>>>>> 0babf4d (Update frontend application)
   const accessEditorPermissions = accessEditorMember
     ? getEnterprisePermissionLabels(accessEditorDraft?.permissions)
     : [];
@@ -1522,12 +1401,8 @@ export default function UsersPage() {
     const currentRole = member.role;
     const draftRole = roleDrafts[member.memberId] || currentRole;
     const hasRoleDraft = draftRole !== currentRole;
-<<<<<<< HEAD
     const canManageMember = canManageMemberAccess(member);
     const hierarchyHelper = getHierarchyHelper(member);
-=======
-    const protectedMember = isProtectedMember(member);
->>>>>>> 0babf4d (Update frontend application)
     const memberKey = `member-${member.memberId}`;
     const memberBusy = mutatingId === memberKey;
     const permissionSummary = getEnterprisePermissionLabels(
@@ -1540,16 +1415,11 @@ export default function UsersPage() {
       permissionSummary.length - previewPermissions.length,
       0,
     );
-<<<<<<< HEAD
     const roleDisplay = getRoleDisplayMeta(
       currentRole,
       member.customRoleName,
       member.roleLabel,
     );
-=======
-    const currentRoleLabel =
-      member.customRoleName || member.roleLabel || getWorkspaceRoleLabel(currentRole);
->>>>>>> 0babf4d (Update frontend application)
 
     return (
       <article key={member.memberId || member.email} className={mobileCardClass}>
@@ -1565,7 +1435,6 @@ export default function UsersPage() {
           <Badge kind="active" value={member.active ? "ENABLED" : "DISABLED"} />
         </div>
 
-<<<<<<< HEAD
         {member.createdBy ? (
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
             Added by {member.createdBy}
@@ -1588,28 +1457,6 @@ export default function UsersPage() {
               ) : null}
             </div>
           </MobileField>
-=======
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <Badge kind="role" value={currentRole} />
-          {isCurrentUser(member) ? (
-            <div className="inline-flex rounded-full border border-sky-300/40 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-600 dark:text-sky-100">
-              You
-            </div>
-          ) : null}
-          {currentRoleLabel !== getWorkspaceRoleLabel(currentRole) ? (
-            <div className="inline-flex rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-              {currentRoleLabel}
-            </div>
-          ) : null}
-          {member.createdBy ? (
-            <div className="inline-flex max-w-full rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-              <span className="truncate">Added by {member.createdBy}</span>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
->>>>>>> 0babf4d (Update frontend application)
           <MobileField label="Status">
             {member.active
               ? "Can access this workspace"
@@ -1625,11 +1472,7 @@ export default function UsersPage() {
           </MobileField>
         </div>
 
-<<<<<<< HEAD
         {canManageMember ? (
-=======
-        {canManageTeam && currentRole !== "OWNER" && !protectedMember ? (
->>>>>>> 0babf4d (Update frontend application)
           <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/55">
             <MobileField label="Change role">
               <div className="space-y-2">
@@ -1644,11 +1487,7 @@ export default function UsersPage() {
                   }
                   className={`${compactSelectClassName} w-full`}
                 >
-<<<<<<< HEAD
                   {manageableRoleOptions.map((option) => (
-=======
-                  {MUTABLE_WORKSPACE_ROLE_OPTIONS.map((option) => (
->>>>>>> 0babf4d (Update frontend application)
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -1685,17 +1524,10 @@ export default function UsersPage() {
 
         {isEnterprisePlan ? (
           <div className="mt-4 rounded-xl border border-slate-200/80 bg-white/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/55">
-<<<<<<< HEAD
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                   Access details
-=======
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                  Enterprise access
->>>>>>> 0babf4d (Update frontend application)
                 </div>
                 <div className="mt-1 text-xs text-slate-600 dark:text-slate-300">
                   {permissionSummary.length} active permission
@@ -1704,39 +1536,24 @@ export default function UsersPage() {
               </div>
               <Button
                 size="sm"
-<<<<<<< HEAD
                 variant="outline"
                 className={accessActionButtonClass}
                 onClick={() => setExpandedPermissionMemberId(member.memberId)}
               >
                 {canManageMember ? "Edit access" : "View access"}
-=======
-                variant="ghost"
-                onClick={() => setExpandedPermissionMemberId(member.memberId)}
-              >
-                {canManageTeam && currentRole !== "OWNER" && !protectedMember ? "Edit" : "View"}
->>>>>>> 0babf4d (Update frontend application)
               </Button>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {previewPermissions.map((permission) => (
                 <span
                   key={`${member.memberId}-${permission.value}`}
-<<<<<<< HEAD
                   className={premiumPermissionChipClass}
-=======
-                  className="rounded-full border border-slate-200/80 bg-white/75 px-2 py-0.5 text-[11px] text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300"
->>>>>>> 0babf4d (Update frontend application)
                 >
                   {permission.label}
                 </span>
               ))}
               {remainingPermissionCount > 0 ? (
-<<<<<<< HEAD
                 <span className={premiumPermissionChipClass}>
-=======
-                <span className="rounded-full border border-slate-200/80 bg-slate-100/80 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-slate-400">
->>>>>>> 0babf4d (Update frontend application)
                   +{remainingPermissionCount} more
                 </span>
               ) : null}
@@ -1744,20 +1561,9 @@ export default function UsersPage() {
           </div>
         ) : null}
 
-<<<<<<< HEAD
         {hierarchyHelper ? (
           <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             {hierarchyHelper}
-=======
-        {currentRole === "OWNER" ? (
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Owners are protected from role changes here.
-          </div>
-        ) : null}
-        {protectedMember && currentRole !== "OWNER" ? (
-          <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Use another admin account to edit your own access.
->>>>>>> 0babf4d (Update frontend application)
           </div>
         ) : null}
 
@@ -1768,11 +1574,7 @@ export default function UsersPage() {
                 size="sm"
                 variant="outline"
                 className="w-full"
-<<<<<<< HEAD
                 disabled={!canManageMember || memberBusy}
-=======
-                disabled={protectedMember || currentRole === "OWNER" || memberBusy}
->>>>>>> 0babf4d (Update frontend application)
                 onClick={() =>
                   setConfirmState({
                     open: true,
@@ -1794,11 +1596,7 @@ export default function UsersPage() {
                 size="sm"
                 variant="danger"
                 className="w-full"
-<<<<<<< HEAD
                 disabled={!canManageMember || memberBusy}
-=======
-                disabled={protectedMember || currentRole === "OWNER" || memberBusy}
->>>>>>> 0babf4d (Update frontend application)
                 onClick={() =>
                   setConfirmState({
                     open: true,
@@ -1823,10 +1621,7 @@ export default function UsersPage() {
     const inviteKey = `invite-${invitation.invitationId}`;
     const inviteBusy = mutatingId === inviteKey;
     const invitationState = getInvitationState(invitation);
-<<<<<<< HEAD
     const canManageInvitation = canManageInvitationAccess(invitation);
-=======
->>>>>>> 0babf4d (Update frontend application)
 
     return (
       <article key={invitation.invitationId || invitation.email} className={mobileCardClass}>
@@ -1841,11 +1636,7 @@ export default function UsersPage() {
                 : "Pending teammate invite"}
             </div>
           </div>
-<<<<<<< HEAD
           <WorkspaceRolePill role={invitation.role} compact />
-=======
-          <Badge kind="role" value={invitation.role} />
->>>>>>> 0babf4d (Update frontend application)
         </div>
 
         <div className="mt-3">
@@ -1868,7 +1659,6 @@ export default function UsersPage() {
 
         <div className="mt-4">
           {canManageTeam ? (
-<<<<<<< HEAD
             <>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Button
@@ -1904,36 +1694,6 @@ export default function UsersPage() {
                 </div>
               ) : null}
             </>
-=======
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => handleCopyInvite(invitation)}
-              >
-                <Copy className="h-4 w-4" />
-                Copy link
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                className="w-full"
-                disabled={inviteBusy}
-                onClick={() =>
-                  setConfirmState({
-                    open: true,
-                    title: "Revoke invitation",
-                    message: `Revoke the invitation sent to ${invitation.email}? They will need a new invite to join later.`,
-                    type: "revoke_invitation",
-                    payload: invitation,
-                  })
-                }
-              >
-                Revoke
-              </Button>
-            </div>
->>>>>>> 0babf4d (Update frontend application)
           ) : (
             <div className="text-sm text-slate-500 dark:text-slate-400">View only</div>
           )}
@@ -1988,7 +1748,6 @@ export default function UsersPage() {
       ? {
           icon: Users,
           title: canViewAudit
-<<<<<<< HEAD
             ? "Understand team access faster"
             : "Understand your farm team faster",
           description: canViewAudit
@@ -2008,27 +1767,6 @@ export default function UsersPage() {
       : {
           icon: History,
           title: "Understand the audit log faster",
-=======
-            ? "How to manage team access and review audit history"
-            : "How to manage your farm team",
-          description: canViewAudit
-            ? "Use this page to invite teammates, adjust roles, and review the access history behind every change."
-            : "Use this page to invite teammates, adjust roles, and keep access tidy as your farm grows.",
-          steps: [
-            "Invite teammates with the lowest role they need for their work.",
-            "Use the Members tab for live access and the Invitations tab for pending onboarding.",
-            ...(canViewAudit
-              ? ["Use Audit log to review role changes, invite activity, and access updates over time."]
-              : ["Review member roles and pending invites regularly so access stays clean."]),
-          ],
-          tip: canViewAudit
-            ? "Owners stay protected here, and the audit log gives you a clean trail for each access change."
-            : "Owners stay protected here, and only admins can change team access.",
-        }
-      : {
-          icon: History,
-          title: "How to use the audit log",
->>>>>>> 0babf4d (Update frontend application)
           description:
             "Use this page to review invitation activity, role changes, and access updates recorded for this workspace.",
           steps: [
@@ -2048,7 +1786,6 @@ export default function UsersPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold text-accent-primary dark:text-blue-200">
                 <ShieldCheck className="h-3.5 w-3.5" />
-<<<<<<< HEAD
                 {workspaceModeLabel}
               </div>
               <h1 className="mt-3 text-2xl font-header font-semibold text-slate-900 dark:text-slate-100 md:text-[1.9rem]">
@@ -2080,24 +1817,6 @@ export default function UsersPage() {
                   {activeTab === "audit" ? "Team roster" : "Audit log"}
                 </Button>
               ) : null}
-=======
-                Workspace access
-              </div>
-              <h1 className="mt-3 text-2xl font-header font-semibold text-slate-900 dark:text-slate-100 md:text-[1.9rem]">
-                User Management & Audit
-              </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700/90 dark:text-slate-300/85">
-                Manage who can access{" "}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {activeTenant?.name || "this farm"}
-                </span>
-                , which role they hold, which invites are still waiting to be accepted, and
-                which access changes have been recorded over time.
-              </p>
-            </div>
-
-            <div className="flex w-full items-center gap-2 md:w-auto md:flex-wrap md:justify-start">
->>>>>>> 0babf4d (Update frontend application)
               <button
                 type="button"
                 onClick={async () => {
@@ -2127,33 +1846,22 @@ export default function UsersPage() {
             </div>
           </div>
 
-<<<<<<< HEAD
           <div className="relative z-10 mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-=======
-          <div className="relative z-10 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
->>>>>>> 0babf4d (Update frontend application)
             <div className={`${insetPanelClass} px-3 py-2.5`}>
               <p className="text-[11px] uppercase tracking-[0.14em] text-slate-600/80 dark:text-slate-300/70">
                 Your access
               </p>
-<<<<<<< HEAD
               <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {getWorkspaceRoleLabel(tenantRole)}
               </p>
               <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
                 Current role
               </p>
-=======
-              <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                {getWorkspaceRoleLabel(tenantRole)}
-              </p>
->>>>>>> 0babf4d (Update frontend application)
             </div>
             {canViewUsers ? (
               <>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
                   <p className="text-[11px] uppercase tracking-[0.14em] text-slate-600/80 dark:text-slate-300/70">
-<<<<<<< HEAD
                     Active access
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -2161,12 +1869,6 @@ export default function UsersPage() {
                   </p>
                   <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
                     Can sign in now
-=======
-                    Active members
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {formatNumber(activeMemberCount)} of {formatNumber(members.length)}
->>>>>>> 0babf4d (Update frontend application)
                   </p>
                 </div>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
@@ -2175,17 +1877,11 @@ export default function UsersPage() {
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatNumber(invitations.length)}
-<<<<<<< HEAD
                   </p>
                   <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
                     {expiringSoonInviteCount > 0
                       ? `${formatNumber(expiringSoonInviteCount)} expiring soon`
                       : "Waiting to join"}
-=======
-                    {expiringSoonInviteCount > 0
-                      ? ` · ${formatNumber(expiringSoonInviteCount)} expiring soon`
-                      : ""}
->>>>>>> 0babf4d (Update frontend application)
                   </p>
                 </div>
               </>
@@ -2199,12 +1895,9 @@ export default function UsersPage() {
                     {AUDIT_ACTION_OPTIONS.find((option) => option.value === auditAction)?.label ||
                       "All activity"}
                   </p>
-<<<<<<< HEAD
                   <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
                     Current filter
                   </p>
-=======
->>>>>>> 0babf4d (Update frontend application)
                 </div>
                 <div className={`${insetPanelClass} px-3 py-2.5`}>
                   <p className="text-[11px] uppercase tracking-[0.14em] text-slate-600/80 dark:text-slate-300/70">
@@ -2213,12 +1906,9 @@ export default function UsersPage() {
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {formatNumber(auditTotalItems)}
                   </p>
-<<<<<<< HEAD
                   <p className="mt-1 hidden text-[11px] text-slate-600/80 dark:text-slate-300/80 sm:block">
                     Events found
                   </p>
-=======
->>>>>>> 0babf4d (Update frontend application)
                 </div>
               </>
             )}
@@ -2286,7 +1976,6 @@ export default function UsersPage() {
                 />
                 <MetricCard
                   icon={ShieldCheck}
-<<<<<<< HEAD
                   label="Active access"
                   value={formatNumber(activeMemberCount)}
                   detail="Teammates who can sign in right now"
@@ -2312,25 +2001,6 @@ export default function UsersPage() {
                       ? `${formatNumber(manageableMemberCount)} members within your control lane`
                       : "Review only from your current role"
                   }
-=======
-                  label="Admins"
-                  value={formatNumber(adminCount)}
-                  detail="Full access to billing and team controls"
-                  iconTone="bg-violet-500/15 text-violet-600 dark:bg-violet-500/20 dark:text-violet-200"
-                />
-                <MetricCard
-                  icon={UserRoundCog}
-                  label="Managers"
-                  value={formatNumber(managerCount)}
-                  detail="Can review team access and daily operations"
-                  iconTone="bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200"
-                />
-                <MetricCard
-                  icon={MailPlus}
-                  label="Disabled access"
-                  value={formatNumber(disabledMemberCount)}
-                  detail="Members blocked until an admin re-enables them"
->>>>>>> 0babf4d (Update frontend application)
                   iconTone="bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-200"
                 />
               </div>
@@ -2345,13 +2015,8 @@ export default function UsersPage() {
               />
             ) : null}
 
-<<<<<<< HEAD
             <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.58fr)_minmax(20rem,0.92fr)]">
               <section className={`${glassPanelClass} self-start p-5`}>
-=======
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-              <section className={`${glassPanelClass} p-5 xl:col-span-8`}>
->>>>>>> 0babf4d (Update frontend application)
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     {activeTab === "audit" ? (
@@ -2479,7 +2144,6 @@ export default function UsersPage() {
                         Clear
                       </Button>
                     ) : null}
-<<<<<<< HEAD
                   </div>
                 </div>
 
@@ -2491,18 +2155,6 @@ export default function UsersPage() {
                       : "You can review access coverage and pending invites here, but role changes stay with admins."}
                 </div>
 
-=======
-                    <div className="rounded-md border border-slate-200/80 bg-white/60 px-3 py-2 text-sm text-slate-600 dark:border-slate-800/80 dark:bg-slate-900/70 dark:text-slate-300">
-                      {activeTab === "audit"
-                        ? "Audit history tracks invite activity, role changes, and member access updates."
-                        : canManageTeam
-                          ? "Admins can invite, change roles, disable access, and remove members."
-                          : "Managers can review access and pending invites here."}
-                    </div>
-                  </div>
-                </div>
-
->>>>>>> 0babf4d (Update frontend application)
                 {activeFilterBadges.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {activeFilterBadges.map((badge) => (
@@ -2558,10 +2210,6 @@ export default function UsersPage() {
                           const currentRole = member.role;
                           const draftRole = roleDrafts[member.memberId] || currentRole;
                           const hasRoleDraft = draftRole !== currentRole;
-<<<<<<< HEAD
-=======
-                          const protectedMember = isProtectedMember(member);
->>>>>>> 0babf4d (Update frontend application)
                           const memberKey = `member-${member.memberId}`;
                           const memberBusy = mutatingId === memberKey;
                           const permissionSummary = getEnterprisePermissionLabels(
@@ -2574,18 +2222,11 @@ export default function UsersPage() {
                             permissionSummary.length - previewPermissions.length,
                             0,
                           );
-<<<<<<< HEAD
                           const roleDisplay = getRoleDisplayMeta(
                             currentRole,
                             member.customRoleName,
                             member.roleLabel,
                           );
-=======
-                          const currentRoleLabel =
-                            member.customRoleName ||
-                            member.roleLabel ||
-                            getWorkspaceRoleLabel(currentRole);
->>>>>>> 0babf4d (Update frontend application)
 
                           return (
                             <>
@@ -2601,30 +2242,17 @@ export default function UsersPage() {
                                     <div className={`mt-0.5 break-all ${premiumMetaTextClass}`}>
                                       {member.email || "No email"}
                                     </div>
-<<<<<<< HEAD
                                     <div className="mt-1.5 flex flex-wrap gap-1.5">
-=======
-                                    <div className="mt-3 flex flex-wrap gap-1.5">
->>>>>>> 0babf4d (Update frontend application)
                                       {isCurrentUser(member) ? (
                                         <div className="inline-flex rounded-full border border-sky-300/40 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-sky-600 dark:text-sky-100">
                                           You
                                         </div>
                                       ) : null}
-<<<<<<< HEAD
-=======
-                                      {member.createdBy ? (
-                                        <div className="inline-flex rounded-full border border-slate-200/70 bg-white/70 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-400">
-                                          Added by {member.createdBy}
-                                        </div>
-                                      ) : null}
->>>>>>> 0babf4d (Update frontend application)
                                     </div>
                                   </div>
                                 </div>
                               </td>
                               <td className={premiumCellClass}>
-<<<<<<< HEAD
                                 <div className="flex flex-col gap-1.5">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <WorkspaceRolePill role={currentRole} compact />
@@ -2635,23 +2263,6 @@ export default function UsersPage() {
                                     ) : null}
                                   </div>
                                   {canManageMemberAccess(member) ? (
-=======
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <Badge kind="role" value={currentRole} />
-                                    {currentRoleLabel !== getWorkspaceRoleLabel(currentRole) ? (
-                                      <span className={premiumMetaTextClass}>
-                                        {currentRoleLabel}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  {currentRoleLabel !== getWorkspaceRoleLabel(currentRole) ? (
-                                    <div className="text-[11px] uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                                      Custom role
-                                    </div>
-                                  ) : null}
-                                  {canManageTeam && currentRole !== "OWNER" && !protectedMember ? (
->>>>>>> 0babf4d (Update frontend application)
                                     <div className="flex flex-wrap items-center gap-2">
                                       <select
                                         value={draftRole}
@@ -2664,11 +2275,7 @@ export default function UsersPage() {
                                         }
                                         className={compactSelectClassName}
                                       >
-<<<<<<< HEAD
                                         {manageableRoleOptions.map((option) => (
-=======
-                                        {MUTABLE_WORKSPACE_ROLE_OPTIONS.map((option) => (
->>>>>>> 0babf4d (Update frontend application)
                                           <option key={option.value} value={option.value}>
                                             {option.label}
                                           </option>
@@ -2700,7 +2307,6 @@ export default function UsersPage() {
                                     </div>
                                   ) : null}
                                   {isEnterprisePlan && (
-<<<<<<< HEAD
                                     <div className={premiumPermissionSummaryClass}>
                                       <span className="font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                                         Access
@@ -2739,83 +2345,6 @@ export default function UsersPage() {
                               </td>
                               <td className={`${premiumCellClass} whitespace-nowrap`}>
                                 <div className={premiumMetaTextClass}>{formatDateTime(member.createdAt)}</div>
-=======
-                                    <div className={premiumInsetCardClass}>
-                                      <div className="flex items-center justify-between gap-3">
-                                        <div className="min-w-0">
-                                          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                                            Enterprise access
-                                          </div>
-                                          <div className={`mt-1 ${premiumHelperTextClass}`}>
-                                            {permissionSummary.length} active permission
-                                            {permissionSummary.length === 1 ? "" : "s"}
-                                          </div>
-                                        </div>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => setExpandedPermissionMemberId(member.memberId)}
-                                        >
-                                          {canManageTeam && currentRole !== "OWNER" && !protectedMember
-                                            ? "Edit"
-                                            : "View"}
-                                        </Button>
-                                      </div>
-
-                                      <div className="mt-2 flex flex-wrap gap-1.5">
-                                        {previewPermissions.map((permission) => (
-                                          <span
-                                            key={`${member.memberId}-${permission.value}`}
-                                            className="rounded-full border border-slate-200/80 bg-white/80 px-2 py-0.5 text-[11px] text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300"
-                                          >
-                                            {permission.label}
-                                          </span>
-                                        ))}
-                                        {remainingPermissionCount > 0 ? (
-                                          <span className="rounded-full border border-slate-200/80 bg-slate-100/80 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:border-slate-700/80 dark:bg-slate-800/70 dark:text-slate-400">
-                                            +{remainingPermissionCount} more
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {currentRole === "OWNER" ? (
-                                    <div className={premiumHelperTextClass}>
-                                      Owners are protected from role changes here.
-                                    </div>
-                                  ) : null}
-                                  {protectedMember && currentRole !== "OWNER" ? (
-                                    <div className={premiumHelperTextClass}>
-                                      Use another admin account to edit your own access.
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </td>
-                              <td className={premiumCellClass}>
-                                <div className="flex flex-col gap-1.5">
-                                  <div>
-                                    <Badge
-                                      kind="active"
-                                      value={member.active ? "ENABLED" : "DISABLED"}
-                                    />
-                                  </div>
-                                  <div className={premiumHelperTextClass}>
-                                    {member.active
-                                      ? "Can access this workspace"
-                                      : "Blocked until an admin re-enables access"}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className={`${premiumCellClass} whitespace-nowrap`}>
-                                <div className={premiumMetaTextClass}>
-                                  {formatDateTime(member.createdAt)}
-                                </div>
-                                {member.updatedAt ? (
-                                  <div className={`mt-1 ${premiumHelperTextClass}`}>
-                                    Updated {formatDateTime(member.updatedAt)}
-                                  </div>
-                                ) : null}
->>>>>>> 0babf4d (Update frontend application)
                               </td>
                               <td className={`${premiumCellClass} text-right`}>
                                 <div className="flex flex-wrap justify-end gap-2">
@@ -2824,13 +2353,7 @@ export default function UsersPage() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-<<<<<<< HEAD
                                         disabled={!canManageMemberAccess(member) || memberBusy}
-=======
-                                        disabled={
-                                          protectedMember || currentRole === "OWNER" || memberBusy
-                                        }
->>>>>>> 0babf4d (Update frontend application)
                                         onClick={() =>
                                           setConfirmState({
                                             open: true,
@@ -2853,13 +2376,7 @@ export default function UsersPage() {
                                       <Button
                                         size="sm"
                                         variant="danger"
-<<<<<<< HEAD
                                         disabled={!canManageMemberAccess(member) || memberBusy}
-=======
-                                        disabled={
-                                          protectedMember || currentRole === "OWNER" || memberBusy
-                                        }
->>>>>>> 0babf4d (Update frontend application)
                                         onClick={() =>
                                           setConfirmState({
                                             open: true,
@@ -2948,10 +2465,7 @@ export default function UsersPage() {
                         renderRow={(invitation) => {
                           const inviteKey = `invite-${invitation.invitationId}`;
                           const inviteBusy = mutatingId === inviteKey;
-<<<<<<< HEAD
                           const canManageInvitation = canManageInvitationAccess(invitation);
-=======
->>>>>>> 0babf4d (Update frontend application)
                           const invitationState = getInvitationState(invitation);
 
                           return (
@@ -2974,11 +2488,7 @@ export default function UsersPage() {
                                 </div>
                               </td>
                               <td className={`${premiumCellClass} whitespace-nowrap`}>
-<<<<<<< HEAD
                                 <WorkspaceRolePill role={invitation.role} compact />
-=======
-                                <Badge kind="role" value={invitation.role} />
->>>>>>> 0babf4d (Update frontend application)
                               </td>
                               <td className={`${premiumCellClass} whitespace-nowrap`}>
                                 <div className={premiumMetaTextClass}>
@@ -3023,11 +2533,7 @@ export default function UsersPage() {
                                     <Button
                                       size="sm"
                                       variant="danger"
-<<<<<<< HEAD
                                       disabled={!canManageInvitation || inviteBusy}
-=======
-                                      disabled={inviteBusy}
->>>>>>> 0babf4d (Update frontend application)
                                       onClick={() =>
                                         setConfirmState({
                                           open: true,
@@ -3046,14 +2552,11 @@ export default function UsersPage() {
                                     </span>
                                   )}
                                 </div>
-<<<<<<< HEAD
                                 {canManageTeam && !canManageInvitation ? (
                                   <div className={`mt-2 ${premiumHelperTextClass}`}>
                                     Below your hierarchy only
                                   </div>
                                 ) : null}
-=======
->>>>>>> 0babf4d (Update frontend application)
                               </td>
                             </>
                           );
@@ -3209,11 +2712,7 @@ export default function UsersPage() {
                 )}
               </section>
 
-<<<<<<< HEAD
               <section className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-=======
-              <section className="space-y-4 xl:col-span-4">
->>>>>>> 0babf4d (Update frontend application)
                 {activeTab === "audit" ? (
                   <>
                     <div className={`${glassPanelClass} p-4`}>
@@ -3264,7 +2763,6 @@ export default function UsersPage() {
                       </p>
                     </div>
                   </>
-<<<<<<< HEAD
                 ) : (
                   <>
                     {canManageTeam ? (
@@ -3352,85 +2850,6 @@ export default function UsersPage() {
                       </div>
                     )}
 
-=======
-                ) : canManageTeam ? (
-                  <div className={`${glassPanelClass} p-4`}>
-                    <div className="flex items-center gap-2">
-                      <MailPlus className="h-4 w-4 text-accent-primary" />
-                      <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
-                        Invite teammate
-                      </h3>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
-                      Send access with the right role from the start. Admins can update it later if
-                      the teammate's responsibilities change.
-                    </p>
-
-                    <form onSubmit={handleInviteSubmit} className="mt-4 space-y-3">
-                      <div>
-                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={inviteForm.email}
-                          onChange={(event) =>
-                            setInviteForm((current) => ({
-                              ...current,
-                              email: event.target.value,
-                            }))
-                          }
-                          placeholder="teammate@farm.com"
-                          className={`mt-1 ${inputClassName}`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                          Role
-                        </label>
-                        <select
-                          value={inviteForm.role}
-                          onChange={(event) =>
-                            setInviteForm((current) => ({
-                              ...current,
-                              role: event.target.value,
-                            }))
-                          }
-                          className={`mt-1 ${selectClassName}`}
-                        >
-                          {MUTABLE_WORKSPACE_ROLE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <Button type="submit" disabled={submittingInvite} className="w-full">
-                        <MailPlus className="h-4 w-4" />
-                        {submittingInvite ? "Inviting..." : "Send invite"}
-                      </Button>
-                    </form>
-                  </div>
-                ) : (
-                  <div className={`${glassPanelClass} p-4`}>
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-4 w-4 text-accent-primary" />
-                      <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
-                        View permissions
-                      </h3>
-                    </div>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                      Managers can review members and invitations, but only admins
-                      can change access.
-                    </p>
-                  </div>
-                )}
-
-                {activeTab !== "audit" ? (
-                  <>
->>>>>>> 0babf4d (Update frontend application)
                     <div className={`${glassPanelClass} p-4`}>
                       <div className="flex items-center gap-2">
                         <UserRoundCog className="h-4 w-4 text-accent-primary" />
@@ -3438,7 +2857,6 @@ export default function UsersPage() {
                           Workspace roles
                         </h3>
                       </div>
-<<<<<<< HEAD
                       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                         Quick role guide for this workspace.
                       </p>
@@ -3454,18 +2872,6 @@ export default function UsersPage() {
                                 : normalizeWorkspaceRole(tenantRole) === role.value
                             }
                           />
-=======
-                      <div className="mt-3 space-y-3">
-                        {roleGuide.map((role) => (
-                          <div key={role.value} className={`${insetPanelClass} px-3 py-3`}>
-                            <div className="flex items-center gap-2">
-                              <Badge kind="role" value={role.value} />
-                            </div>
-                            <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                              {role.description}
-                            </p>
-                          </div>
->>>>>>> 0babf4d (Update frontend application)
                         ))}
                       </div>
                     </div>
@@ -3474,7 +2880,6 @@ export default function UsersPage() {
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="h-4 w-4 text-accent-primary" />
                         <h3 className="font-header font-semibold text-slate-900 dark:text-slate-100">
-<<<<<<< HEAD
                           Access lane
                         </h3>
                       </div>
@@ -3511,30 +2916,6 @@ export default function UsersPage() {
                     </div>
                   </>
                 )}
-=======
-                          Invite health
-                        </h3>
-                      </div>
-                      <div className={`${insetPanelClass} mt-3 px-3 py-3`}>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Pending invites
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {formatNumber(invitations.length)}
-                        </p>
-                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
-                          {expiringSoonInviteCount > 0
-                            ? `${formatNumber(expiringSoonInviteCount)} invite(s) will expire soon.`
-                            : "No invite expiry risk right now."}
-                        </p>
-                      </div>
-                      <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        Keep invitations current so every teammate joins with the right access.
-                      </div>
-                    </div>
-                  </>
-                ) : null}
->>>>>>> 0babf4d (Update frontend application)
               </section>
             </div>
           </>
@@ -3588,11 +2969,7 @@ export default function UsersPage() {
                 <div className="space-y-4">
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-800/80 dark:bg-slate-900/70">
                     <div className="flex flex-wrap items-center gap-2">
-<<<<<<< HEAD
                       <WorkspaceRolePill role={accessEditorMember.role} compact />
-=======
-                      <Badge kind="role" value={accessEditorMember.role} />
->>>>>>> 0babf4d (Update frontend application)
                       {accessEditorMember.active ? (
                         <Badge kind="active" value="ENABLED" />
                       ) : (

@@ -1,11 +1,7 @@
-<<<<<<< HEAD
 import apiClient, {
   getWorkspaceToken,
   isBackendUnavailableError,
 } from "../api/apiClient";
-=======
-import apiClient from "../api/apiClient";
->>>>>>> 0babf4d (Update frontend application)
 import { hasDemoAccountHint } from "../auth/demoMode";
 import {
   getOfflineQueueSnapshot,
@@ -21,13 +17,8 @@ let initialized = false;
 let flushPromise = null;
 let autoRetryBlockedUntil = 0;
 
-<<<<<<< HEAD
 const AUTO_RETRY_COOLDOWN_MS = 15000;
 const REPLAY_REQUEST_TIMEOUT_MS = 25000;
-=======
-const AUTO_RETRY_COOLDOWN_MS = 12000;
-const REPLAY_REQUEST_TIMEOUT_MS = 10000;
->>>>>>> 0babf4d (Update frontend application)
 
 function extractErrorMessage(error) {
   return (
@@ -39,7 +30,6 @@ function extractErrorMessage(error) {
 }
 
 function isNetworkFailure(error) {
-<<<<<<< HEAD
   return isBackendUnavailableError(error);
 }
 
@@ -107,9 +97,6 @@ function isRetriableQueuedFailure(mutation, { allowSessionBootstrapRetry = false
     isRetriableSyncMessage(mutation?.lastError) ||
     (allowSessionBootstrapRetry && isSessionBootstrapSyncMessage(mutation?.lastError))
   );
-=======
-  return !error?.response;
->>>>>>> 0babf4d (Update frontend application)
 }
 
 async function replayMutation(mutation) {
@@ -131,10 +118,7 @@ async function replayMutation(mutation) {
 
 export async function flushOfflineQueue(options = {}) {
   const source = String(options.source || "system");
-<<<<<<< HEAD
   const allowSessionBootstrapRetry = source === "manual" || source === "session-ready";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   if (flushPromise) return flushPromise;
   if (typeof window !== "undefined" && !window.navigator.onLine) {
@@ -150,7 +134,6 @@ export async function flushOfflineQueue(options = {}) {
     });
     return false;
   }
-<<<<<<< HEAD
   if (!getWorkspaceToken()) {
     setOfflineSyncSnapshot({
       status: "idle",
@@ -161,24 +144,18 @@ export async function flushOfflineQueue(options = {}) {
     });
     return false;
   }
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   if (
     source !== "manual" &&
     source !== "online" &&
-<<<<<<< HEAD
     source !== "backend-up" &&
     source !== "session-ready" &&
-=======
->>>>>>> 0babf4d (Update frontend application)
     autoRetryBlockedUntil > Date.now()
   ) {
     return false;
   }
 
   flushPromise = (async () => {
-<<<<<<< HEAD
     const existingMutations = listQueuedMutations();
     existingMutations
       .filter((mutation) => isRetriableQueuedFailure(mutation, { allowSessionBootstrapRetry }))
@@ -186,8 +163,6 @@ export async function flushOfflineQueue(options = {}) {
         markQueuedMutationQueued(mutation.requestId);
       });
 
-=======
->>>>>>> 0babf4d (Update frontend application)
     const allMutations = listQueuedMutations().filter((item) =>
       item.status === "queued" || item.status === "failed" || item.status === "syncing",
     );
@@ -221,11 +196,7 @@ export async function flushOfflineQueue(options = {}) {
         await replayMutation(mutation);
         removeQueuedMutation(mutation.requestId);
       } catch (error) {
-<<<<<<< HEAD
         if (isRetriableSyncFailure(error) || isSessionBootstrapFailure(error)) {
-=======
-        if (isNetworkFailure(error)) {
->>>>>>> 0babf4d (Update frontend application)
           pausedForNetworkFailure = true;
           autoRetryBlockedUntil = Date.now() + AUTO_RETRY_COOLDOWN_MS;
           markQueuedMutationQueued(mutation.requestId);
@@ -285,11 +256,8 @@ export function initializeOfflineSync() {
           ? "online"
           : event?.type === "kf-backend-up"
             ? "backend-up"
-<<<<<<< HEAD
             : event?.type === "kf-workspace-session-ready"
               ? "session-ready"
-=======
->>>>>>> 0babf4d (Update frontend application)
             : "system";
 
     void flushOfflineQueue({ source });
@@ -298,14 +266,9 @@ export function initializeOfflineSync() {
   window.addEventListener("online", triggerFlush);
   window.addEventListener("kf-backend-up", triggerFlush);
   window.addEventListener("kf-offline-sync-requested", triggerFlush);
-<<<<<<< HEAD
   window.addEventListener("kf-workspace-session-ready", triggerFlush);
 
   if (window.navigator.onLine && getWorkspaceToken()) {
-=======
-
-  if (window.navigator.onLine) {
->>>>>>> 0babf4d (Update frontend application)
     void flushOfflineQueue({ source: "startup" });
   }
 }

@@ -1000,12 +1000,9 @@ export default function FishPondsPage() {
         fetchHatches(),
         fetchSummaries(),
       ]);
-<<<<<<< HEAD
       setToast({ message: "Fish ponds refreshed", type: "success" });
     } catch {
       setToast({ message: "Failed to refresh fish ponds", type: "error" });
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setRefreshing(false);
     }
@@ -2181,12 +2178,9 @@ export default function FishPondsPage() {
                 ? `"${pond.pondName}" saved offline. It will sync automatically.`
                 : `"${pond.pondName}" ${pondEditing ? "updated" : "created"}`,
               type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
               actionLabel: pendingOffline ? "" : "View item",
               onAction: pendingOffline ? undefined : () => openPondDetails(pond),
               duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
             });
 
             setPonds((current) => {
@@ -2226,12 +2220,9 @@ export default function FishPondsPage() {
                 ? "Hatch record saved offline. It will sync automatically."
                 : `Hatch record ${hatchEditing ? "updated" : "created"}`,
               type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
               actionLabel: pendingOffline ? "" : "View item",
               onAction: pendingOffline ? undefined : () => openHatchDetails(saved),
               duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
             });
 
             setHatches((current) => {

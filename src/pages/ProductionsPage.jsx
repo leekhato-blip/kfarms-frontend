@@ -16,10 +16,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import SummaryCard from "../components/SummaryCard";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import FilteredResultsHint from "../components/FilteredResultsHint";
-<<<<<<< HEAD
 import MobileAccordionCard from "../components/MobileAccordionCard";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import ProductionChart from "../components/ProductionChart";
 import EggProductionFormModal from "../components/EggProductionFormModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
@@ -369,12 +366,9 @@ export default function ProductionsPage() {
         fetchLayerBatches(),
         fetchRecords(meta.page),
       ]);
-<<<<<<< HEAD
       setToast({ message: "Productions refreshed", type: "success" });
     } catch {
       setToast({ message: "Failed to refresh productions", type: "error" });
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setRefreshing(false);
     }
@@ -425,12 +419,9 @@ export default function ProductionsPage() {
     setDeleting(true);
     try {
       await deleteEggRecord(deleteTarget.id);
-<<<<<<< HEAD
       if (detailItem?.id === deleteTarget.id) {
         closeDetails();
       }
-=======
->>>>>>> 0babf4d (Update frontend application)
       const nextPage = records.length === 1 && meta.page > 0 ? meta.page - 1 : meta.page;
       await Promise.all([fetchSummary(), fetchRecords(nextPage)]);
       setToast({
@@ -621,7 +612,6 @@ export default function ProductionsPage() {
           </div>
         )}
 
-<<<<<<< HEAD
         <div className="md:hidden">
           <MobileAccordionCard
             title="Egg output over time"
@@ -779,10 +769,6 @@ export default function ProductionsPage() {
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.95fr)]">
           <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark md:block">
-=======
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.95fr)]">
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-lg font-header text-slate-900 dark:text-slate-100">
@@ -1266,12 +1252,9 @@ export default function ProductionsPage() {
                 ? "Production record saved offline. It will sync automatically."
                 : `Production record ${editing ? "updated" : "created"} successfully`,
               type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
               actionLabel: pendingOffline ? "" : "View item",
               onAction: pendingOffline ? undefined : () => openDetails(saved),
               duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
             });
           }}
           onError={(error) => {
@@ -1304,10 +1287,6 @@ export default function ProductionsPage() {
             openEdit(detailItem);
           } : undefined}
           onDelete={canDelete && detailItem ? () => {
-<<<<<<< HEAD
-=======
-            closeDetails();
->>>>>>> 0babf4d (Update frontend application)
             askDelete(detailItem);
           } : undefined}
         />
@@ -1392,12 +1371,9 @@ export default function ProductionsPage() {
         <GlassToast
           message={toast.message}
           type={toast.type}
-<<<<<<< HEAD
           duration={toast.duration}
           actionLabel={toast.actionLabel}
           onAction={toast.onAction}
-=======
->>>>>>> 0babf4d (Update frontend application)
           onClose={() => setToast({ message: "", type: "info" })}
         />
       </div>

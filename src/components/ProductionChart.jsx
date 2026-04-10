@@ -28,11 +28,8 @@ export default function ProductionChart({
   actionHref = "/productions",
   actionLabel = "Record Production",
 }) {
-<<<<<<< HEAD
   const navigate = useNavigate();
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   // Helper to format "YYYY-MM" → "Jan '25"
   const formatMonth = (value) => {
     const [year, month] = value.split("-");
@@ -114,15 +111,11 @@ export default function ProductionChart({
                   onCreate();
                   return;
                 }
-<<<<<<< HEAD
                 if (actionHref?.startsWith("/")) {
                   navigate(actionHref);
                   return;
                 }
                 window.location.assign(actionHref);
-=======
-                window.location.href = actionHref;
->>>>>>> 0babf4d (Update frontend application)
               }}
             >
               {actionLabel}

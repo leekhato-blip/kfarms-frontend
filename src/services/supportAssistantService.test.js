@@ -111,37 +111,7 @@ describe("supportAssistantService", () => {
 
     expect(apiPost).not.toHaveBeenCalled();
     expect(result.reply.toLowerCase()).toContain("absolutely");
-<<<<<<< HEAD
     expect(result.reply).toContain("KAI Free");
-=======
->>>>>>> 0babf4d (Update frontend application)
-    expect(result.reply.toLowerCase()).toContain("feed planning");
-    expect(result.actions.some((action) => action.label === "Open Feeds")).toBe(true);
-  });
-
-<<<<<<< HEAD
-  it("gives pro-grade capability guidance when the workspace is on pro", async () => {
-    const { askSupportAssistant } = await import("./supportAssistantService");
-
-    const result = await askSupportAssistant({
-      tenantId: 22,
-      tenantName: "Delta Farm",
-      userName: "Lee",
-      message: "what can you do",
-      context: {
-        currentPath: "/dashboard",
-        modules: ["POULTRY", "FISH_FARMING"],
-        plan: "PRO",
-      },
-    });
-
-    expect(apiPost).not.toHaveBeenCalled();
-    expect(result.reply).toContain("KAI Pro");
-    expect(result.reply).toContain("Smarter operational coaching");
-  });
-
-=======
->>>>>>> 0babf4d (Update frontend application)
   it("answers sales summary requests honestly in placeholder mode and offers the right actions", async () => {
     apiPost.mockRejectedValue({ response: { status: 404 } });
 
@@ -157,7 +127,6 @@ describe("supportAssistantService", () => {
       },
     });
 
-<<<<<<< HEAD
     expect(result.reply).toContain("KAI Free local mode");
     expect(result.actions.some((action) => action.target === "/app/kfarms/sales")).toBe(true);
     expect(result.suggestions).toContain("What sales fields are mandatory?");
@@ -185,13 +154,6 @@ describe("supportAssistantService", () => {
     expect(result.actions.some((action) => action.label === "Open Users")).toBe(true);
   });
 
-=======
-    expect(result.reply).toContain("local assistant mode");
-    expect(result.actions.some((action) => action.target === "/sales")).toBe(true);
-    expect(result.suggestions).toContain("What sales fields are mandatory?");
-  });
-
->>>>>>> 0babf4d (Update frontend application)
   it("fills in suggestions and actions when the API reply omits them", async () => {
     apiPost.mockResolvedValue({
       data: {
@@ -221,7 +183,6 @@ describe("supportAssistantService", () => {
     expect(result.source).toBe("api");
     expect(result.suggestions.length).toBeGreaterThan(0);
     expect(result.actions.length).toBeGreaterThan(0);
-<<<<<<< HEAD
     expect(result.actions.some((action) => action.target === "/app/kfarms/inventory")).toBe(true);
   });
 
@@ -257,8 +218,5 @@ describe("supportAssistantService", () => {
     expect(result.source).toBe("hybrid");
     expect(result.reply.toLowerCase()).toContain("to add a new sale");
     expect(result.actions.some((action) => action.target === "/app/kfarms/sales")).toBe(true);
-=======
-    expect(result.actions.some((action) => action.target === "/inventory")).toBe(true);
->>>>>>> 0babf4d (Update frontend application)
   });
 });

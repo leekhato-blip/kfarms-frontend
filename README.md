@@ -18,7 +18,6 @@ npm install
 npm run dev
 ```
 
-<<<<<<< HEAD
 ## Deployment
 
 Copy `.env.example` to your deployment environment and set `VITE_API_BASE_URL` when the API is hosted on a different origin. If the frontend is served behind the same domain as the backend, the app now falls back to `/api` automatically in production.
@@ -66,36 +65,3 @@ This command warns if the project is nested inside a larger git repository (whic
 - Platform admin API client: `src/api/platformClient.js`
 
 Service modules now import directly from `src/api/apiClient.js`.
-=======
-## Quality Commands
-
-```bash
-npm run lint
-npm run test:run
-npm run build
-```
-
-## Repo Hygiene
-
-Run:
-
-```bash
-npm run repo:doctor
-```
-
-This command warns if the project is nested inside a larger git repository (which can cause accidental cross-project commits).
-
-## Routing Notes
-
-- Public auth routes live under `/auth/*`
-- Workspace routes use tenant-aware redirects via `src/routes/workspaceRedirect.js`
-- Tenant path helpers are centralized in `src/tenant/tenantRouting.js`
-
-## API Client Structure
-
-- Tenant/workspace API client: `src/api/apiClient.js`
-- Platform admin API client: `src/api/platformClient.js`
-
-Service modules now import directly from `src/api/apiClient.js`.
-
->>>>>>> 0babf4d (Update frontend application)

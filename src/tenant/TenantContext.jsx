@@ -5,10 +5,7 @@ import apiClient, { tenantStorageKey } from "../api/apiClient";
 import { useAuth } from "../hooks/useAuth";
 import { isTenantOnboardingPath, isTenantScopedPath } from "./tenantRouting";
 import { FARM_MODULES, normalizeEnabledModules } from "./tenantModules";
-<<<<<<< HEAD
 import { normalizePlanId } from "../constants/plans";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 const TenantContext = React.createContext(null);
 const TENANT_PLAN_OVERRIDE_STORAGE_KEY = "kf-placeholder-tenant-plan-overrides";
@@ -28,7 +25,6 @@ function readTenantPlanOverrides() {
   } catch {
     return {};
   }
-<<<<<<< HEAD
 }
 
 function writeTenantPlanOverrides(overrides) {
@@ -71,8 +67,6 @@ function reconcileTenantPlanOverrides(tenantList = [], currentOverrides = {}) {
   });
 
   return { nextOverrides, changed };
-=======
->>>>>>> 0babf4d (Update frontend application)
 }
 
 export function useTenant() {
@@ -120,7 +114,6 @@ export function TenantProvider({ children }) {
       setTenantPlanOverrides(readTenantPlanOverrides());
     };
 
-<<<<<<< HEAD
     const handleStorage = (event) => {
       if (event?.key && event.key !== TENANT_PLAN_OVERRIDE_STORAGE_KEY) {
         return;
@@ -133,11 +126,6 @@ export function TenantProvider({ children }) {
     return () => {
       window.removeEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
       window.removeEventListener("storage", handleStorage);
-=======
-    window.addEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
-    return () => {
-      window.removeEventListener("kf-tenant-plan-overrides-changed", handleOverridesChanged);
->>>>>>> 0babf4d (Update frontend application)
     };
   }, []);
 
@@ -304,18 +292,8 @@ export function TenantProvider({ children }) {
     if (authLoading) return;
 
     if (!isAuthenticated) {
-<<<<<<< HEAD
       lastAuthIdentityRef.current = "";
       resetTenantState();
-=======
-      setTenants([]);
-      setLoadingTenants(false);
-      setTenantBootstrapDone(false);
-      setTenantSwitchMessage("");
-      setTenantPlanOverrides(readTenantPlanOverrides());
-      refreshPromiseRef.current = null;
-      networkRetryAfterRef.current = 0;
->>>>>>> 0babf4d (Update frontend application)
       return;
     }
 

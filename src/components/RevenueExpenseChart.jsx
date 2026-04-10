@@ -71,10 +71,7 @@ function CustomTooltip({ active, payload, label, currency = "NGN" }) {
 /* ------------------ Component ------------------ */
 export default function RevenueExpenseChart({
   data = [],
-<<<<<<< HEAD
   currency = "NGN",
-=======
->>>>>>> 0babf4d (Update frontend application)
   onRefresh,
   refreshing = false,
 }) {
@@ -190,11 +187,7 @@ export default function RevenueExpenseChart({
             Revenue Generated
           </p>
           <h2 className="text-2xl font-bold font-header text-green-400">
-<<<<<<< HEAD
             {formatCurrency(totalRevenue, currency)}
-=======
-            {formatCurrency(totalRevenue)}
->>>>>>> 0babf4d (Update frontend application)
           </h2>
           <p className="mt-2 text-xs text-lightText/70 dark:text-darkText/70">
             Monthly revenue, expense, and profit trends.
@@ -223,11 +216,7 @@ export default function RevenueExpenseChart({
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <h3 className="text-xl font-semibold font-header text-lightText dark:text-darkText">
-<<<<<<< HEAD
               {formatCurrency(currentProfit, currency)}
-=======
-              {formatCurrency(currentProfit)}
->>>>>>> 0babf4d (Update frontend application)
             </h3>
             <div className={`flex items-center gap-1.5 text-xs font-medium ${trendTone}`}>
               {profitTrend === "up" ? <ArrowUpRight className="h-3.5 w-3.5" /> : null}

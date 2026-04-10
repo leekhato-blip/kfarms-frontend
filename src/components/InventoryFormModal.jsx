@@ -6,7 +6,6 @@ import {
   MapPin,
   Save,
   StickyNote,
-<<<<<<< HEAD
   Truck,
   Wallet,
 } from "lucide-react";
@@ -35,21 +34,6 @@ import {
 
 function todayValue() {
   return todayDateInputValue();
-=======
-  Tag,
-  Truck,
-  Wallet,
-} from "lucide-react";
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
-import {
-  INVENTORY_CATEGORIES,
-  formatInventoryCategoryLabel,
-} from "../constants/inventory";
-import { createInventory, updateInventory } from "../services/inventoryService";
-
-function todayValue() {
-  return new Date().toISOString().slice(0, 10);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function defaultForm() {
@@ -77,11 +61,7 @@ function parseNumber(value, fallback = 0) {
   if (value === "" || value === null || value === undefined) {
     return fallback;
   }
-<<<<<<< HEAD
   const numeric = Number(String(value).replace(/,/g, ""));
-=======
-  const numeric = Number(value);
->>>>>>> 0babf4d (Update frontend application)
   return Number.isFinite(numeric) ? numeric : fallback;
 }
 
@@ -90,19 +70,11 @@ const Required = () => <span className="ml-0.5 text-red-500">*</span>;
 const INVENTORY_STEPS = [
   {
     title: "What item is this?",
-<<<<<<< HEAD
     description: "Add the item name, category, and unit.",
   },
   {
     title: "How much is in stock?",
     description: "Add quantity, cost, and update date.",
-=======
-    description: "Add the item name, category, stock code, and unit.",
-  },
-  {
-    title: "How much is in stock?",
-    description: "Add quantity, reorder level, cost, and update date.",
->>>>>>> 0babf4d (Update frontend application)
   },
   {
     title: "Where is it kept?",
@@ -155,7 +127,6 @@ export default function InventoryFormModal({
     () => parseNumber(form.quantity, 0) * parseNumber(form.unitCost, 0),
     [form.quantity, form.unitCost],
   );
-<<<<<<< HEAD
   const unitOptions = useMemo(() => {
     const normalizedCurrentUnit = String(form.unit || "")
       .trim()
@@ -177,8 +148,6 @@ export default function InventoryFormModal({
       },
     ];
   }, [form.unit]);
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   const stepOneComplete = Boolean(
     String(form.itemName || "").trim() && form.category && String(form.unit || "").trim(),
@@ -187,7 +156,6 @@ export default function InventoryFormModal({
 
   async function handleSubmit(event) {
     event.preventDefault();
-<<<<<<< HEAD
     if (step < INVENTORY_STEPS.length - 1) {
       const canAdvance =
         (step === 0 && stepOneComplete) ||
@@ -196,8 +164,6 @@ export default function InventoryFormModal({
       setStep((current) => Math.min(current + 1, INVENTORY_STEPS.length - 1));
       return;
     }
-=======
->>>>>>> 0babf4d (Update frontend application)
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
@@ -251,11 +217,7 @@ export default function InventoryFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Back
           </button>
@@ -263,11 +225,7 @@ export default function InventoryFormModal({
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Cancel
           </button>
@@ -280,17 +238,12 @@ export default function InventoryFormModal({
               (step === 0 && !stepOneComplete) ||
               (step === 1 && !stepTwoComplete)
             }
-<<<<<<< HEAD
             onClick={(event) =>
               handleGuidedFormAdvanceClick(event, () => {
                 setStep((current) => Math.min(current + 1, INVENTORY_STEPS.length - 1));
               })
             }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
-=======
-            onClick={() => setStep((current) => Math.min(current + 1, INVENTORY_STEPS.length - 1))}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             Continue
           </button>
@@ -298,11 +251,7 @@ export default function InventoryFormModal({
           <button
             type="submit"
             disabled={saving || !stepOneComplete || !stepTwoComplete}
-<<<<<<< HEAD
             className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
-=======
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save stock item"}
@@ -331,21 +280,12 @@ export default function InventoryFormModal({
       {step === 0 ? (
         <GuidedFormSection
           title="Item basics"
-<<<<<<< HEAD
           description="Add the item name, category, and unit."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <Archive className={GUIDED_FORM_ICON_CLASS} />
-=======
-          description="Add the item name, category, stock code, and unit."
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Archive className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                 Item name <Required />
               </label>
               <input
@@ -353,11 +293,7 @@ export default function InventoryFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, itemName: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 placeholder="e.g. Starter feed 2mm"
                 autoFocus
                 required
@@ -365,7 +301,6 @@ export default function InventoryFormModal({
             </div>
 
             <div className="md:col-span-2">
-<<<<<<< HEAD
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <Archive className={GUIDED_FORM_ICON_CLASS} />
                 Category <Required />
@@ -392,55 +327,10 @@ export default function InventoryFormModal({
                 Unit <Required />
               </label>
               <select
-=======
-              <label className="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">
-                Category <Required />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {INVENTORY_CATEGORIES.map((category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => setForm((current) => ({ ...current, category }))}
-                    className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                      form.category === category
-                        ? "border-accent-primary bg-accent-primary text-white"
-                        : "border-white/20 bg-white/50 text-slate-700 dark:bg-white/10 dark:text-slate-200"
-                    }`}
-                  >
-                    {formatInventoryCategoryLabel(category)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Tag className="h-4 w-4 text-slate-500" />
-                Stock code
-              </label>
-              <input
-                value={form.sku}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, sku: event.target.value }))
-                }
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                placeholder="Optional stock code"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Boxes className="h-4 w-4 text-slate-500" />
-                Unit <Required />
-              </label>
-              <input
->>>>>>> 0babf4d (Update frontend application)
                 value={form.unit}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, unit: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
                 required
               >
@@ -453,12 +343,6 @@ export default function InventoryFormModal({
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Pick the closest stock unit so reports stay consistent.
               </p>
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                placeholder="kg, bags, litres"
-                required
-              />
->>>>>>> 0babf4d (Update frontend application)
             </div>
           </div>
         </GuidedFormSection>
@@ -466,21 +350,12 @@ export default function InventoryFormModal({
         <>
           <GuidedFormSection
             title="Stock and value"
-<<<<<<< HEAD
             description="Add how much is available, the item cost, and the latest update date."
           >
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Boxes className={GUIDED_FORM_ICON_CLASS} />
-=======
-            description="Add how much is available, when to reorder, and the item cost."
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Boxes className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Quantity
                 </label>
                 <input
@@ -490,16 +365,11 @@ export default function InventoryFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, quantity: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Wallet className={GUIDED_FORM_ICON_CLASS} />
                   Unit cost (Naira)
@@ -530,53 +400,13 @@ export default function InventoryFormModal({
                     }));
                   }}
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Boxes className="h-4 w-4 text-slate-500" />
-                  Reorder level
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.minThreshold}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      minThreshold: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Wallet className="h-4 w-4 text-slate-500" />
-                  Unit cost (Naira)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.unitCost}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, unitCost: event.target.value }))
-                  }
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="0.00"
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <CalendarDays className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <CalendarDays className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Last updated <Required />
                 </label>
                 <input
@@ -585,11 +415,7 @@ export default function InventoryFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, lastUpdated: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 />
               </div>
@@ -616,13 +442,8 @@ export default function InventoryFormModal({
           >
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Truck className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Truck className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Supplier
                 </label>
                 <input
@@ -630,23 +451,14 @@ export default function InventoryFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, supplierName: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="Supplier or shop name"
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <MapPin className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <MapPin className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Storage location
                 </label>
                 <input
@@ -657,11 +469,7 @@ export default function InventoryFormModal({
                       storageLocation: event.target.value,
                     }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="Store room, shed, or section"
                 />
               </div>
@@ -672,13 +480,8 @@ export default function InventoryFormModal({
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <StickyNote className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Note
             </label>
             <textarea
@@ -686,11 +489,7 @@ export default function InventoryFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-<<<<<<< HEAD
               className={`${GUIDED_FORM_FIELD_CLASS} min-h-[96px]`}
-=======
-              className="min-h-[96px] w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               placeholder="Optional note about this stock item"
             />
           </GuidedFormSection>

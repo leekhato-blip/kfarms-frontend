@@ -19,12 +19,8 @@ import FarmerGuideCard from "../components/FarmerGuideCard";
 import GlassToast from "../components/GlassToast";
 import { useTenant } from "../tenant/TenantContext";
 import { useAuth } from "../hooks/useAuth";
-<<<<<<< HEAD
 import { usePlanCatalog } from "../hooks/usePlanCatalog";
 import { getPlanById, normalizePlanId } from "../constants/plans";
-=======
-import { PLAN_TIER_CONFIG, getPlanById, normalizePlanId } from "../constants/plans";
->>>>>>> 0babf4d (Update frontend application)
 import {
   normalizeOrganizationSettings,
 } from "../constants/settings";
@@ -44,13 +40,10 @@ import {
   getOrganizationSettings,
 } from "../services/settingsService";
 import {
-<<<<<<< HEAD
   BILLING_PLAN_FOCUS_PARAM,
   getBillingPlanCardAnchor,
 } from "../utils/billingNavigation";
 import {
-=======
->>>>>>> 0babf4d (Update frontend application)
   WORKSPACE_PERMISSIONS,
   hasWorkspacePermission,
 } from "../utils/workspacePermissions";
@@ -126,7 +119,6 @@ function normalizeLimitLabel(label) {
   return raw;
 }
 
-<<<<<<< HEAD
 const LIVE_BILLING_CHECKLIST = Object.freeze([
   "Create and verify a Paystack business account for live billing.",
   "Set backend env vars: KFARMS_PAYSTACK_ENABLED=true, KFARMS_PAYSTACK_SECRET_KEY, and KFARMS_PAYSTACK_PRO_MONTHLY_PLAN_CODE.",
@@ -135,17 +127,12 @@ const LIVE_BILLING_CHECKLIST = Object.freeze([
   "Add a billing email in Workspace Settings before starting checkout.",
 ]);
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export default function BillingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
-<<<<<<< HEAD
   const displayPlans = usePlanCatalog();
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -173,10 +160,7 @@ export default function BillingPage() {
   const [toast, setToast] = React.useState({ message: "", type: "info" });
   const processedReferencesRef = React.useRef(new Set());
   const processedIntentRef = React.useRef(new Set());
-<<<<<<< HEAD
   const planCardRefs = React.useRef({});
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   const canManageBilling = hasWorkspacePermission(
     activeTenant,
@@ -190,7 +174,6 @@ export default function BillingPage() {
   const contactEmail = organizationProfile?.contactEmail || "";
   const contactPhone = organizationProfile?.contactPhone || "";
   const contactAddress = organizationProfile?.address || "";
-<<<<<<< HEAD
   const focusPlanId = React.useMemo(
     () =>
       normalizePlanId(
@@ -199,8 +182,6 @@ export default function BillingPage() {
       ),
     [location.search],
   );
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -302,7 +283,6 @@ export default function BillingPage() {
     loadBillingData({ page: invoicePage });
   }, [invoicePage, loadBillingData]);
 
-<<<<<<< HEAD
   React.useEffect(() => {
     if (!focusPlanId || loading || typeof window === "undefined") return undefined;
 
@@ -320,8 +300,6 @@ export default function BillingPage() {
     return () => window.clearTimeout(timerId);
   }, [focusPlanId, loading]);
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   const clearPaymentQuery = React.useCallback(() => {
     const nextParams = new URLSearchParams(location.search);
     [
@@ -444,11 +422,7 @@ export default function BillingPage() {
       return false;
     }
     if (normalizedPlan === "ENTERPRISE") {
-<<<<<<< HEAD
       navigate("/product-profile#contact");
-=======
-      navigate("/company-profile#contact");
->>>>>>> 0babf4d (Update frontend application)
       return false;
     }
 
@@ -589,11 +563,7 @@ export default function BillingPage() {
     }
 
     if (requestedPlan === "ENTERPRISE") {
-<<<<<<< HEAD
       navigate("/product-profile#contact");
-=======
-      navigate("/company-profile#contact");
->>>>>>> 0babf4d (Update frontend application)
       clearPlanIntentQuery();
       return;
     }
@@ -734,10 +704,6 @@ export default function BillingPage() {
     "rounded-xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark";
   const insetPanelClass =
     "rounded-lg border border-white/10 bg-white/5 dark:bg-darkCard/60";
-<<<<<<< HEAD
-=======
-
->>>>>>> 0babf4d (Update frontend application)
   return (
     <DashboardLayout>
       <div className="space-y-4 font-body">
@@ -833,7 +799,6 @@ export default function BillingPage() {
         )}
 
         {dataSource === "placeholder" && (
-<<<<<<< HEAD
           <div className="space-y-3">
             <div className="rounded-xl border border-amber-300/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200">
               Test payment mode is on. Live billing in this app uses Paystack, so checkout will switch
@@ -887,11 +852,6 @@ export default function BillingPage() {
                 ))}
               </div>
             </div>
-=======
-          <div className="rounded-xl border border-amber-300/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:border-amber-400/40 dark:bg-amber-500/15 dark:text-amber-200">
-            Test payment mode is on. Billing will switch to live payments once payment keys and
-            webhooks are connected.
->>>>>>> 0babf4d (Update frontend application)
           </div>
         )}
 
@@ -914,11 +874,7 @@ export default function BillingPage() {
                       {currentPlan.name}
                     </p>
                   </div>
-<<<<<<< HEAD
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-accent-primary/20 bg-accent-primary/12 text-accent-primary shadow-[0_10px_18px_rgba(37,99,235,0.08)] dark:border-accent-primary/20 dark:bg-accent-primary/18 dark:text-blue-200 dark:shadow-none">
-=======
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-accent-primary/15 text-accent-primary dark:bg-accent-primary/20 dark:text-blue-200">
->>>>>>> 0babf4d (Update frontend application)
                     <ShieldCheck className="h-4 w-4" />
                   </span>
                 </div>
@@ -945,11 +901,7 @@ export default function BillingPage() {
                       {nextBillingDateLabel}
                     </p>
                   </div>
-<<<<<<< HEAD
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-200/70 bg-cyan-500/12 text-cyan-600 shadow-[0_10px_18px_rgba(8,145,178,0.08)] dark:border-cyan-400/20 dark:bg-cyan-500/18 dark:text-cyan-200 dark:shadow-none">
-=======
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-300">
->>>>>>> 0babf4d (Update frontend application)
                     <Receipt className="h-4 w-4" />
                   </span>
                 </div>
@@ -966,11 +918,7 @@ export default function BillingPage() {
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{billingIntervalLabel}</p>
                   </div>
-<<<<<<< HEAD
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200/70 bg-emerald-500/12 text-emerald-600 shadow-[0_10px_18px_rgba(16,185,129,0.08)] dark:border-emerald-400/20 dark:bg-emerald-500/18 dark:text-emerald-300 dark:shadow-none">
-=======
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
->>>>>>> 0babf4d (Update frontend application)
                     <CircleDollarSign className="h-4 w-4" />
                   </span>
                 </div>
@@ -987,14 +935,9 @@ export default function BillingPage() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-<<<<<<< HEAD
                   {displayPlans.map((plan) => {
                     const isCurrent = plan.id === effectivePlanId;
                     const isFocused = focusPlanId === plan.id;
-=======
-                  {PLAN_TIER_CONFIG.map((plan) => {
-                    const isCurrent = plan.id === effectivePlanId;
->>>>>>> 0babf4d (Update frontend application)
                     const billingInfo = getPlanBillingInfo(plan.id);
                     const isEnterprise = plan.id === "ENTERPRISE";
                     const isFreeDowngrade = plan.id === "FREE" && effectivePlanId !== "FREE";
@@ -1003,7 +946,6 @@ export default function BillingPage() {
                     return (
                       <article
                         key={plan.id}
-<<<<<<< HEAD
                         id={getBillingPlanCardAnchor(plan.id)}
                         ref={(node) => {
                           if (node) {
@@ -1021,12 +963,6 @@ export default function BillingPage() {
                           isFocused
                             ? "ring-2 ring-cyan-400/70 ring-offset-2 ring-offset-slate-50 dark:ring-cyan-300/60 dark:ring-offset-slate-950"
                             : ""
-=======
-                        className={`relative overflow-hidden rounded-2xl border p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition dark:shadow-[0_14px_34px_rgba(2,6,23,0.42)] ${
-                          isCurrent
-                            ? "border-accent-primary/45 bg-gradient-to-br from-accent-primary/15 via-cyan-500/10 to-emerald-500/10 dark:from-accent-primary/24 dark:via-cyan-500/12 dark:to-emerald-500/12"
-                            : "border-slate-200/80 bg-white/72 dark:border-slate-800/80 dark:bg-slate-900/64"
->>>>>>> 0babf4d (Update frontend application)
                         }`}
                       >
                         {plan.recommended && !isCurrent && (
@@ -1047,7 +983,6 @@ export default function BillingPage() {
                           )}
                         </div>
 
-<<<<<<< HEAD
                         <div className="mt-2 flex items-end gap-2">
                           {plan.compareAtPriceLabel && (
                             <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
@@ -1063,10 +998,6 @@ export default function BillingPage() {
                         </p>
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                           {plan.promoNote || billingInfo.label}
-=======
-                        <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          {billingInfo.label}
->>>>>>> 0babf4d (Update frontend application)
                         </p>
                         <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{plan.tagline}</p>
 
@@ -1103,11 +1034,7 @@ export default function BillingPage() {
                         <div className="mt-5">
                           {isEnterprise ? (
                             <Link
-<<<<<<< HEAD
                               to="/product-profile#contact"
-=======
-                              to="/company-profile#contact"
->>>>>>> 0babf4d (Update frontend application)
                               className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
                             >
                               Talk to Sales

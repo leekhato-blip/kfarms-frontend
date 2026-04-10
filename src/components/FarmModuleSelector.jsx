@@ -1,9 +1,5 @@
 import React from "react";
-<<<<<<< HEAD
 import { Check, Droplets, Feather } from "lucide-react";
-=======
-import { CheckCircle2, Droplets, Feather } from "lucide-react";
->>>>>>> 0babf4d (Update frontend application)
 import {
   FARM_MODULE_OPTIONS,
   FARM_MODULES,
@@ -77,21 +73,13 @@ export default function FarmModuleSelector({
                   </div>
                 </div>
                 <span
-<<<<<<< HEAD
                   className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border shadow-sm sm:h-8 sm:w-8 ${
-=======
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full border sm:h-7 sm:w-7 ${
->>>>>>> 0babf4d (Update frontend application)
                     selected
                       ? "border-accent-primary bg-accent-primary text-white"
                       : "border-slate-300/80 bg-white/80 text-transparent dark:border-white/15 dark:bg-white/5"
                   }`}
                 >
-<<<<<<< HEAD
                   <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={3} />
-=======
-                  <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
->>>>>>> 0babf4d (Update frontend application)
                 </span>
               </div>
             </button>

@@ -5,11 +5,7 @@ export function Skeleton({ className = "" }) {
 }
 
 export function MetricCardSkeleton() {
-<<<<<<< HEAD
   return <Skeleton className="h-[150px] w-full rounded-[1.25rem]" />;
-=======
-  return <Skeleton className="h-24 w-full" />;
->>>>>>> 0babf4d (Update frontend application)
 }
 
 export function TableRowSkeleton({ columns = 6 }) {

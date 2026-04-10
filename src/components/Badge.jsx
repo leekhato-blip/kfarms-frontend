@@ -1,13 +1,10 @@
 import React from "react";
 import { normalizePlanId } from "../constants/plans";
 import {
-<<<<<<< HEAD
   getPlatformRoleLabel,
   normalizePlatformRole,
 } from "../utils/platformRoles";
 import {
-=======
->>>>>>> 0babf4d (Update frontend application)
   getWorkspaceRoleLabel,
   normalizeWorkspaceRole,
 } from "../utils/workspaceRoles";
@@ -16,7 +13,6 @@ function normalize(value) {
   return String(value ?? "").trim().toUpperCase();
 }
 
-<<<<<<< HEAD
 const PLAN_LABELS = {
   FREE: "Free",
   PRO: "Pro",
@@ -33,15 +29,6 @@ const PLAN = {
     "border-sky-300/90 bg-[linear-gradient(180deg,#eff6ff_0%,#dbeafe_100%)] text-sky-800 shadow-[0_10px_22px_rgba(37,99,235,0.12)] dark:border-sky-400/35 dark:bg-[linear-gradient(180deg,rgba(37,99,235,0.38),rgba(8,145,178,0.22))] dark:text-sky-50 dark:shadow-[0_0_0_1px_rgba(59,130,246,0.22),0_0_16px_rgba(14,165,233,0.16)]",
   ENTERPRISE:
     "atlas-shimmer border-amber-300/85 bg-[linear-gradient(180deg,#fff8e6_0%,#fde68a_100%)] text-amber-950 shadow-[0_10px_24px_rgba(245,158,11,0.14)] dark:border-amber-400/40 dark:bg-[linear-gradient(180deg,rgba(180,83,9,0.5),rgba(120,53,15,0.36))] dark:text-amber-50 dark:shadow-[0_0_0_1px_rgba(245,158,11,0.24),0_0_18px_rgba(180,83,9,0.18)]",
-=======
-const BASE = "inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide";
-
-const PLAN = {
-  FREE: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/60 dark:bg-blue-500/10 dark:text-blue-200",
-  PRO: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-400/60 dark:bg-violet-500/20 dark:text-violet-200 dark:shadow-[0_0_12px_rgba(139,92,246,0.45)]",
-  ENTERPRISE:
-    "atlas-shimmer border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/60 dark:bg-emerald-500/20 dark:text-emerald-200 dark:shadow-[0_0_14px_rgba(16,185,129,0.45)]",
->>>>>>> 0babf4d (Update frontend application)
 };
 
 const STATUS = {
@@ -49,20 +36,16 @@ const STATUS = {
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-300/90 dark:bg-emerald-300/85 dark:text-emerald-950 dark:shadow-[0_0_0_1px_rgba(16,185,129,0.22),0_0_14px_rgba(16,185,129,0.16)]",
   SUSPENDED:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-300/90 dark:bg-amber-300/84 dark:text-amber-950 dark:shadow-[0_0_0_1px_rgba(251,191,36,0.2),0_0_12px_rgba(251,191,36,0.14)]",
-<<<<<<< HEAD
   OPEN:
     "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-400/45 dark:bg-sky-500/14 dark:text-sky-100 dark:shadow-[0_0_0_1px_rgba(56,189,248,0.2),0_0_14px_rgba(14,165,233,0.1)]",
   PENDING:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/45 dark:bg-amber-500/14 dark:text-amber-100 dark:shadow-[0_0_0_1px_rgba(251,191,36,0.2),0_0_14px_rgba(245,158,11,0.1)]",
   RESOLVED:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/45 dark:bg-emerald-500/14 dark:text-emerald-100 dark:shadow-[0_0_0_1px_rgba(16,185,129,0.2),0_0_14px_rgba(16,185,129,0.1)]",
-=======
->>>>>>> 0babf4d (Update frontend application)
 };
 
 const ROLE = {
   OWNER:
-<<<<<<< HEAD
     "border-amber-300/80 bg-amber-100 text-amber-950 shadow-[0_8px_18px_rgba(245,158,11,0.12)] dark:border-amber-400/45 dark:bg-amber-500/20 dark:text-amber-50 dark:shadow-[0_0_0_1px_rgba(245,158,11,0.22),0_0_14px_rgba(245,158,11,0.1)]",
   ADMIN:
     "border-fuchsia-300/80 bg-fuchsia-100 text-fuchsia-900 shadow-[0_8px_18px_rgba(217,70,239,0.12)] dark:border-fuchsia-400/45 dark:bg-fuchsia-500/16 dark:text-fuchsia-100 dark:shadow-[0_0_0_1px_rgba(217,70,239,0.22),0_0_14px_rgba(217,70,239,0.1)]",
@@ -95,19 +78,6 @@ const STATUS_BADGE = {
   OPEN: "atlas-status-badge--open",
   PENDING: "atlas-status-badge--pending",
   RESOLVED: "atlas-status-badge--resolved",
-=======
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200",
-  ADMIN:
-    "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-400/50 dark:bg-violet-500/20 dark:text-violet-200",
-  MANAGER:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200",
-  STAFF:
-    "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/40 dark:bg-blue-500/10 dark:text-blue-200",
-  USER:
-    "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/40 dark:bg-blue-500/10 dark:text-blue-200",
-  PLATFORM_ADMIN:
-    "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-400/50 dark:bg-fuchsia-500/20 dark:text-fuchsia-200",
->>>>>>> 0babf4d (Update frontend application)
 };
 
 const ACTIVE = {
@@ -122,7 +92,6 @@ export default function Badge({ kind = "plan", value }) {
   const normalizedPlan = kind === "plan" ? normalizePlanId(value, "") : "";
   const normalizedRole =
     kind === "role" ? normalizeWorkspaceRole(value, normalized || "STAFF") : "";
-<<<<<<< HEAD
   const normalizedPlatformRole =
     kind === "platform-role"
       ? normalizePlatformRole(value, normalized || "PLATFORM_USER")
@@ -133,18 +102,10 @@ export default function Badge({ kind = "plan", value }) {
   if (kind === "status") classes = STATUS_BADGE[normalized] || STATUS[normalized] || classes;
   if (kind === "role") classes = ROLE[normalizedRole] || classes;
   if (kind === "platform-role") classes = PLATFORM_ROLE[normalizedPlatformRole] || ROLE[normalizedPlatformRole] || classes;
-=======
-
-  let classes = "border-slate-200 bg-slate-100 text-slate-700 dark:border-white/20 dark:bg-white/10 dark:text-slate-200";
-  if (kind === "plan") classes = PLAN[normalizedPlan] || classes;
-  if (kind === "status") classes = STATUS[normalized] || classes;
-  if (kind === "role") classes = ROLE[normalizedRole] || classes;
->>>>>>> 0babf4d (Update frontend application)
   if (kind === "active") classes = ACTIVE[normalized] || classes;
 
   const label =
     kind === "plan"
-<<<<<<< HEAD
       ? PLAN_LABELS[normalizedPlan] || normalizedPlan || normalized
       : kind === "platform-role"
         ? getPlatformRoleLabel(value)
@@ -156,11 +117,4 @@ export default function Badge({ kind = "plan", value }) {
       <span className="relative z-[1]">{label || "-"}</span>
     </span>
   );
-=======
-      ? normalizedPlan || normalized
-      : kind === "role"
-        ? getWorkspaceRoleLabel(value)
-        : normalized;
-  return <span className={`${BASE} ${classes}`}>{label || "-"}</span>;
->>>>>>> 0babf4d (Update frontend application)
 }

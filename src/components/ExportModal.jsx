@@ -1,17 +1,11 @@
 import { useEffect, useState } from "react";
-<<<<<<< HEAD
 import { createPortal } from "react-dom";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import { Link } from "react-router-dom";
 import { X, Download } from "lucide-react";
 import { useTenant } from "../tenant/TenantContext";
 import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
 import { normalizeExportCategory, normalizeExportType } from "../services/reportService";
-<<<<<<< HEAD
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import PlanUpgradePrompt from "./PlanUpgradePrompt";
 
 const DEFAULT_CATEGORIES = [
@@ -88,54 +82,56 @@ export default function ExportModal({
     onSubmit?.({ type, category, start: start || null, end: end || null });
   }
 
+  const upgradePath = buildBillingPlanFocusPath("PRO");
+
   return createPortal(
-    <div className="fixed inset-0 z-[9998] flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[9998] flex items-end justify-center px-4 py-6 sm:items-center">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm"
         onClick={onClose}
       />
 
       <form
         onSubmit={handleSubmit}
-        className="relative w-full max-w-[96vw] sm:max-w-lg rounded-2xl p-1 animate-fadeIn"
+        className="relative w-full max-w-[32rem] rounded-2xl animate-fadeIn"
         aria-modal="true"
         role="dialog"
       >
-        <div className="rounded-2xl bg-darkCard/60 shadow-neo p-px">
-          <div className="rounded-2xl bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-4 sm:p-6 space-y-5 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-lightText dark:text-darkText">
-                  Download report
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {canUseAdvancedExport
-                    ? "Choose the file type, date range, and section you want to download."
-                    : "Exports are available on Pro and Enterprise plans. Upgrade to unlock CSV, XLSX, PDF downloads, and date filters."}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close export modal"
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
-                title="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="rounded-2xl border border-white/15 bg-white/90 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/85 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Export report
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {canUseAdvancedExport
+                  ? "Pick the section, file type, and date range to download."
+                  : "Upgrade to Pro for full export controls."}
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close export modal"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/70 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)] transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
+              title="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
+          <div className="mt-4 space-y-4">
             {!canUseAdvancedExport && (
               <PlanUpgradePrompt
                 compact
                 requiredPlan="PRO"
                 feature="advanced export controls"
-                title="Unlock Advanced Export"
-                description="Upgrade to Pro to unlock CSV, XLSX, PDF downloads, date choices, and section selection for cleaner farm reports."
+                title="Unlock advanced export"
+                description="Pro unlocks CSV, XLSX, PDF downloads plus date filters."
               />
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-xs text-slate-500 dark:text-slate-400">
                   File type
@@ -144,7 +140,7 @@ export default function ExportModal({
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/70 bg-white/90 px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-accent-primary/60 focus:ring-2 focus:ring-accent-primary/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/70 dark:text-white"
                 >
                   {TYPE_OPTIONS.map((opt) => (
                     <option
@@ -166,7 +162,7 @@ export default function ExportModal({
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/70 bg-white/90 px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-accent-primary/60 focus:ring-2 focus:ring-accent-primary/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/70 dark:text-white"
                 >
                   {categories.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -185,7 +181,7 @@ export default function ExportModal({
                   value={start}
                   onChange={(e) => setStart(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/70 bg-white/90 px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-accent-primary/60 focus:ring-2 focus:ring-accent-primary/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/70 dark:text-white"
                 />
               </div>
 
@@ -198,47 +194,38 @@ export default function ExportModal({
                   value={end}
                   onChange={(e) => setEnd(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/70 bg-white/90 px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-accent-primary/60 focus:ring-2 focus:ring-accent-primary/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-slate-900/70 dark:text-white"
                 />
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-md border border-slate-200/70 px-4 py-2 text-slate-600 transition hover:bg-slate-50 sm:w-auto sm:min-w-[8.5rem] dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/5"
+            >
+              Cancel
+            </button>
+            {canUseAdvancedExport ? (
               <button
-                type="button"
-                onClick={onClose}
-                className="w-full rounded-md border border-white/10 bg-transparent px-4 py-2 hover:bg-white/5 sm:w-auto sm:min-w-[8.5rem]"
+                type="submit"
+                disabled={exporting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[8.5rem]"
               >
-                Cancel
+                <Download className="h-4 w-4" />
+                {exporting ? "Downloading..." : "Download"}
               </button>
-              {canUseAdvancedExport ? (
-                <button
-                  type="submit"
-                  disabled={exporting}
-<<<<<<< HEAD
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white hover:opacity-90 disabled:opacity-50 sm:w-auto sm:min-w-[8.5rem]"
-=======
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent-primary text-white hover:opacity-90 disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
-                >
-                  <Download className="w-4 h-4" />
-                  {exporting ? "Downloading..." : "Download"}
-                </button>
-              ) : (
-                <Link
-<<<<<<< HEAD
-                  to={buildBillingPlanFocusPath("PRO")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white hover:opacity-90 sm:w-auto sm:min-w-[8.5rem]"
-=======
-                  to="/billing?plan=PRO"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent-primary text-white hover:opacity-90"
->>>>>>> 0babf4d (Update frontend application)
-                >
-                  <Download className="w-4 h-4" />
-                  Upgrade to Export
-                </Link>
-              )}
-            </div>
+            ) : (
+              <Link
+                to={upgradePath}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white shadow-sm transition hover:opacity-90 sm:w-auto sm:min-w-[8.5rem]"
+              >
+                <Download className="h-4 w-4" />
+                Upgrade to Export
+              </Link>
+            )}
           </div>
         </div>
       </form>

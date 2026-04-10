@@ -1,10 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-<<<<<<< HEAD
 import { Eye, EyeOff, LogIn, Monitor, Moon, Sun } from "lucide-react";
-=======
-import { LogIn, Moon, ShieldCheck, Sun } from "lucide-react";
->>>>>>> 0babf4d (Update frontend application)
 import {
   AUTH_LOGIN_FALLBACK_URL,
   AUTH_LOGIN_IDENTIFIER_KEY,
@@ -17,22 +13,15 @@ import {
   platformAxios,
   unwrapApiResponse,
 } from "../../api/platformClient";
-<<<<<<< HEAD
 import { isBackendUnavailableError, waitForBackendConnection } from "../../api/apiClient";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import { usePlatformAuth } from "../../auth/AuthProvider";
 import { ToastProvider, useToast } from "../../components/ToastProvider";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import { readTokenFromPayload } from "../../utils/formatters";
 import { useTheme } from "../../hooks/useTheme";
-<<<<<<< HEAD
 import { formatThemePreferenceLabel, THEME_SCOPES } from "../../constants/settings";
 import rootsLogo from "../../assets/roots-logo-trimmed.png";
-=======
-import rootsLogo from "../../assets/roots-logo.png";
->>>>>>> 0babf4d (Update frontend application)
 
 async function loginWithEndpoint(endpoint, identifier, password) {
   const identifierKeys = Array.from(
@@ -84,11 +73,8 @@ async function loginWithEndpoint(endpoint, identifier, password) {
 }
 
 function shouldTryFallbackEndpoint(error) {
-<<<<<<< HEAD
   if (isBackendUnavailableError(error)) return false;
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   const status = error?.response?.status;
   const message = getApiErrorMessage(error, "").toLowerCase();
 
@@ -98,7 +84,6 @@ function shouldTryFallbackEndpoint(error) {
   return false;
 }
 
-<<<<<<< HEAD
 function resolveFriendlyLoginError(error) {
   if (isBackendUnavailableError(error)) {
     return "Platform services are still waking up or temporarily unavailable. Try again shortly.";
@@ -134,13 +119,10 @@ function resolveFriendlyLoginError(error) {
 
   return "We could not sign you in right now. Please try again.";
 }
-=======
->>>>>>> 0babf4d (Update frontend application)
 function PlatformLoginContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { notify } = useToast();
-<<<<<<< HEAD
   const { isAuthenticated, canAccessPlatform, login, logout, profileLoading } = usePlatformAuth();
   const { theme, isDark, toggleTheme } = useTheme(THEME_SCOPES.PLATFORM);
   const themeLabel = formatThemePreferenceLabel(theme);
@@ -155,23 +137,10 @@ function PlatformLoginContent() {
   React.useEffect(() => {
     if (isAuthenticated && !profileLoading && canAccessPlatform) {
       deniedSessionRef.current = false;
-=======
-  const { isAuthenticated, login } = usePlatformAuth();
-  const { isDark, toggleTheme } = useTheme();
-
-  const [identifier, setIdentifier] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [inlineError, setInlineError] = React.useState("");
-
-  React.useEffect(() => {
-    if (isAuthenticated) {
->>>>>>> 0babf4d (Update frontend application)
       navigate("/platform", { replace: true });
       return;
     }
 
-<<<<<<< HEAD
       if (isAuthenticated && !profileLoading && !canAccessPlatform) {
       if (!deniedSessionRef.current) {
         const message =
@@ -196,14 +165,11 @@ function PlatformLoginContent() {
   ]);
 
   React.useEffect(() => {
-=======
->>>>>>> 0babf4d (Update frontend application)
     const flashMessage = window.localStorage.getItem(PLATFORM_FLASH_KEY);
     if (flashMessage) {
       notify(flashMessage, "info");
       window.localStorage.removeItem(PLATFORM_FLASH_KEY);
     }
-<<<<<<< HEAD
   }, [notify]);
 
   React.useEffect(() => {
@@ -223,9 +189,6 @@ function PlatformLoginContent() {
       silent: true,
     });
   }, []);
-=======
-  }, [isAuthenticated, navigate, notify]);
->>>>>>> 0babf4d (Update frontend application)
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -233,7 +196,6 @@ function PlatformLoginContent() {
     setLoading(true);
 
     try {
-<<<<<<< HEAD
       const backendReady = await waitForBackendConnection({
         timeoutMs: 90000,
         intervalMs: 2500,
@@ -247,8 +209,6 @@ function PlatformLoginContent() {
         return;
       }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
       const endpoints = Array.from(new Set([AUTH_LOGIN_URL, AUTH_LOGIN_FALLBACK_URL].filter(Boolean)));
       let result;
       let lastError;
@@ -280,22 +240,15 @@ function PlatformLoginContent() {
       const from = location.state?.from;
       navigate(from || "/platform", { replace: true });
     } catch (error) {
-<<<<<<< HEAD
       const message = resolveFriendlyLoginError(error);
       setInlineError(message);
       notify(message, "error", 3000);
-=======
-      const message = getApiErrorMessage(error, "Unable to sign in.");
-      setInlineError(message);
-      notify(message, "error");
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setLoading(false);
     }
   };
 
   return (
-<<<<<<< HEAD
     <div className="atlas-theme atlas-root-network flex min-h-[100dvh] items-center justify-center px-4 py-4 sm:px-5 sm:py-6">
       <div className="w-full max-w-[27rem]">
         <Card className="atlas-stage-card rounded-[1.75rem] border-[color:var(--atlas-border-strong)] px-5 py-5 sm:px-6 sm:py-6">
@@ -404,67 +357,6 @@ function PlatformLoginContent() {
               </div>
             </form>
           </div>
-=======
-    <div className="atlas-theme atlas-root-network min-h-screen px-4 py-10">
-      <div className="mx-auto flex max-w-md flex-col">
-        <div className="mb-3 flex justify-end">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] p-2 text-[var(--atlas-text)] hover:bg-[color:var(--atlas-surface-hover)]"
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-        </div>
-
-        <Card className="rounded-2xl border-[color:var(--atlas-border-strong)] p-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-            <ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-300" />
-            <img src={rootsLogo} alt="ROOTS" className="h-3.5 w-3.5 object-contain" />
-            Platform
-          </div>
-
-          <h1 className="mt-4 text-2xl font-bold text-[var(--atlas-text-strong)]">Platform Control Plane</h1>
-          <p className="mt-1 text-sm text-[var(--atlas-muted)]">Sign in with platform admin credentials.</p>
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="mb-1 block text-sm text-[var(--atlas-text)]">Email or Username</label>
-              <input
-                type="text"
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                className="h-11 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none transition placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50"
-                autoComplete="username"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm text-[var(--atlas-text)]">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="h-11 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none transition placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50"
-                autoComplete="current-password"
-                required
-              />
-            </div>
-
-            {inlineError && (
-              <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
-                {inlineError}
-              </div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              <LogIn size={15} />
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
->>>>>>> 0babf4d (Update frontend application)
         </Card>
       </div>
     </div>

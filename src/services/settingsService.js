@@ -6,51 +6,7 @@ import {
   normalizeOrganizationSettings,
   normalizeUserPreferences,
 } from "../constants/settings";
-<<<<<<< HEAD
 import { normalizePhoneNumber } from "../utils/accountValidation";
-=======
->>>>>>> 0babf4d (Update frontend application)
-
-const USER_PREFERENCES_CACHE_KEY = "kf-settings-user-preferences-cache";
-const ORGANIZATION_SETTINGS_CACHE_KEY = "kf-settings-organization-cache";
-
-const SETTINGS_ENDPOINTS = {
-  organization: "/settings/organization",
-  preferences: "/settings/preferences",
-  password: "/settings/password",
-<<<<<<< HEAD
-  accountContact: "/settings/account-contact",
-  accountContactSendCodes: "/settings/account-contact/send-codes",
-  accountContactVerify: "/settings/account-contact/verify",
-  accountDelete: "/settings/account",
-};
-
-function normalizeAccountContactStatus(payload) {
-  const source = payload && typeof payload === "object" ? payload : {};
-  const phoneNumber = String(source.phoneNumber || "").trim();
-  const preview =
-    source.preview && typeof source.preview === "object" ? source.preview : null;
-  return {
-    email: String(source.email || "").trim(),
-    phoneNumber,
-    hasPhoneNumber: Boolean(source.hasPhoneNumber) || Boolean(phoneNumber),
-    maskedEmail: String(source.maskedEmail || "").trim(),
-    maskedPhoneNumber: String(source.maskedPhoneNumber || "").trim(),
-    emailVerified: Boolean(source.emailVerified),
-    phoneVerified: Boolean(source.phoneVerified),
-    verificationRequired: Boolean(source.verificationRequired),
-    preview,
-    previewMode: Boolean(
-      source.previewMode ??
-        (preview && (preview.emailCode || preview.phoneCode)),
-    ),
-  };
-}
-
-=======
-};
-
->>>>>>> 0babf4d (Update frontend application)
 function extractErrorMessage(error, fallback) {
   const payload = error?.response?.data;
   if (typeof payload === "string" && payload.trim()) return payload;
@@ -247,7 +203,6 @@ export async function updatePassword({
     throw new Error(extractErrorMessage(error, "Could not update password."));
   }
 }
-<<<<<<< HEAD
 
 export async function getAccountContactStatus() {
   try {
@@ -332,5 +287,3 @@ export async function deleteTenantOwnerAccount({
     );
   }
 }
-=======
->>>>>>> 0babf4d (Update frontend application)

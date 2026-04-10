@@ -284,12 +284,9 @@ export default function LivestockPage() {
     setRefreshing(true);
     try {
       await Promise.all([fetchList(meta.page), fetchOverview()]);
-<<<<<<< HEAD
       setToast({ message: "Livestock refreshed", type: "success" });
     } catch {
       setToast({ message: "Failed to refresh livestock", type: "error" });
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setRefreshing(false);
     }
@@ -1787,12 +1784,9 @@ export default function LivestockPage() {
                   ? "Flock saved offline. It will sync automatically."
                   : `Flock ${editing ? "updated" : "created"}`,
                 type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
                 actionLabel: pendingOffline ? "" : "View item",
                 onAction: pendingOffline ? undefined : () => openDetails(saved),
                 duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
               });
               if (!pendingOffline) {
                 fetchList(meta.page);

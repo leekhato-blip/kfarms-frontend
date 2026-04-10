@@ -4,7 +4,6 @@ export function formatNumber(value) {
   return parsed.toLocaleString();
 }
 
-<<<<<<< HEAD
 export function replaceCurrencyCodeWithSymbol(value) {
   if (typeof value !== "string") return value;
 
@@ -65,8 +64,6 @@ export function formatCompactCurrencyValue(value, currency = "NGN", options = {}
   return replaceCurrencyCodeWithSymbol(`${normalizedCurrency} ${compactNumber}${compactStep.suffix}`);
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);

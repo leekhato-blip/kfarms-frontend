@@ -1,27 +1,16 @@
 import React from "react";
 import {
   Activity,
-<<<<<<< HEAD
   Radar,
-=======
-  AlertTriangle,
->>>>>>> 0babf4d (Update frontend application)
   RefreshCw,
   ShieldCheck,
   ShieldX,
   UserCog,
-<<<<<<< HEAD
 } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
-=======
-  Users,
-} from "lucide-react";
-import Card from "../../components/Card";
-import Button from "../../components/Button";
->>>>>>> 0babf4d (Update frontend application)
 import { useToast } from "../../components/ToastProvider";
 import { PLATFORM_ENDPOINTS } from "../../api/endpoints";
 import {
@@ -34,18 +23,12 @@ import {
   buildPlanDistribution,
   buildPlatformTimeline,
   buildTenantPressureList,
-<<<<<<< HEAD
   filterPlatformUsers,
-=======
->>>>>>> 0babf4d (Update frontend application)
   formatPercentLabel,
   resolvePlatformUserEnabled,
   resolvePlatformUserRole,
 } from "./platformInsights";
-<<<<<<< HEAD
 import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 const FALLBACK_OVERVIEW = {
   totalTenants: 0,
@@ -79,7 +62,6 @@ function toneDotClass(tone) {
   return "bg-violet-500";
 }
 
-<<<<<<< HEAD
 function getHealthStatusMeta(score) {
   if (score >= 88) {
     return {
@@ -135,30 +117,11 @@ function HealthScoreDial({ score }) {
         </div>
       </div>
     </div>
-=======
-function MetricCard({ icon, label, value, hint }) {
-  const IconComponent = icon;
-
-  return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-          {label}
-        </div>
-        <IconComponent size={16} className="text-[var(--atlas-muted)]" />
-      </div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-[var(--atlas-text-strong)]">
-        {value}
-      </div>
-      <div className="mt-1 text-xs text-[var(--atlas-muted)]">{hint}</div>
-    </Card>
->>>>>>> 0babf4d (Update frontend application)
   );
 }
 
 export default function PlatformHealthPage() {
   const { notify } = useToast();
-<<<<<<< HEAD
   const {
     customApps = [],
     platformDataMode = "live",
@@ -169,8 +132,6 @@ export default function PlatformHealthPage() {
     [customApps],
   );
   const liveSnapshot = React.useMemo(() => buildPlatformLiveSnapshot(), []);
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   const [overview, setOverview] = React.useState(FALLBACK_OVERVIEW);
   const [tenants, setTenants] = React.useState([]);
@@ -182,7 +143,6 @@ export default function PlatformHealthPage() {
     setLoading(true);
     setError("");
 
-<<<<<<< HEAD
     if (platformDataMode === "demo") {
       setOverview(demoSnapshot.metrics);
       setTenants(demoSnapshot.tenants);
@@ -191,8 +151,6 @@ export default function PlatformHealthPage() {
       return;
     }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
     try {
       const [overviewResponse, tenantsResponse, usersResponse] = await Promise.all([
         platformAxios.get(PLATFORM_ENDPOINTS.overview),
@@ -200,11 +158,7 @@ export default function PlatformHealthPage() {
           params: { page: 0, size: 100 },
         }),
         platformAxios.get(PLATFORM_ENDPOINTS.users, {
-<<<<<<< HEAD
           params: { page: 0, size: 100, platformOnly: true },
-=======
-          params: { page: 0, size: 100 },
->>>>>>> 0babf4d (Update frontend application)
         }),
       ]);
 
@@ -212,7 +166,6 @@ export default function PlatformHealthPage() {
         overviewResponse.data,
         "Failed to load platform overview",
       );
-<<<<<<< HEAD
       const tenantPayload = unwrapApiResponse(tenantsResponse.data, "Failed to load tenants");
       const userPayload = unwrapApiResponse(usersResponse.data, "Failed to load users");
       const nextOverview = { ...FALLBACK_OVERVIEW, ...(overviewPayload || {}) };
@@ -236,43 +189,16 @@ export default function PlatformHealthPage() {
       setLoading(false);
     }
   }, [demoSnapshot, liveSnapshot, platformDataMode, platformLimitedAccess]);
-=======
-      const tenantPayload = unwrapApiResponse(
-        tenantsResponse.data,
-        "Failed to load tenants",
-      );
-      const userPayload = unwrapApiResponse(usersResponse.data, "Failed to load users");
-
-      setOverview({ ...FALLBACK_OVERVIEW, ...(overviewPayload || {}) });
-      setTenants(normalizePagination(tenantPayload, { page: 0, size: 100 }).items || []);
-      setUsers(normalizePagination(userPayload, { page: 0, size: 100 }).items || []);
-    } catch (snapshotError) {
-      setOverview(FALLBACK_OVERVIEW);
-      setTenants([]);
-      setUsers([]);
-      setError(getApiErrorMessage(snapshotError, "Failed to load platform health"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
->>>>>>> 0babf4d (Update frontend application)
 
   React.useEffect(() => {
     loadSnapshot();
   }, [loadSnapshot]);
 
   React.useEffect(() => {
-<<<<<<< HEAD
     if (platformDataMode === "live" && error && !platformLimitedAccess) {
       notify("Platform health is showing partial data right now.", "info");
     }
   }, [error, notify, platformDataMode, platformLimitedAccess]);
-=======
-    if (error) {
-      notify("Platform health is showing partial data right now.", "info");
-    }
-  }, [error, notify]);
->>>>>>> 0babf4d (Update frontend application)
 
   const enabledUsers = React.useMemo(
     () => users.filter((user) => resolvePlatformUserEnabled(user)).length,
@@ -289,14 +215,7 @@ export default function PlatformHealthPage() {
     [users],
   );
 
-<<<<<<< HEAD
   const pressureRows = React.useMemo(() => buildTenantPressureList(tenants), [tenants]);
-=======
-  const pressureRows = React.useMemo(
-    () => buildTenantPressureList(tenants),
-    [tenants],
-  );
->>>>>>> 0babf4d (Update frontend application)
 
   const pressuredTenants = pressureRows.filter(
     ({ seatUsage }) => seatUsage.nearLimit || seatUsage.overLimit,
@@ -307,14 +226,7 @@ export default function PlatformHealthPage() {
     [tenants, users],
   );
 
-<<<<<<< HEAD
   const planDistribution = React.useMemo(() => buildPlanDistribution(tenants), [tenants]);
-=======
-  const planDistribution = React.useMemo(
-    () => buildPlanDistribution(tenants),
-    [tenants],
-  );
->>>>>>> 0babf4d (Update frontend application)
 
   const healthScore = React.useMemo(() => {
     const penalties =
@@ -326,11 +238,8 @@ export default function PlatformHealthPage() {
     return Math.max(0, 100 - penalties);
   }, [activeAdmins, disabledUsers, overLimitTenants.length, overview.suspendedTenants]);
 
-<<<<<<< HEAD
   const healthStatus = React.useMemo(() => getHealthStatusMeta(healthScore), [healthScore]);
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   const activeTenantShare = React.useMemo(() => {
     const totalTenants = Number(overview.totalTenants || 0);
     if (!totalTenants) return "0%";
@@ -343,78 +252,48 @@ export default function PlatformHealthPage() {
     if (Number(overview.suspendedTenants || 0) > 0) {
       items.push({
         tone: "rose",
-<<<<<<< HEAD
         title: "Suspended workspaces",
         detail: `${formatNumber(overview.suspendedTenants)} suspended now.`,
-=======
-        title: "Suspended workspaces need review",
-        detail: `${formatNumber(overview.suspendedTenants)} tenant workspace(s) are suspended.`,
->>>>>>> 0babf4d (Update frontend application)
       });
     }
 
     if (overLimitTenants.length > 0) {
       items.push({
         tone: "rose",
-<<<<<<< HEAD
         title: "Team limits exceeded",
         detail: `${formatNumber(overLimitTenants.length)} over limit.`,
-=======
-        title: "Seat caps exceeded",
-        detail: `${formatNumber(overLimitTenants.length)} tenant(s) are above plan capacity.`,
->>>>>>> 0babf4d (Update frontend application)
       });
     }
 
     if (pressuredTenants.length > overLimitTenants.length) {
       items.push({
         tone: "amber",
-<<<<<<< HEAD
         title: "Team pressure rising",
         detail: `${formatNumber(pressuredTenants.length)} near limit.`,
-=======
-        title: "Capacity pressure building",
-        detail: `${formatNumber(pressuredTenants.length)} tenant(s) are near their seat ceiling.`,
->>>>>>> 0babf4d (Update frontend application)
       });
     }
 
     if (disabledUsers > 0) {
       items.push({
         tone: "amber",
-<<<<<<< HEAD
         title: "Inactive accounts",
         detail: `${formatNumber(disabledUsers)} accounts inactive.`,
-=======
-        title: "Disabled operator accounts detected",
-        detail: `${formatNumber(disabledUsers)} platform account(s) are inactive.`,
->>>>>>> 0babf4d (Update frontend application)
       });
     }
 
     if (activeAdmins < 2) {
       items.push({
         tone: "amber",
-<<<<<<< HEAD
         title: "Thin admin cover",
         detail: `Only ${formatNumber(activeAdmins)} admins active.`,
-=======
-        title: "Thin admin coverage",
-        detail: `Only ${formatNumber(activeAdmins)} enabled platform admin account(s) are active.`,
->>>>>>> 0babf4d (Update frontend application)
       });
     }
 
     if (items.length === 0) {
       items.push({
         tone: "green",
-<<<<<<< HEAD
         title: "Platform looks healthy",
         detail: "No urgent access or capacity risk.",
-=======
-        title: "Platform posture looks healthy",
-        detail: "No immediate seat, suspension, or operator-access risks detected.",
->>>>>>> 0babf4d (Update frontend application)
       });
     }
 
@@ -429,7 +308,6 @@ export default function PlatformHealthPage() {
 
   return (
     <div className="space-y-4">
-<<<<<<< HEAD
       <section className="grid gap-4 xl:grid-cols-[1.36fr_0.9fr]">
         <Card className="atlas-stage-card min-h-[250px] p-5 md:p-6">
           <div className="relative z-10 max-w-2xl">
@@ -588,84 +466,11 @@ export default function PlatformHealthPage() {
                       <div className="mt-1 text-xs leading-6 opacity-90">{item.detail}</div>
                     </div>
                   </div>
-=======
-      <Card className="p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-emerald-500/15 via-blue-500/10 to-violet-500/10 p-3">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-              Platform Health
-            </div>
-            <div className="mt-1 text-sm text-[var(--atlas-text-strong)]">
-              Live posture across tenant capacity, operator access, and workspace pressure.
-            </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={loadSnapshot} disabled={loading}>
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </Button>
-        </div>
-      </Card>
-
-      {error && (
-        <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
-          {error}
-        </div>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          icon={ShieldCheck}
-          label="Health Score"
-          value={`${healthScore}/100`}
-          hint="A blended score of capacity, suspensions, and access coverage."
-        />
-        <MetricCard
-          icon={Activity}
-          label="Active Workspace Share"
-          value={activeTenantShare}
-          hint={`${formatNumber(overview.activeTenants || 0)} of ${formatNumber(overview.totalTenants || 0)} tenants are active.`}
-        />
-        <MetricCard
-          icon={ShieldX}
-          label="Disabled Operators"
-          value={formatNumber(disabledUsers)}
-          hint="Platform accounts currently unable to sign in."
-        />
-        <MetricCard
-          icon={UserCog}
-          label="Active Platform Admins"
-          value={formatNumber(activeAdmins)}
-          hint="Enabled admin coverage for the control plane."
-        />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_380px]">
-        <div className="space-y-4">
-          <Card className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Risk Register
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Prioritized issues that could weaken tenant isolation or operator coverage.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {riskRegister.map((item) => (
-                <div
-                  key={item.title}
-                  className={`rounded-xl border px-3 py-3 ${toneClasses(item.tone)}`}
-                >
-                  <div className="text-sm font-semibold">{item.title}</div>
-                  <div className="mt-1 text-xs opacity-90">{item.detail}</div>
->>>>>>> 0babf4d (Update frontend application)
                 </div>
               ))}
             </div>
           </Card>
 
-<<<<<<< HEAD
           <Card className="atlas-data-shell space-y-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -679,37 +484,17 @@ export default function PlatformHealthPage() {
               <span className="rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
                 {formatNumber(pressuredTenants.length)} at risk
               </span>
-=======
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                  Tenant Capacity Watch
-                </h2>
-                <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                  Seat guardrails by tenant plan so overages do not hide inside the system.
-                </p>
-              </div>
-              <div className="rounded-full bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-xs font-semibold text-[var(--atlas-text-strong)]">
-                {formatNumber(pressuredTenants.length)} at risk
-              </div>
->>>>>>> 0babf4d (Update frontend application)
             </div>
 
             {pressureRows.length === 0 ? (
               <div className="rounded-xl border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-5 text-center text-sm text-[var(--atlas-muted)]">
-<<<<<<< HEAD
                 No tenants with finite team limits have been loaded yet.
-=======
-                No tenants with finite seat limits have been loaded yet.
->>>>>>> 0babf4d (Update frontend application)
               </div>
             ) : (
               <div className="space-y-3">
                 {pressureRows.slice(0, 6).map(({ tenant, seatUsage }) => (
                   <div
                     key={`pressure-${tenant.id}`}
-<<<<<<< HEAD
                     className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 p-4"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -722,20 +507,6 @@ export default function PlatformHealthPage() {
                         </div>
                       </div>
                       <span
-=======
-                    className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                          {tenant.name || tenant.slug}
-                        </div>
-                        <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                          {tenant.ownerEmail || "Owner email unavailable"} · {seatUsage.label} seats
-                        </div>
-                      </div>
-                      <div
->>>>>>> 0babf4d (Update frontend application)
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           seatUsage.overLimit
                             ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
@@ -749,17 +520,10 @@ export default function PlatformHealthPage() {
                           : seatUsage.nearLimit
                             ? "Near limit"
                             : "Healthy"}
-<<<<<<< HEAD
                       </span>
                     </div>
 
                     <div className="mt-4 h-2 rounded-full bg-[color:var(--atlas-border)]/70">
-=======
-                      </div>
-                    </div>
-
-                    <div className="mt-3 h-2 rounded-full bg-[color:var(--atlas-border)]">
->>>>>>> 0babf4d (Update frontend application)
                       <div
                         className={`h-2 rounded-full ${
                           seatUsage.overLimit
@@ -774,11 +538,7 @@ export default function PlatformHealthPage() {
                       />
                     </div>
                     <div className="mt-2 text-xs text-[var(--atlas-muted)]">
-<<<<<<< HEAD
                       {formatPercentLabel(seatUsage.usageRatio, 0)} of team limit used.
-=======
-                      {formatPercentLabel(seatUsage.usageRatio, 0)} of plan capacity used.
->>>>>>> 0babf4d (Update frontend application)
                     </div>
                   </div>
                 ))}
@@ -788,7 +548,6 @@ export default function PlatformHealthPage() {
         </div>
 
         <div className="space-y-4">
-<<<<<<< HEAD
           <Card className="atlas-data-shell space-y-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -802,16 +561,6 @@ export default function PlatformHealthPage() {
               <span className="rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
                 {formatNumber(liveSignals.length)} recent
               </span>
-=======
-          <Card className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Live Signals
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Recent tenant and operator changes visible from the control plane.
-              </p>
->>>>>>> 0babf4d (Update frontend application)
             </div>
 
             <div className="space-y-3">
@@ -823,20 +572,12 @@ export default function PlatformHealthPage() {
                 liveSignals.map((signal) => (
                   <div
                     key={signal.id}
-<<<<<<< HEAD
                     className="rounded-[1.2rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/70 px-4 py-4"
-=======
-                    className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3"
->>>>>>> 0babf4d (Update frontend application)
                   >
                     <div className="flex items-start gap-3">
                       <span className={`mt-1 h-2.5 w-2.5 rounded-full ${toneDotClass(signal.tone)}`} />
                       <div className="min-w-0 flex-1">
-<<<<<<< HEAD
                         <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
-=======
-                        <div className="text-xs uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
->>>>>>> 0babf4d (Update frontend application)
                           {signal.category}
                         </div>
                         <div className="mt-1 text-sm font-semibold text-[var(--atlas-text-strong)]">
@@ -845,11 +586,7 @@ export default function PlatformHealthPage() {
                         <div className="mt-1 text-sm text-[var(--atlas-text)]">
                           {signal.subject}
                         </div>
-<<<<<<< HEAD
                         <div className="mt-1 text-xs leading-5 text-[var(--atlas-muted)]">
-=======
-                        <div className="mt-1 text-xs text-[var(--atlas-muted)]">
->>>>>>> 0babf4d (Update frontend application)
                           {signal.detail}
                         </div>
                       </div>
@@ -863,7 +600,6 @@ export default function PlatformHealthPage() {
             </div>
           </Card>
 
-<<<<<<< HEAD
           <Card className="atlas-data-shell space-y-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -880,19 +616,6 @@ export default function PlatformHealthPage() {
             </div>
 
             <div className="space-y-4">
-=======
-          <Card className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold text-[var(--atlas-text-strong)]">
-                Plan Mix
-              </h2>
-              <p className="mt-1 text-sm text-[var(--atlas-muted)]">
-                Distribution of tenants by commercial tier.
-              </p>
-            </div>
-
-            <div className="space-y-3">
->>>>>>> 0babf4d (Update frontend application)
               {planDistribution.map((planItem) => {
                 const ratio =
                   tenants.length > 0 ? planItem.count / Math.max(tenants.length, 1) : 0;
@@ -907,15 +630,9 @@ export default function PlatformHealthPage() {
                         {formatNumber(planItem.count)} tenant(s)
                       </span>
                     </div>
-<<<<<<< HEAD
                     <div className="mt-2 h-2 rounded-full bg-[color:var(--atlas-border)]/70">
                       <div
                         className="h-2 rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-500 to-indigo-500"
-=======
-                    <div className="mt-2 h-2 rounded-full bg-[color:var(--atlas-border)]">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-emerald-500"
->>>>>>> 0babf4d (Update frontend application)
                         style={{ width: `${ratio * 100}%` }}
                       />
                     </div>
@@ -924,7 +641,6 @@ export default function PlatformHealthPage() {
               })}
             </div>
 
-<<<<<<< HEAD
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/75 p-4">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
@@ -948,14 +664,6 @@ export default function PlatformHealthPage() {
                 <div className="mt-2 text-xs text-[var(--atlas-muted)]">
                   {formatNumber(overview.totalTenants || 0)} total workspaces visible.
                 </div>
-=======
-            <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-3 text-sm text-[var(--atlas-muted)]">
-              <div className="font-semibold text-[var(--atlas-text-strong)]">
-                Enabled operators
-              </div>
-              <div className="mt-1">
-                {formatNumber(enabledUsers)} enabled out of {formatNumber(users.length)} total platform users.
->>>>>>> 0babf4d (Update frontend application)
               </div>
             </div>
           </Card>

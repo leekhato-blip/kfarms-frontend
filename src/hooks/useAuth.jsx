@@ -3,15 +3,12 @@ import React from "react";
 import { login as loginApi, logout as logoutApi, me as meApi } from "../services/authService";
 import { isDemoAccountUser, setDemoAccountHint } from "../auth/demoMode";
 import { clearQueuedMutations } from "../offline/offlineStore";
-<<<<<<< HEAD
 import apiClient, { clearWorkspaceToken, getWorkspaceToken, setWorkspaceToken } from "../api/apiClient";
 import {
   applyTenantUserProfile,
   saveTenantUserProfile,
 } from "../services/userProfileService";
 import { readTokenFromPayload } from "../utils/formatters";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 export const AuthContext = React.createContext(null);
 const AUTH_SESSION_HINT_KEY = "kf_auth_session_hint";
@@ -76,18 +73,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = React.useState(hasWorkspaceSessionBootstrap);
 
   const setSession = (userData) => {
-<<<<<<< HEAD
     const nextUser = applyTenantUserProfile(userData);
     setUser(nextUser);
     setIsAuthenticated(Boolean(nextUser));
     setSessionHint(Boolean(nextUser));
     const demoAccount = isDemoAccountUser(nextUser);
-=======
-    setUser(userData);
-    setIsAuthenticated(Boolean(userData));
-    setSessionHint(Boolean(userData));
-    const demoAccount = isDemoAccountUser(userData);
->>>>>>> 0babf4d (Update frontend application)
     setDemoAccountHint(demoAccount);
     if (demoAccount) {
       clearQueuedMutations();

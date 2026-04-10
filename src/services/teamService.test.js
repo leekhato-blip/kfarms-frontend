@@ -1,110 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const apiGet = vi.fn();
-<<<<<<< HEAD
 const apiPost = vi.fn();
 const apiPut = vi.fn();
 const apiPatch = vi.fn();
 const apiDelete = vi.fn();
-=======
->>>>>>> 0babf4d (Update frontend application)
-
-vi.mock("../api/apiClient", () => ({
-  default: {
-    get: apiGet,
-<<<<<<< HEAD
-    post: apiPost,
-    put: apiPut,
-    patch: apiPatch,
-    delete: apiDelete,
-  },
-}));
-
-describe("teamService", () => {
-  beforeEach(() => {
-    apiGet.mockReset();
-    apiPost.mockReset();
-    apiPut.mockReset();
-    apiPatch.mockReset();
-    apiDelete.mockReset();
-  });
-
-  it("normalizes team members", async () => {
-    apiGet.mockResolvedValue({
-      data: {
-        data: [
-          {
-            memberId: 11,
-            userId: 17,
-            username: "Grace",
-            email: "grace@farm.com",
-            role: "user",
-            roleLabel: "Operations Controller",
-            customRoleName: "Operations Controller",
-            permissions: ["users_view", "audit_view"],
-            active: true,
-            createdBy: "owner@farm.com",
-          },
-        ],
-      },
-    });
-
-    const { listTeamMembers } = await import("./teamService");
-    const result = await listTeamMembers();
-
-    expect(apiGet).toHaveBeenCalledWith("/tenant/members");
-    expect(result).toEqual([
-      expect.objectContaining({
-        memberId: 11,
-        userId: 17,
-        username: "Grace",
-        email: "grace@farm.com",
-        role: "STAFF",
-        roleLabel: "Operations Controller",
-        customRoleName: "Operations Controller",
-        permissions: ["USERS_VIEW", "AUDIT_VIEW"],
-        active: true,
-        createdBy: "owner@farm.com",
-      }),
-    ]);
-  });
-
-  it("normalizes invitations and builds a share link", async () => {
-    apiGet.mockResolvedValue({
-      data: {
-        data: [
-          {
-            invitationId: 7,
-            email: "invitee@farm.com",
-            role: "manager",
-            token: "join-token",
-            createdBy: "owner@farm.com",
-          },
-        ],
-      },
-    });
-
-    const { listPendingInvitations } = await import("./teamService");
-    const result = await listPendingInvitations();
-
-    expect(apiGet).toHaveBeenCalledWith("/tenant/invitations");
-    expect(result[0]).toMatchObject({
-      invitationId: 7,
-      email: "invitee@farm.com",
-      role: "MANAGER",
-      token: "join-token",
-      createdBy: "owner@farm.com",
-    });
-    expect(result[0].inviteLink).toBeTruthy();
-    expect(result[0].inviteLink === "join-token" || result[0].inviteLink.includes("token=join-token")).toBe(true);
-=======
-  },
-}));
-
-describe("teamService audit logs", () => {
-  beforeEach(() => {
-    apiGet.mockReset();
->>>>>>> 0babf4d (Update frontend application)
   });
 
   it("normalizes paginated audit log responses", async () => {
@@ -163,7 +63,6 @@ describe("teamService audit logs", () => {
       nextValue: "MANAGER",
     });
   });
-<<<<<<< HEAD
 
   it("creates invitations with normalized roles", async () => {
     apiPost.mockResolvedValue({
@@ -295,6 +194,4 @@ describe("teamService audit logs", () => {
 
     expect(apiDelete).toHaveBeenCalledWith("/tenant/invitations/13");
   });
-=======
->>>>>>> 0babf4d (Update frontend application)
 });

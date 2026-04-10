@@ -1,6 +1,5 @@
 import React from "react";
 
-<<<<<<< HEAD
 const THEME_KEY = "kf_theme";
 
 function getPreferredTheme() {
@@ -58,9 +57,6 @@ export default function PageLoader({ label = "Opening your farm…" }) {
     };
   }, []);
 
-=======
-export default function PageLoader({ label = "Opening your farm…" }) {
->>>>>>> 0babf4d (Update frontend application)
   const fallback = {
     position: "fixed",
     inset: 0,

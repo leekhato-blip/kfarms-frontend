@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-<<<<<<< HEAD
 import { useNavigate } from "react-router-dom";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import { formatFeedLabel, resolveFeedColor } from "../utils/feedChart";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -117,11 +114,7 @@ export default function FeedPie({
       return;
     }
 
-<<<<<<< HEAD
     navigate("/feeds");
-=======
-    window.location.href = "/feeds";
->>>>>>> 0babf4d (Update frontend application)
   };
 
   const renderEmpty = () => (

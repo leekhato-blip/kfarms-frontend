@@ -65,20 +65,10 @@ const EMPTY_SUMMARY = {
   lastUpdated: null,
 };
 
-<<<<<<< HEAD
-=======
-const currencyFormatter = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  maximumFractionDigits: 0,
-});
-
->>>>>>> 0babf4d (Update frontend application)
 function normalizeRole(value) {
   return String(value || "").trim().toUpperCase();
 }
 
-<<<<<<< HEAD
 function formatCurrency(value, currency = "NGN") {
   const numeric = Number(value || 0);
   return new Intl.NumberFormat(undefined, {
@@ -86,11 +76,6 @@ function formatCurrency(value, currency = "NGN") {
     currency: String(currency || "NGN").toUpperCase(),
     maximumFractionDigits: 0,
   }).format(Number.isFinite(numeric) ? numeric : 0);
-=======
-function formatCurrency(value) {
-  const numeric = Number(value || 0);
-  return currencyFormatter.format(Number.isFinite(numeric) ? numeric : 0);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function formatCount(value) {
@@ -331,10 +316,7 @@ function buildSystemSignals(summary) {
 
 export default function InventoryPage() {
   const { activeTenant, activeTenantId, tenantBootstrapDone } = useTenant();
-<<<<<<< HEAD
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
-=======
->>>>>>> 0babf4d (Update frontend application)
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [listLoading, setListLoading] = useState(true);
@@ -380,11 +362,7 @@ export default function InventoryPage() {
     ? "Add your first inventory item to start tracking stock levels, reorder pressure, and total store value from one view."
     : "Inventory tips will appear here once a farm manager records the first stock item.";
 
-<<<<<<< HEAD
   const loadSummary = React.useCallback(async ({ silent = false } = {}) => {
-=======
-  async function loadSummary({ silent = false } = {}) {
->>>>>>> 0babf4d (Update frontend application)
     if (!tenantBootstrapDone) return null;
     if (!activeTenantId) {
       setSummary(EMPTY_SUMMARY);
@@ -416,15 +394,9 @@ export default function InventoryPage() {
     } finally {
       setSummaryLoading(false);
     }
-<<<<<<< HEAD
   }, [activeTenantId, tenantBootstrapDone]);
 
   const loadInventory = React.useCallback(async (page = 0, { silent = false } = {}) => {
-=======
-  }
-
-  async function loadInventory(page = 0, { silent = false } = {}) {
->>>>>>> 0babf4d (Update frontend application)
     if (!tenantBootstrapDone) return null;
     if (!activeTenantId) {
       setItems([]);
@@ -478,31 +450,17 @@ export default function InventoryPage() {
     } finally {
       setListLoading(false);
     }
-<<<<<<< HEAD
   }, [activeTenantId, category, debouncedQuery, status, tenantBootstrapDone]);
-=======
-  }
->>>>>>> 0babf4d (Update frontend application)
 
   useEffect(() => {
     if (!tenantBootstrapDone) return;
     void loadSummary({ silent: true });
-<<<<<<< HEAD
   }, [loadSummary, tenantBootstrapDone]);
-=======
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTenantId, tenantBootstrapDone]);
->>>>>>> 0babf4d (Update frontend application)
 
   useEffect(() => {
     if (!tenantBootstrapDone) return;
     void loadInventory(0, { silent: true });
-<<<<<<< HEAD
   }, [loadInventory, tenantBootstrapDone]);
-=======
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTenantId, tenantBootstrapDone, debouncedQuery, category, status]);
->>>>>>> 0babf4d (Update frontend application)
 
   useEffect(() => {
     if (!detailItem?.id) return;
@@ -561,20 +519,12 @@ export default function InventoryPage() {
         {
           label: "Unit Cost",
           value: getItemUnitCost(detailItem)
-<<<<<<< HEAD
             ? formatCurrency(getItemUnitCost(detailItem), workspaceCurrency)
-=======
-            ? formatCurrency(getItemUnitCost(detailItem))
->>>>>>> 0babf4d (Update frontend application)
             : "—",
         },
         {
           label: "Stock Value",
-<<<<<<< HEAD
           value: formatCurrency(getItemTotalValue(detailItem), workspaceCurrency),
-=======
-          value: formatCurrency(getItemTotalValue(detailItem)),
->>>>>>> 0babf4d (Update frontend application)
         },
         { label: "Last Updated", value: formatDate(detailItem?.lastUpdated) },
         { label: "Note", value: detailItem?.note || "—", span: 2 },
@@ -671,10 +621,6 @@ export default function InventoryPage() {
     const pendingOffline = isOfflinePendingRecord(saved);
     setModalOpen(false);
     setEditing(null);
-<<<<<<< HEAD
-=======
-    setDetailItem(saved);
->>>>>>> 0babf4d (Update frontend application)
 
     setItems((current) => {
       if (editing) {
@@ -710,12 +656,9 @@ export default function InventoryPage() {
         ? `${getItemName(saved)} saved offline`
         : `${getItemName(saved)} ${actionLabel} successfully`,
       type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
       actionLabel: pendingOffline ? "" : "View item",
       onAction: pendingOffline ? undefined : () => setDetailItem(saved),
       duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
     });
   }
 
@@ -891,10 +834,6 @@ export default function InventoryPage() {
           detailItem && canDeleteOrRestore
             ? () => {
                 const target = detailItem;
-<<<<<<< HEAD
-=======
-                closeDetails();
->>>>>>> 0babf4d (Update frontend application)
                 askDelete(target);
               }
             : undefined
@@ -980,12 +919,9 @@ export default function InventoryPage() {
       <GlassToast
         message={toast.message}
         type={toast.type}
-<<<<<<< HEAD
         duration={toast.duration}
         actionLabel={toast.actionLabel}
         onAction={toast.onAction}
-=======
->>>>>>> 0babf4d (Update frontend application)
         onClose={() => setToast({ message: "", type: "info" })}
       />
 
@@ -1106,11 +1042,7 @@ export default function InventoryPage() {
                 icon={<Ban />}
                 title="Out of stock"
                 value={formatCount(summary.outOfStockCount)}
-<<<<<<< HEAD
                 subtitle={`Store value ${formatCurrency(summary.inventoryValue, workspaceCurrency)}`}
-=======
-                subtitle={`Store value ${formatCurrency(summary.inventoryValue)}`}
->>>>>>> 0babf4d (Update frontend application)
               />
             </>
           ) : (
@@ -1127,21 +1059,13 @@ export default function InventoryPage() {
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="space-y-4 xl:col-span-8">
-<<<<<<< HEAD
             <div className="rounded-xl border border-slate-200/80 bg-white/70 p-4 shadow-neo dark:border-white/10 dark:bg-darkCard/70 dark:shadow-dark">
-=======
-            <div className="rounded-xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
                 Search only when you want to narrow the list. Leave filters clear to
                 see everything in stock.
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-<<<<<<< HEAD
                 <label className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white/85 px-3 py-2 dark:border-white/15 dark:bg-white/10">
-=======
-                <label className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2">
->>>>>>> 0babf4d (Update frontend application)
                   <Search className="h-4 w-4 text-slate-500" />
                   <input
                     value={query}
@@ -1154,11 +1078,7 @@ export default function InventoryPage() {
                 <select
                   value={category}
                   onChange={(event) => setCategory(event.target.value)}
-<<<<<<< HEAD
                   className="rounded-lg border border-slate-200/80 bg-white/85 px-3 py-2 text-sm outline-none dark:border-white/15 dark:bg-white/10"
-=======
-                  className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm outline-none"
->>>>>>> 0babf4d (Update frontend application)
                 >
                   <option value="all">All Categories</option>
                   {INVENTORY_CATEGORIES.map((entry) => (
@@ -1171,11 +1091,7 @@ export default function InventoryPage() {
                 <select
                   value={status}
                   onChange={(event) => setStatus(event.target.value)}
-<<<<<<< HEAD
                   className="rounded-lg border border-slate-200/80 bg-white/85 px-3 py-2 text-sm outline-none dark:border-white/15 dark:bg-white/10"
-=======
-                  className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm outline-none"
->>>>>>> 0babf4d (Update frontend application)
                 >
                   <option value="all">All Status</option>
                   <option value="healthy">Healthy</option>
@@ -1285,19 +1201,11 @@ export default function InventoryPage() {
                             </td>
                             <td className="text-right">
                               {getItemUnitCost(item)
-<<<<<<< HEAD
                                 ? formatCurrency(getItemUnitCost(item), workspaceCurrency)
                                 : "—"}
                             </td>
                             <td className="text-right font-semibold">
                               {formatCurrency(getItemTotalValue(item), workspaceCurrency)}
-=======
-                                ? formatCurrency(getItemUnitCost(item))
-                                : "—"}
-                            </td>
-                            <td className="text-right font-semibold">
-                              {formatCurrency(getItemTotalValue(item))}
->>>>>>> 0babf4d (Update frontend application)
                             </td>
                             <td className="text-center">
                               <span

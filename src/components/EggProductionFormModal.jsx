@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Egg, Hash, Save, StickyNote } from "lucide-react";
-<<<<<<< HEAD
 import GuidedFormModal, {
   GUIDED_FORM_FIELD_CLASS,
   GUIDED_FORM_ICON_CLASS,
@@ -13,19 +12,11 @@ import GuidedFormModal, {
 } from "./GuidedFormModal";
 import { createEggRecord, updateEggRecord } from "../services/eggProductionService";
 import { todayDateInputValue } from "../utils/formInputs";
-=======
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
-import { createEggRecord, updateEggRecord } from "../services/eggProductionService";
->>>>>>> 0babf4d (Update frontend application)
 
 function defaultForm(layerBatches = []) {
   return {
     batchId: layerBatches[0]?.id ? String(layerBatches[0].id) : "",
-<<<<<<< HEAD
     collectionDate: todayDateInputValue(),
-=======
-    collectionDate: "",
->>>>>>> 0babf4d (Update frontend application)
     goodEggs: "",
     damagedEggs: "",
     note: "",
@@ -70,11 +61,7 @@ export default function EggProductionFormModal({
         batchId: initialData.batchId ? String(initialData.batchId) : "",
         collectionDate: initialData.collectionDate
           ? String(initialData.collectionDate).slice(0, 10)
-<<<<<<< HEAD
           : todayDateInputValue(),
-=======
-          : "",
->>>>>>> 0babf4d (Update frontend application)
         goodEggs: String(initialData.goodEggs ?? ""),
         damagedEggs: String(initialData.damagedEggs ?? ""),
         note: initialData.note ?? "",
@@ -96,14 +83,11 @@ export default function EggProductionFormModal({
 
   async function submit(event) {
     event.preventDefault();
-<<<<<<< HEAD
     if (step < PRODUCTION_STEPS.length - 1) {
       if (!hasBatches || !stepOneComplete) return;
       setStep((current) => Math.min(current + 1, PRODUCTION_STEPS.length - 1));
       return;
     }
-=======
->>>>>>> 0babf4d (Update frontend application)
     if (!hasBatches || !stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
@@ -145,11 +129,7 @@ export default function EggProductionFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Back
           </button>
@@ -157,11 +137,7 @@ export default function EggProductionFormModal({
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Cancel
           </button>
@@ -171,17 +147,12 @@ export default function EggProductionFormModal({
           <button
             type="button"
             disabled={!stepOneComplete}
-<<<<<<< HEAD
             onClick={(event) =>
               handleGuidedFormAdvanceClick(event, () => {
                 setStep(1);
               })
             }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
-=======
-            onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             Continue
           </button>
@@ -189,11 +160,7 @@ export default function EggProductionFormModal({
           <button
             type="submit"
             disabled={saving || !hasBatches || !stepOneComplete || !stepTwoComplete}
-<<<<<<< HEAD
             className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
-=======
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save record"}
@@ -234,13 +201,8 @@ export default function EggProductionFormModal({
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-<<<<<<< HEAD
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <Egg className={GUIDED_FORM_ICON_CLASS} />
-=======
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Egg className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                 Layer batch <Required />
               </label>
               <select
@@ -248,11 +210,7 @@ export default function EggProductionFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, batchId: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 required
               >
                 {layerBatches.map((batch) => (
@@ -264,13 +222,8 @@ export default function EggProductionFormModal({
             </div>
 
             <div>
-<<<<<<< HEAD
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <CalendarDays className={GUIDED_FORM_ICON_CLASS} />
-=======
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <CalendarDays className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                 Collection date <Required />
               </label>
               <input
@@ -279,11 +232,7 @@ export default function EggProductionFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, collectionDate: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 required
               />
             </div>
@@ -297,13 +246,8 @@ export default function EggProductionFormModal({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Hash className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Good eggs <Required />
                 </label>
                 <input
@@ -313,23 +257,14 @@ export default function EggProductionFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, goodEggs: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Hash className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Damaged eggs <Required />
                 </label>
                 <input
@@ -339,11 +274,7 @@ export default function EggProductionFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, damagedEggs: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 />
               </div>
@@ -366,13 +297,8 @@ export default function EggProductionFormModal({
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <StickyNote className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Note
             </label>
             <textarea
@@ -380,11 +306,7 @@ export default function EggProductionFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-<<<<<<< HEAD
               className={`${GUIDED_FORM_FIELD_CLASS} h-24 resize-none`}
-=======
-              className="h-24 w-full resize-none rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               placeholder="Optional notes about the collection"
             />
           </GuidedFormSection>

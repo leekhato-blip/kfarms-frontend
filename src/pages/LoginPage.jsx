@@ -2,41 +2,25 @@ import React from "react";
 import AuthCard from "../components/AuthCard";
 import AuthWatermark from "../components/AuthWatermark";
 import GlassToast from "../components/GlassToast";
-<<<<<<< HEAD
 import { PLATFORM_ONLY_WORKSPACE_MESSAGE, useAuth } from "../hooks/useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
-=======
-import { useAuth } from "../hooks/useAuth";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
->>>>>>> 0babf4d (Update frontend application)
 import PageWrapper from "../components/PageWrapper";
 import FloatingInput from "../components/FloatingInput";
 import PageLoader from "../components/PageLoader";
 import { getAuthTrustText } from "../constants/authCopy";
 import { useTenant } from "../tenant/TenantContext";
-<<<<<<< HEAD
 import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import {
   DEMO_ACCOUNT_EMAIL,
   DEMO_ACCOUNT_INFO,
   DEMO_ACCOUNT_PASSWORD,
-=======
-import {
-  DEMO_ACCOUNT_EMAIL,
-  DEMO_ACCOUNT_PASSWORD,
-  DEMO_ACCOUNT_USERNAME,
->>>>>>> 0babf4d (Update frontend application)
   isDemoAccountUser,
 } from "../auth/demoMode";
 import kfarmsLogo from "../assets/Kfarms_logo.png";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
-<<<<<<< HEAD
 import { writePendingContactVerification } from "../auth/contactVerificationStorage";
 import { waitForBackendConnection } from "../api/apiClient";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 /**
  * Login page:
@@ -48,11 +32,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loading: authLoading } = useAuth();
-<<<<<<< HEAD
   const { refreshTenants, ensureActiveTenant, setActiveTenant, resetTenantState } = useTenant();
-=======
-  const { refreshTenants, ensureActiveTenant, setActiveTenant } = useTenant();
->>>>>>> 0babf4d (Update frontend application)
   const brandName = "KFarms";
   const brandLogo = kfarmsLogo;
   const brandPrimaryColor = "#2563EB";
@@ -141,7 +121,6 @@ export default function LoginPage() {
     setLoaderLabel("Starting secure connection...");
     setInlineError("");
     try {
-<<<<<<< HEAD
       const backendReady = await waitForBackendConnection({ silent: false, intervalMs: 2500 });
       if (!backendReady) {
         setInlineError("The server is still starting. Please wait about 2-3 minutes, then try again.");
@@ -149,8 +128,6 @@ export default function LoginPage() {
       }
 
       setLoaderLabel("Signing you in...");
-=======
->>>>>>> 0babf4d (Update frontend application)
       const loggedInUser = await login({ identifier: nextIdentifier, password: nextPassword });
       loginSuccessRef.current = true;
       resetTenantState();
@@ -214,44 +191,23 @@ export default function LoginPage() {
     void submitLogin(identifier, password);
   }
 
-<<<<<<< HEAD
-=======
-  function handleUseDemoAccount() {
-    setIdentifier(DEMO_ACCOUNT_EMAIL);
-    setPassword(DEMO_ACCOUNT_PASSWORD);
-    setInlineError("");
-  }
-
->>>>>>> 0babf4d (Update frontend application)
   function handleDemoLogin() {
     setIdentifier(DEMO_ACCOUNT_EMAIL);
     setPassword(DEMO_ACCOUNT_PASSWORD);
     void submitLogin(DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD);
   }
-<<<<<<< HEAD
-=======
-
->>>>>>> 0babf4d (Update frontend application)
 
   return (
     <PageWrapper>
       {(loginLoaderVisible || authLoading) && (
         <PageLoader label={loaderLabel} />
       )}
-<<<<<<< HEAD
       <div className="relative app-full overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
-=======
-      <div className="relative app-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
->>>>>>> 0babf4d (Update frontend application)
         <AuthWatermark />
         <AuthThemeSwitcher />
         <Link
           to="/"
-<<<<<<< HEAD
           className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20 sm:left-4 sm:top-4"
-=======
-          className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/20"
->>>>>>> 0babf4d (Update frontend application)
           aria-label="Back to landing page"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -264,11 +220,7 @@ export default function LoginPage() {
           onClose={() => setToast({ message: "", type: "info" })}
         />
 
-<<<<<<< HEAD
         <div className="relative z-10 mx-auto grid h-full w-full max-w-4xl grid-cols-1 items-center gap-4 px-0 pb-4 pt-16 sm:px-4 sm:pb-6 sm:pt-20 md:grid-cols-2 md:gap-8">
-=======
-        <div className="relative z-10 w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center px-4">
->>>>>>> 0babf4d (Update frontend application)
           {/* Brand - Left side */}
           <div className="hidden md:flex flex-col items-start gap-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
@@ -335,11 +287,7 @@ export default function LoginPage() {
                       backgroundColor: brandPrimaryColor,
                       borderColor: `${brandPrimaryColor}66`,
                     }}
-<<<<<<< HEAD
                     className={`inline-flex min-h-11 w-full items-center justify-center rounded-md border px-3 py-2 text-sm font-header text-white transition-all duration-300 sm:w-auto ${
-=======
-                    className={`rounded-md border px-3 py-2 text-sm font-header text-white transition-all duration-300 ${
->>>>>>> 0babf4d (Update frontend application)
                       loading ? "pointer-events-none opacity-70" : "hover:bg-blue-600"
                     }`}
                   >
@@ -360,7 +308,6 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-<<<<<<< HEAD
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-2.5 dark:border-white/10 dark:bg-white/[0.04]">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-300">
@@ -381,8 +328,6 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-=======
->>>>>>> 0babf4d (Update frontend application)
                 <div className="text-xs text-slate-500 dark:text-slate-300">
                   <Link
                     to="/auth/forgot-password"
@@ -392,51 +337,7 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-<<<<<<< HEAD
                 <div className="flex items-center gap-2 pt-1 text-xs text-slate-400">
-=======
-                <div className="rounded-2xl border border-dashed border-emerald-200/80 bg-emerald-50/80 p-4 text-left dark:border-emerald-400/20 dark:bg-emerald-500/10">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">
-                        Demo Account
-                      </div>
-                      <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                        View the full product with sample data. All write actions are blocked because this is a showroom workspace.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleDemoLogin}
-                      className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                    >
-                      Enter demo mode
-                    </button>
-                  </div>
-
-                  <div className="mt-3 grid gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    <div>
-                      Username: <span className="font-mono text-slate-900 dark:text-slate-100">{DEMO_ACCOUNT_USERNAME}</span>
-                    </div>
-                    <div>
-                      Email: <span className="font-mono text-slate-900 dark:text-slate-100">{DEMO_ACCOUNT_EMAIL}</span>
-                    </div>
-                    <div>
-                      Password: <span className="font-mono text-slate-900 dark:text-slate-100">{DEMO_ACCOUNT_PASSWORD}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleUseDemoAccount}
-                    className="mt-3 text-xs font-semibold text-emerald-700 transition hover:text-emerald-600 dark:text-emerald-200"
-                  >
-                    Fill these demo credentials
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-slate-400 pt-2">
->>>>>>> 0babf4d (Update frontend application)
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Verified access • Only you can view your account.
                 </div>

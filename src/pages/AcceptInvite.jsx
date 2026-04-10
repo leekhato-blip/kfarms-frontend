@@ -127,46 +127,19 @@ export default function AcceptInvite() {
 
   return (
     <PageWrapper>
-<<<<<<< HEAD
       <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-sky-50 px-4 py-8 text-slate-900 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-slate-100">
         <AuthWatermark />
         <AuthThemeSwitcher />
-=======
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-8 text-slate-100">
-        <div className="mx-auto w-full max-w-xl">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20 transition"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
->>>>>>> 0babf4d (Update frontend application)
 
         <div className="relative z-10 mx-auto w-full max-w-5xl pt-12 sm:pt-14">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-<<<<<<< HEAD
               onClick={handleBack}
               className={ACTION_BUTTON_CLASS}
             >
               <ArrowLeft className="h-4 w-4" />
               Back
-=======
-              onClick={() => handleLogoutTo("/auth/login")}
-              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-semibold hover:bg-white/20 transition"
-            >
-              Sign out to Login
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLogoutTo("/")}
-              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-semibold hover:bg-white/20 transition"
-            >
-              Sign out to home
->>>>>>> 0babf4d (Update frontend application)
             </button>
 
             <div className="flex flex-wrap gap-2">
@@ -189,27 +162,11 @@ export default function AcceptInvite() {
             </div>
           </div>
 
-<<<<<<< HEAD
           <div className="mt-6 grid gap-6 lg:grid-cols-[0.92fr_minmax(0,1.08fr)]">
             <section className={PANEL_CLASS}>
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/12 dark:text-sky-200">
                 <MailCheck className="h-4 w-4" />
                 Team invite
-=======
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-200">
-              <MailCheck className="h-4 w-4" />
-              Team invite
-            </div>
-            <h1 className="text-2xl font-semibold">Join farm</h1>
-            <p className="mt-2 text-sm text-slate-300">
-              Paste your invite code below, or open this page with <code>?token=...</code>.
-            </p>
-
-            {error && (
-              <div className="mt-4 rounded-lg border border-red-400/30 bg-red-500/20 px-3 py-2 text-sm text-red-100">
-                {error}
->>>>>>> 0babf4d (Update frontend application)
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
                 Join your farm team
@@ -252,7 +209,6 @@ export default function AcceptInvite() {
               </div>
             </section>
 
-<<<<<<< HEAD
             <section className={PANEL_CLASS}>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300">
                 <Link2 className="h-4 w-4" />
@@ -316,30 +272,6 @@ export default function AcceptInvite() {
                 </Link>
               </div>
             </section>
-=======
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  submitting
-                    ? "cursor-not-allowed bg-sky-500/50"
-                    : "bg-sky-500 hover:bg-sky-400"
-                }`}
-                >
-                {submitting ? "Joining farm..." : "Join farm"}
-              </button>
-            </form>
-
-            <div className="mt-4 text-xs text-slate-400">
-              Need to create your own farm instead?{" "}
-              <Link
-                to="/onboarding/create-tenant"
-                className="text-sky-300 hover:underline"
-              >
-                Create farm
-              </Link>
-            </div>
->>>>>>> 0babf4d (Update frontend application)
           </div>
         </div>
       </div>

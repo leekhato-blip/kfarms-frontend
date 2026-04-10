@@ -236,12 +236,9 @@ function normalizeTicket(raw = {}) {
     category: String(raw.category || "General"),
     priority: normalizePriority(raw.priority, "MEDIUM"),
     status: normalizeStatus(raw.status, "OPEN"),
-<<<<<<< HEAD
     lane: String(raw.lane || "STANDARD").toUpperCase(),
     laneLabel: String(raw.laneLabel || ""),
     plan: String(raw.plan || raw.tenantPlan || "FREE").toUpperCase(),
-=======
->>>>>>> 0babf4d (Update frontend application)
     description: initialMessage || (normalizedMessages[0]?.body ?? ""),
     createdAt: raw.createdAt || new Date().toISOString(),
     updatedAt: raw.updatedAt || raw.createdAt || new Date().toISOString(),

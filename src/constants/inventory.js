@@ -10,7 +10,6 @@ export const INVENTORY_CATEGORIES = [
   "OTHER",
 ];
 
-<<<<<<< HEAD
 export const INVENTORY_UNITS = [
   { value: "units", label: "Units" },
   { value: "bags", label: "Bags" },
@@ -26,8 +25,6 @@ export const INVENTORY_UNITS = [
   { value: "trays", label: "Trays" },
 ];
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function formatInventoryCategoryLabel(value) {
   const normalized = String(value || "").trim().toUpperCase();
   if (!normalized) return "Other";

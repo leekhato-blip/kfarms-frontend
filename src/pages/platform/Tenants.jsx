@@ -8,24 +8,18 @@ import {
   ShieldAlert,
   Users,
 } from "lucide-react";
-<<<<<<< HEAD
 import { useOutletContext, useSearchParams } from "react-router-dom";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import Card from "../../components/Card";
 import Table from "../../components/Table";
 import Badge from "../../components/Badge";
 import Button from "../../components/Button";
 import EmptyState from "../../components/EmptyState";
-<<<<<<< HEAD
 import PlatformMetricCard from "../../components/PlatformMetricCard";
 import PlatformMobileSheet from "../../components/PlatformMobileSheet";
 import {
   PlatformInspectSection,
   PlatformInspectStatCard,
 } from "../../components/PlatformInspectPrimitives";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import { useToast } from "../../components/ToastProvider";
 import { cleanQueryParams, PLATFORM_ENDPOINTS } from "../../api/endpoints";
 import {
@@ -39,21 +33,17 @@ import {
   normalizePagination,
 } from "../../utils/formatters";
 import { PLAN_IDS } from "../../constants/plans";
-<<<<<<< HEAD
 import { getEnabledModuleOptions } from "../../tenant/tenantModules";
 import {
   getWorkspaceRoleLabel,
   normalizeWorkspaceRole,
 } from "../../utils/workspaceRoles";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import {
   buildTenantPressureList,
   formatPercentLabel,
   getSeatUsageSummary,
   getTenantId,
 } from "./platformInsights";
-<<<<<<< HEAD
 import { buildPlatformDemoSnapshot, buildPlatformLiveSnapshot } from "./platformWorkbench";
 
 const PLAN_OPTIONS = ["", ...PLAN_IDS];
@@ -130,29 +120,6 @@ function filterDemoTenants(tenants, { search = "", plan = "", status = "" } = {}
 
     return haystack.includes(query);
   });
-=======
-
-const PLAN_OPTIONS = ["", ...PLAN_IDS];
-const STATUS_OPTIONS = ["", "ACTIVE", "SUSPENDED"];
-
-function SnapshotTile({ icon, label, value, hint }) {
-  const IconComponent = icon;
-
-  return (
-    <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-          {label}
-        </div>
-        <IconComponent size={16} className="text-[var(--atlas-muted)]" />
-      </div>
-      <div className="mt-2 text-2xl font-semibold text-[var(--atlas-text-strong)]">
-        {value}
-      </div>
-      <div className="mt-1 text-xs text-[var(--atlas-muted)]">{hint}</div>
-    </div>
-  );
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function TenantDetailSkeleton() {
@@ -169,7 +136,6 @@ function TenantDetailSkeleton() {
   );
 }
 
-<<<<<<< HEAD
 function DetailTabButton({ active = false, label, count, onClick }) {
   return (
     <button
@@ -237,13 +203,6 @@ export default function PlatformTenantsPage() {
   const [search, setSearch] = React.useState(
     () => searchParamValue,
   );
-=======
-export default function PlatformTenantsPage() {
-  const { notify } = useToast();
-
-  const [searchInput, setSearchInput] = React.useState("");
-  const [search, setSearch] = React.useState("");
->>>>>>> 0babf4d (Update frontend application)
   const [plan, setPlan] = React.useState("");
   const [status, setStatus] = React.useState("");
   const [page, setPage] = React.useState(0);
@@ -263,7 +222,6 @@ export default function PlatformTenantsPage() {
   const [statusDraft, setStatusDraft] = React.useState("ACTIVE");
   const [savingPlan, setSavingPlan] = React.useState(false);
   const [savingStatus, setSavingStatus] = React.useState(false);
-<<<<<<< HEAD
   const [detailTab, setDetailTab] = React.useState("overview");
   const [memberSearchInput, setMemberSearchInput] = React.useState("");
   const [mobileInspectOpen, setMobileInspectOpen] = React.useState(false);
@@ -280,8 +238,6 @@ export default function PlatformTenantsPage() {
     selectTenant(tenantId);
     setMobileInspectOpen(true);
   }, [selectTenant]);
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -292,7 +248,6 @@ export default function PlatformTenantsPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
-<<<<<<< HEAD
   React.useEffect(() => {
     setSearchInput((current) => (current === searchParamValue ? current : searchParamValue));
     setSearch((current) => (current === searchParamValue ? current : searchParamValue));
@@ -316,13 +271,10 @@ export default function PlatformTenantsPage() {
     );
   }, [search, searchParamValue, setSearchParams]);
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   const fetchTenants = React.useCallback(async () => {
     setLoading(true);
     setError("");
 
-<<<<<<< HEAD
     if (platformDataMode === "demo") {
       const filteredTenants = filterDemoTenants(demoSnapshot.tenants, {
         search,
@@ -337,14 +289,11 @@ export default function PlatformTenantsPage() {
       return;
     }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
     try {
       const params = cleanQueryParams({ search, plan, status, page, size });
       const response = await platformAxios.get(PLATFORM_ENDPOINTS.tenants, { params });
       const payload = unwrapApiResponse(response.data, "Failed to load tenants");
       const normalized = normalizePagination(payload, { page, size });
-<<<<<<< HEAD
       const nextTenants = normalized.items || [];
       setTenants(nextTenants);
       setTotalItems(normalized.totalItems);
@@ -354,32 +303,18 @@ export default function PlatformTenantsPage() {
         platformLimitedAccess ? "" : getApiErrorMessage(fetchError, "Failed to load tenants"),
       );
       setTenants(liveSnapshot.tenants);
-=======
-
-      setTenants(normalized.items);
-      setTotalItems(normalized.totalItems);
-      setTotalPages(normalized.totalPages);
-    } catch (fetchError) {
-      setError(getApiErrorMessage(fetchError, "Failed to load tenants"));
-      setTenants([]);
->>>>>>> 0babf4d (Update frontend application)
       setTotalItems(0);
       setTotalPages(1);
     } finally {
       setLoading(false);
     }
-<<<<<<< HEAD
   }, [demoSnapshot.tenants, liveSnapshot.tenants, page, plan, platformDataMode, platformLimitedAccess, search, size, status]);
-=======
-  }, [page, plan, search, size, status]);
->>>>>>> 0babf4d (Update frontend application)
 
   React.useEffect(() => {
     fetchTenants();
   }, [fetchTenants]);
 
   React.useEffect(() => {
-<<<<<<< HEAD
     if (page <= totalPages - 1) return;
     setPage(Math.max(totalPages - 1, 0));
   }, [page, totalPages]);
@@ -395,10 +330,6 @@ export default function PlatformTenantsPage() {
     if (!selectionExists) {
       setSelectedTenantId(getTenantId(tenants[0]));
     }
-=======
-    if (selectedTenantId || tenants.length === 0) return;
-    setSelectedTenantId(getTenantId(tenants[0]));
->>>>>>> 0babf4d (Update frontend application)
   }, [selectedTenantId, tenants]);
 
   const loadTenantDetails = React.useCallback(
@@ -412,7 +343,6 @@ export default function PlatformTenantsPage() {
       setDetailsLoading(true);
       setDetailsError("");
 
-<<<<<<< HEAD
       if (platformDataMode === "demo") {
         const fallbackTenant =
           demoSnapshot.tenants.find((tenant) => getTenantId(tenant) === tenantId) ||
@@ -425,8 +355,6 @@ export default function PlatformTenantsPage() {
         return;
       }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
       try {
         const response = await platformAxios.get(PLATFORM_ENDPOINTS.tenantDetails(tenantId));
         const payload = unwrapApiResponse(response.data, "Failed to load tenant details");
@@ -434,7 +362,6 @@ export default function PlatformTenantsPage() {
         setPlanDraft(String(payload?.plan || "FREE").toUpperCase());
         setStatusDraft(String(payload?.status || "ACTIVE").toUpperCase());
       } catch (detailError) {
-<<<<<<< HEAD
         const fallbackTenant =
           tenants.find((tenant) => getTenantId(tenant) === tenantId) || null;
         setSelectedTenant(fallbackTenant);
@@ -445,26 +372,17 @@ export default function PlatformTenantsPage() {
             ? ""
             : getApiErrorMessage(detailError, "Failed to load tenant details"),
         );
-=======
-        setSelectedTenant(null);
-        setDetailsError(getApiErrorMessage(detailError, "Failed to load tenant details"));
->>>>>>> 0babf4d (Update frontend application)
       } finally {
         setDetailsLoading(false);
       }
     },
-<<<<<<< HEAD
     [demoSnapshot.tenants, platformDataMode, platformLimitedAccess, tenants],
-=======
-    [],
->>>>>>> 0babf4d (Update frontend application)
   );
 
   React.useEffect(() => {
     loadTenantDetails(selectedTenantId);
   }, [loadTenantDetails, selectedTenantId]);
 
-<<<<<<< HEAD
   React.useEffect(() => {
     if (!selectedTenantId && !loading) {
       setMobileInspectOpen(false);
@@ -477,10 +395,6 @@ export default function PlatformTenantsPage() {
       notify("Demo preview is read-only for tenant plan changes.", "info");
       return;
     }
-=======
-  const savePlan = React.useCallback(async () => {
-    if (!selectedTenantId || !planDraft) return;
->>>>>>> 0babf4d (Update frontend application)
 
     setSavingPlan(true);
     try {
@@ -489,10 +403,7 @@ export default function PlatformTenantsPage() {
         { plan: planDraft },
       );
       unwrapApiResponse(response.data, "Failed to update tenant plan");
-<<<<<<< HEAD
       syncTenantPlanOverride(selectedTenantId, planDraft);
-=======
->>>>>>> 0babf4d (Update frontend application)
       notify("Tenant plan updated", "success");
       await Promise.all([fetchTenants(), loadTenantDetails(selectedTenantId)]);
     } catch (mutationError) {
@@ -500,7 +411,6 @@ export default function PlatformTenantsPage() {
     } finally {
       setSavingPlan(false);
     }
-<<<<<<< HEAD
   }, [fetchTenants, loadTenantDetails, notify, planDraft, platformDataMode, selectedTenantId]);
 
   const saveStatus = React.useCallback(async () => {
@@ -509,12 +419,6 @@ export default function PlatformTenantsPage() {
       notify("Demo preview is read-only for tenant status changes.", "info");
       return;
     }
-=======
-  }, [fetchTenants, loadTenantDetails, notify, planDraft, selectedTenantId]);
-
-  const saveStatus = React.useCallback(async () => {
-    if (!selectedTenantId || !statusDraft) return;
->>>>>>> 0babf4d (Update frontend application)
 
     setSavingStatus(true);
     try {
@@ -530,11 +434,7 @@ export default function PlatformTenantsPage() {
     } finally {
       setSavingStatus(false);
     }
-<<<<<<< HEAD
   }, [fetchTenants, loadTenantDetails, notify, platformDataMode, selectedTenantId, statusDraft]);
-=======
-  }, [fetchTenants, loadTenantDetails, notify, selectedTenantId, statusDraft]);
->>>>>>> 0babf4d (Update frontend application)
 
   const activeTenantsOnPage = React.useMemo(
     () =>
@@ -560,7 +460,6 @@ export default function PlatformTenantsPage() {
     [selectedTenant, selectedTenantSummary],
   );
 
-<<<<<<< HEAD
   const memberRows = React.useMemo(
     () => (Array.isArray(selectedTenant?.members) ? selectedTenant.members : []),
     [selectedTenant?.members],
@@ -595,12 +494,6 @@ export default function PlatformTenantsPage() {
   const columns = [
     { key: "name", label: "Tenant", className: "min-w-[180px]" },
     { key: "appName", label: "App", className: "min-w-[140px]" },
-=======
-  const memberRows = Array.isArray(selectedTenant?.members) ? selectedTenant.members : [];
-
-  const columns = [
-    { key: "name", label: "Tenant", className: "min-w-[180px]" },
->>>>>>> 0babf4d (Update frontend application)
     { key: "plan", label: "Plan", className: "min-w-[120px]" },
     { key: "status", label: "Status", className: "min-w-[120px]" },
     { key: "ownerEmail", label: "Owner", className: "min-w-[260px]" },
@@ -612,7 +505,6 @@ export default function PlatformTenantsPage() {
 
   const selectedTenantName =
     selectedTenant?.name || selectedTenantSummary?.name || "Select a tenant";
-<<<<<<< HEAD
   const seatHealthLabel = selectedSeatUsage.overLimit
     ? "Over limit"
     : selectedSeatUsage.nearLimit
@@ -987,19 +879,6 @@ export default function PlatformTenantsPage() {
             </h1>
             <div className="mt-3 text-sm leading-7 text-[var(--atlas-muted)]">
               Track plans, team limits, and live status.
-=======
-
-  return (
-    <div className="space-y-4">
-      <Card className="p-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-violet-500/15 via-blue-500/10 to-emerald-500/10 p-3">
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-              Tenant Control
-            </div>
-            <div className="mt-1 text-sm text-[var(--atlas-text-strong)]">
-              Inspect organizations, tune plans, and confirm each tenant stays inside its own lane.
->>>>>>> 0babf4d (Update frontend application)
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={fetchTenants}>
@@ -1009,7 +888,6 @@ export default function PlatformTenantsPage() {
         </div>
       </Card>
 
-<<<<<<< HEAD
       <div className="atlas-platform-metric-grid-compact">
         <PlatformMetricCard
           className="platform-tenant-summary-card"
@@ -1042,32 +920,6 @@ export default function PlatformTenantsPage() {
           value={selectedSeatUsage.label}
           hint={`${selectedTenantName} seats in use.`}
           tone="blue"
-=======
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SnapshotTile
-          icon={Building2}
-          label="Filtered Tenants"
-          value={formatNumber(totalItems)}
-          hint="Based on the current search and plan filters."
-        />
-        <SnapshotTile
-          icon={Radar}
-          label="Active On Page"
-          value={formatNumber(activeTenantsOnPage)}
-          hint="Workspaces currently in active service."
-        />
-        <SnapshotTile
-          icon={Users}
-          label="Capacity Pressure"
-          value={formatNumber(pressuredTenantsOnPage)}
-          hint="Tenants approaching or exceeding their seat limits."
-        />
-        <SnapshotTile
-          icon={ShieldAlert}
-          label="Selected Scope"
-          value={selectedSeatUsage.label}
-          hint={`${selectedTenantName} team seats in use right now.`}
->>>>>>> 0babf4d (Update frontend application)
         />
       </div>
 
@@ -1077,15 +929,9 @@ export default function PlatformTenantsPage() {
         </div>
       )}
 
-<<<<<<< HEAD
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_minmax(360px,0.98fr)]">
         <div className="space-y-4">
           <Card className="atlas-data-shell">
-=======
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_420px]">
-        <div className="space-y-4">
-          <Card>
->>>>>>> 0babf4d (Update frontend application)
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
               <label className="relative block">
                 <Search
@@ -1096,13 +942,8 @@ export default function PlatformTenantsPage() {
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
-<<<<<<< HEAD
                   placeholder="Search name, slug, or owner"
                   className="h-11 w-full rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] pl-9 pr-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-violet-400/50"
-=======
-                  placeholder="Search name, slug, owner email"
-                  className="h-10 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] pl-9 pr-3 text-sm text-[var(--atlas-text-strong)] outline-none placeholder:text-[var(--atlas-muted-soft)] focus:border-blue-400/50"
->>>>>>> 0babf4d (Update frontend application)
                 />
               </label>
 
@@ -1112,11 +953,7 @@ export default function PlatformTenantsPage() {
                   setPlan(event.target.value);
                   setPage(0);
                 }}
-<<<<<<< HEAD
                 className="h-11 rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-=======
-                className="h-10 rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
->>>>>>> 0babf4d (Update frontend application)
               >
                 {PLAN_OPTIONS.map((option) => (
                   <option key={option || "all-plan"} value={option}>
@@ -1131,11 +968,7 @@ export default function PlatformTenantsPage() {
                   setStatus(event.target.value);
                   setPage(0);
                 }}
-<<<<<<< HEAD
                 className="h-11 rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-=======
-                className="h-10 rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
->>>>>>> 0babf4d (Update frontend application)
               >
                 {STATUS_OPTIONS.map((option) => (
                   <option key={option || "all-status"} value={option}>
@@ -1151,7 +984,6 @@ export default function PlatformTenantsPage() {
             </div>
           </Card>
 
-<<<<<<< HEAD
           <div className="space-y-3 xl:hidden">
             {loading
               ? Array.from({ length: 3 }).map((_, index) => (
@@ -1356,87 +1188,15 @@ export default function PlatformTenantsPage() {
               emptyMessage="Try a wider search."
             />
           </div>
-=======
-          <Table
-            columns={columns}
-            data={tenants}
-            loading={loading}
-            tableClassName="min-w-[1420px]"
-            rowKey={(tenant) => getTenantId(tenant)}
-            onRowClick={(tenant) => setSelectedTenantId(getTenantId(tenant))}
-            rowClassName="hover:bg-[color:var(--atlas-surface-hover)]"
-            renderRow={(tenant) => {
-              const tenantId = getTenantId(tenant);
-              const seatUsage = getSeatUsageSummary(tenant);
-              const isSelected = tenantId === selectedTenantId;
-
-              return (
-                <>
-                  <td className="px-4 py-3">
-                    <div className="font-semibold text-[var(--atlas-text-strong)]">
-                      {tenant.name || "-"}
-                    </div>
-                    <div className="text-xs text-[var(--atlas-muted)]">{tenant.slug || "-"}</div>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <Badge kind="plan" value={tenant.plan || "FREE"} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <Badge kind="status" value={tenant.status || "ACTIVE"} />
-                  </td>
-                  <td className="max-w-[280px] px-4 py-3 text-[var(--atlas-muted)]">
-                    <div className="truncate" title={tenant.ownerEmail || tenant.owner?.email || "-"}>
-                      {tenant.ownerEmail || tenant.owner?.email || "-"}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-[var(--atlas-muted)]">
-                    <div>{formatNumber(tenant.memberCount ?? tenant.membersCount ?? 0)}</div>
-                    <div className="text-xs text-[var(--atlas-muted-soft)]">
-                      {seatUsage.label} seats
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-[var(--atlas-muted)]">
-                    {formatDateTime(tenant.createdAt)}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-[var(--atlas-muted)]">
-                    {formatDateTime(tenant.lastActivityAt || tenant.lastActivity)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant={isSelected ? "primary" : "outline"}
-                      size="sm"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedTenantId(tenantId);
-                      }}
-                    >
-                      {isSelected ? "Inspecting" : "Inspect"}
-                    </Button>
-                  </td>
-                </>
-              );
-            }}
-            emptyTitle="No tenants found"
-            emptyMessage="Try a broader search or clear filters."
-          />
->>>>>>> 0babf4d (Update frontend application)
 
           {!loading && tenants.length === 0 && !error && (
             <EmptyState
               title="No tenants found"
-<<<<<<< HEAD
               message="No workspaces match this filter."
             />
           )}
 
           <Card className="atlas-data-shell flex flex-wrap items-center justify-between gap-3">
-=======
-              message="No organizations match your current filters."
-            />
-          )}
-
-          <Card className="flex flex-wrap items-center justify-between gap-3">
->>>>>>> 0babf4d (Update frontend application)
             <div className="text-sm text-[var(--atlas-muted)]">
               Page <span className="font-semibold text-[var(--atlas-text-strong)]">{page + 1}</span>
               {" "}of{" "}
@@ -1447,13 +1207,8 @@ export default function PlatformTenantsPage() {
               {formatNumber(totalItems)} total
             </div>
 
-<<<<<<< HEAD
             <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
               <label className="inline-flex items-center gap-2 whitespace-nowrap text-sm text-[var(--atlas-muted)]">
-=======
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-[var(--atlas-muted)]">
->>>>>>> 0babf4d (Update frontend application)
                 Size
                 <select
                   value={size}
@@ -1461,11 +1216,7 @@ export default function PlatformTenantsPage() {
                     setSize(Number(event.target.value));
                     setPage(0);
                   }}
-<<<<<<< HEAD
                   className="rounded-xl border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 py-1.5 text-sm text-[var(--atlas-text-strong)]"
-=======
-                  className="ml-2 rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-2 py-1 text-sm text-[var(--atlas-text-strong)]"
->>>>>>> 0babf4d (Update frontend application)
                 >
                   {[10, 20, 50].map((option) => (
                     <option key={option} value={option}>
@@ -1477,11 +1228,8 @@ export default function PlatformTenantsPage() {
 
               <Button
                 variant="outline"
-<<<<<<< HEAD
                 size="sm"
                 className="min-w-[5.75rem]"
-=======
->>>>>>> 0babf4d (Update frontend application)
                 onClick={() => setPage((prev) => Math.max(0, prev - 1))}
                 disabled={loading || page <= 0}
               >
@@ -1489,11 +1237,8 @@ export default function PlatformTenantsPage() {
               </Button>
               <Button
                 variant="outline"
-<<<<<<< HEAD
                 size="sm"
                 className="min-w-[4.75rem]"
-=======
->>>>>>> 0babf4d (Update frontend application)
                 onClick={() =>
                   setPage((prev) => Math.min(Math.max(totalPages - 1, 0), prev + 1))
                 }
@@ -1505,13 +1250,8 @@ export default function PlatformTenantsPage() {
           </Card>
         </div>
 
-<<<<<<< HEAD
         <div className="hidden xl:block xl:sticky xl:top-4 xl:self-start">
           <Card className="atlas-data-shell flex min-h-[34rem] flex-col overflow-hidden xl:max-h-[calc(100vh-8.5rem)]">
-=======
-        <div className="space-y-4">
-          <Card className="space-y-4">
->>>>>>> 0babf4d (Update frontend application)
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
@@ -1520,14 +1260,11 @@ export default function PlatformTenantsPage() {
                 <h2 className="mt-1 text-xl font-semibold text-[var(--atlas-text-strong)]">
                   {selectedTenantName}
                 </h2>
-<<<<<<< HEAD
                 {selectedTenantId ? (
                   <div className="mt-1 text-xs text-[var(--atlas-muted)]">
                     Review members, plan, and controls.
                   </div>
                 ) : null}
-=======
->>>>>>> 0babf4d (Update frontend application)
               </div>
               {selectedTenantId ? (
                 <Button
@@ -1541,7 +1278,6 @@ export default function PlatformTenantsPage() {
                 </Button>
               ) : null}
             </div>
-<<<<<<< HEAD
             {renderSelectedTenantInspectContent()}
           </Card>
         </div>
@@ -1573,239 +1309,6 @@ export default function PlatformTenantsPage() {
           {renderSelectedTenantInspectContent()}
         </div>
       </PlatformMobileSheet>
-=======
-
-            {!selectedTenantId && (
-              <EmptyState
-                title="Select a tenant"
-                message="Choose any row from the left to inspect members, plan posture, and module activity."
-              />
-            )}
-
-            {selectedTenantId && detailsLoading && <TenantDetailSkeleton />}
-
-            {selectedTenantId && detailsError && (
-              <div className="rounded-md border border-violet-300/60 bg-violet-50 px-3 py-2 text-sm text-violet-800 dark:border-violet-400/30 dark:bg-violet-500/20 dark:text-violet-100">
-                {detailsError}
-              </div>
-            )}
-
-            {selectedTenantId && !detailsLoading && !detailsError && selectedTenant && (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  <Badge kind="plan" value={selectedTenant.plan || "FREE"} />
-                  <Badge kind="status" value={selectedTenant.status || "ACTIVE"} />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-3">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                      Owner
-                    </div>
-                    <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {selectedTenant.ownerEmail || "Not available"}
-                    </div>
-                    <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                      Created {formatDateTime(selectedTenant.createdAt)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-3">
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                      Tenant Scope
-                    </div>
-                    <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {selectedSeatUsage.label} active seats
-                    </div>
-                    <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                      Last activity {formatDateTime(selectedTenant.lastActivityAt)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <SnapshotTile
-                    icon={Users}
-                    label="Members"
-                    value={formatNumber(selectedTenant.memberCount ?? memberRows.length)}
-                    hint="Owner, admins, managers, and staff."
-                  />
-                  <SnapshotTile
-                    icon={Building2}
-                    label="Records"
-                    value={formatNumber(selectedTenant.salesCount ?? 0)}
-                    hint="Sales already logged for this tenant."
-                  />
-                  <SnapshotTile
-                    icon={Radar}
-                    label="Poultry"
-                    value={formatNumber(selectedTenant.livestockCount ?? 0)}
-                    hint="Tracked poultry groups or flocks."
-                  />
-                  <SnapshotTile
-                    icon={ShieldAlert}
-                    label="Fish / Feed"
-                    value={`${formatNumber(selectedTenant.fishPondCount ?? 0)} / ${formatNumber(
-                      selectedTenant.feedItemCount ?? 0,
-                    )}`}
-                    hint="Ponds and feed records inside this tenant."
-                  />
-                </div>
-
-                <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                        Plan pressure
-                      </div>
-                      <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                        {selectedSeatUsage.hasFiniteLimit
-                          ? `${selectedSeatUsage.label} seats in use`
-                          : "Enterprise workspace with no seat cap"}
-                      </div>
-                    </div>
-                    <div
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        selectedSeatUsage.overLimit
-                          ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
-                          : selectedSeatUsage.nearLimit
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200"
-                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200"
-                      }`}
-                    >
-                      {selectedSeatUsage.overLimit
-                        ? "Over limit"
-                        : selectedSeatUsage.nearLimit
-                          ? "Near limit"
-                          : "Healthy"}
-                    </div>
-                  </div>
-
-                  {selectedSeatUsage.hasFiniteLimit ? (
-                    <>
-                      <div className="mt-3 h-2 rounded-full bg-[color:var(--atlas-border)]">
-                        <div
-                          className={`h-2 rounded-full ${
-                            selectedSeatUsage.overLimit
-                              ? "bg-rose-500"
-                              : selectedSeatUsage.nearLimit
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                          }`}
-                          style={{
-                            width: `${Math.min(selectedSeatUsage.usageRatio, 1) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="mt-2 text-xs text-[var(--atlas-muted)]">
-                        {formatPercentLabel(selectedSeatUsage.usageRatio, 0)} of available seats used.
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
-                    <span>Plan</span>
-                    <select
-                      value={planDraft}
-                      onChange={(event) => setPlanDraft(event.target.value)}
-                      className="h-10 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-                    >
-                      {PLAN_IDS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={savePlan}
-                      disabled={savingPlan || planDraft === String(selectedTenant.plan || "FREE").toUpperCase()}
-                    >
-                      <Save size={14} />
-                      {savingPlan ? "Saving..." : "Save plan"}
-                    </Button>
-                  </label>
-
-                  <label className="space-y-2 text-sm text-[var(--atlas-muted)]">
-                    <span>Status</span>
-                    <select
-                      value={statusDraft}
-                      onChange={(event) => setStatusDraft(event.target.value)}
-                      className="h-10 w-full rounded-md border border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-input-bg)] px-3 text-sm text-[var(--atlas-text-strong)] outline-none"
-                    >
-                      {STATUS_OPTIONS.filter(Boolean).map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={saveStatus}
-                      disabled={
-                        savingStatus ||
-                        statusDraft === String(selectedTenant.status || "ACTIVE").toUpperCase()
-                      }
-                    >
-                      <Save size={14} />
-                      {savingStatus ? "Saving..." : "Save status"}
-                    </Button>
-                  </label>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      Members
-                    </div>
-                    <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                      Live membership list for this tenant workspace.
-                    </div>
-                  </div>
-
-                  {memberRows.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-[color:var(--atlas-border-strong)] px-3 py-5 text-center text-sm text-[var(--atlas-muted)]">
-                      No member records were returned for this tenant yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {memberRows.map((member) => (
-                        <div
-                          key={member.id}
-                          className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-3 py-3"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                                {member.fullName || member.email || "Member"}
-                              </div>
-                              <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                                {member.email || "No email"}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Badge kind="role" value={member.role || "STAFF"} />
-                              <Badge
-                                kind="active"
-                                value={member.active ? "ENABLED" : "DISABLED"}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </Card>
-        </div>
-      </div>
->>>>>>> 0babf4d (Update frontend application)
     </div>
   );
 }

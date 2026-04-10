@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Activity, Calendar, Droplets, Fish, Hash, Save, StickyNote } from "lucide-react";
-<<<<<<< HEAD
 import GuidedFormModal, {
   GUIDED_FORM_FIELD_CLASS,
   GUIDED_FORM_ICON_CLASS,
@@ -11,9 +10,6 @@ import GuidedFormModal, {
   GuidedFormSection,
   handleGuidedFormAdvanceClick,
 } from "./GuidedFormModal";
-=======
-import GuidedFormModal, { GuidedFormSection } from "./GuidedFormModal";
->>>>>>> 0babf4d (Update frontend application)
 import { createFishPond, updateFishPond } from "../services/fishPondService";
 import { todayDateInputValue } from "../utils/formInputs";
 
@@ -83,14 +79,11 @@ export default function FishPondFormModal({
 
   async function submit(event) {
     event.preventDefault();
-<<<<<<< HEAD
     if (step < POND_STEPS.length - 1) {
       if (!stepOneComplete) return;
       setStep((current) => Math.min(current + 1, POND_STEPS.length - 1));
       return;
     }
-=======
->>>>>>> 0babf4d (Update frontend application)
     if (!stepOneComplete || !stepTwoComplete) return;
 
     setSaving(true);
@@ -128,11 +121,7 @@ export default function FishPondFormModal({
           <button
             type="button"
             onClick={() => setStep((current) => Math.max(current - 1, 0))}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Back
           </button>
@@ -140,11 +129,7 @@ export default function FishPondFormModal({
           <button
             type="button"
             onClick={onClose}
-<<<<<<< HEAD
             className={GUIDED_FORM_SECONDARY_BUTTON_CLASS}
-=======
-            className="rounded-lg border border-white/15 bg-white/40 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white/70 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
->>>>>>> 0babf4d (Update frontend application)
           >
             Cancel
           </button>
@@ -154,17 +139,12 @@ export default function FishPondFormModal({
           <button
             type="button"
             disabled={!stepOneComplete}
-<<<<<<< HEAD
             onClick={(event) =>
               handleGuidedFormAdvanceClick(event, () => {
                 setStep(1);
               })
             }
             className={GUIDED_FORM_PRIMARY_BUTTON_CLASS}
-=======
-            onClick={() => setStep(1)}
-            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             Continue
           </button>
@@ -172,11 +152,7 @@ export default function FishPondFormModal({
           <button
             type="submit"
             disabled={saving || !stepOneComplete || !stepTwoComplete}
-<<<<<<< HEAD
             className={GUIDED_FORM_PRIMARY_SUBMIT_BUTTON_CLASS}
-=======
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
->>>>>>> 0babf4d (Update frontend application)
           >
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : editing ? "Save changes" : "Save pond"}
@@ -208,13 +184,8 @@ export default function FishPondFormModal({
         >
           <div className="space-y-4">
             <div>
-<<<<<<< HEAD
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <Droplets className={GUIDED_FORM_ICON_CLASS} />
-=======
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Droplets className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                 Pond name <Required />
               </label>
               <input
@@ -222,11 +193,7 @@ export default function FishPondFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, pondName: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 placeholder="e.g. Grow out pond 1"
                 autoFocus
                 required
@@ -235,13 +202,8 @@ export default function FishPondFormModal({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Fish className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Fish className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Pond type <Required />
                 </label>
                 <select
@@ -249,11 +211,7 @@ export default function FishPondFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, pondType: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 >
                   <option value="HATCHING">Hatching</option>
@@ -264,13 +222,8 @@ export default function FishPondFormModal({
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Activity className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Activity className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Status <Required />
                 </label>
                 <select
@@ -278,11 +231,7 @@ export default function FishPondFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, status: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   required
                 >
                   <option value="ACTIVE">Active</option>
@@ -301,13 +250,8 @@ export default function FishPondFormModal({
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Hash className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Capacity <Required />
                 </label>
                 <input
@@ -317,24 +261,15 @@ export default function FishPondFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, capacity: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="e.g. 2000"
                   required
                 />
               </div>
 
               <div>
-<<<<<<< HEAD
                 <label className={GUIDED_FORM_LABEL_CLASS}>
                   <Hash className={GUIDED_FORM_ICON_CLASS} />
-=======
-                <label className="mb-1 flex items-center gap-2 text-xs">
-                  <Hash className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                   Current stock <Required />
                 </label>
                 <input
@@ -344,11 +279,7 @@ export default function FishPondFormModal({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, currentStock: event.target.value }))
                   }
-<<<<<<< HEAD
                   className={GUIDED_FORM_FIELD_CLASS}
-=======
-                  className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                   placeholder="e.g. 1500"
                   required
                 />
@@ -356,13 +287,8 @@ export default function FishPondFormModal({
             </div>
 
             <div className="mt-4">
-<<<<<<< HEAD
               <label className={GUIDED_FORM_LABEL_CLASS}>
                 <Calendar className={GUIDED_FORM_ICON_CLASS} />
-=======
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <Calendar className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
                 Last water change <Required />
               </label>
               <input
@@ -371,11 +297,7 @@ export default function FishPondFormModal({
                 onChange={(event) =>
                   setForm((current) => ({ ...current, lastWaterChange: event.target.value }))
                 }
-<<<<<<< HEAD
                 className={GUIDED_FORM_FIELD_CLASS}
-=======
-                className="w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
                 required
               />
             </div>
@@ -385,13 +307,8 @@ export default function FishPondFormModal({
             title="Optional note"
             description="Use this only if there is anything helpful to remember later."
           >
-<<<<<<< HEAD
             <label className={GUIDED_FORM_LABEL_CLASS}>
               <StickyNote className={GUIDED_FORM_ICON_CLASS} />
-=======
-            <label className="mb-1 flex items-center gap-2 text-xs">
-              <StickyNote className="h-4 w-4 text-slate-500" />
->>>>>>> 0babf4d (Update frontend application)
               Note
             </label>
             <textarea
@@ -399,11 +316,7 @@ export default function FishPondFormModal({
               onChange={(event) =>
                 setForm((current) => ({ ...current, note: event.target.value }))
               }
-<<<<<<< HEAD
               className={`${GUIDED_FORM_FIELD_CLASS} min-h-[96px]`}
-=======
-              className="min-h-[96px] w-full rounded-lg bg-white/80 p-3 outline-none dark:bg-black/60"
->>>>>>> 0babf4d (Update frontend application)
               placeholder="Optional note about this pond"
             />
           </GuidedFormSection>

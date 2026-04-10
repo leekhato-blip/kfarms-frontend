@@ -2,10 +2,7 @@ import React from "react";
 import GlassToast from "../components/GlassToast";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
-<<<<<<< HEAD
 import WorkspaceBottomNav from "../components/WorkspaceBottomNav";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import SupportAssistantWidget from "../components/SupportAssistantWidget";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -52,17 +49,11 @@ export default function DashboardLayout({ children }) {
               </p>
             </section>
           )}
-<<<<<<< HEAD
           <main data-route-scroll className="mt-6 flex-1 pb-32 md:pb-8">
             {children}
           </main>
 
           <footer className="mt-auto -mx-4 overflow-hidden border-t border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(240,246,252,0.92))] pb-[calc(env(safe-area-inset-bottom,0px)+7rem)] shadow-neo backdrop-blur-xl md:-mx-6 md:pb-0 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,17,32,0.84),rgba(12,26,46,0.92))] dark:shadow-dark">
-=======
-          <main className="mt-6 flex-1 pb-8">{children}</main>
-
-          <footer className="mt-auto -mx-4 overflow-hidden border-t border-white/10 bg-white/70 shadow-neo backdrop-blur-xl md:-mx-6 dark:bg-darkCard/75 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
             <div className="relative px-4 py-4 md:px-6">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_50%,rgba(14,165,233,0.15),transparent_42%),radial-gradient(circle_at_92%_50%,rgba(16,185,129,0.16),transparent_44%)]" />
               <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -76,21 +67,13 @@ export default function DashboardLayout({ children }) {
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                   <a
                     className="rounded-full border border-white/20 bg-white/50 px-3 py-1 text-slate-600 transition hover:border-accent-primary/35 hover:text-accent-primary dark:bg-white/10 dark:text-slate-200"
-<<<<<<< HEAD
                     href="/product-profile#plans"
-=======
-                    href="/company-profile#plans"
->>>>>>> 0babf4d (Update frontend application)
                   >
                     Pricing
                   </a>
                   <a
                     className="rounded-full border border-white/20 bg-white/50 px-3 py-1 text-slate-600 transition hover:border-accent-primary/35 hover:text-accent-primary dark:bg-white/10 dark:text-slate-200"
-<<<<<<< HEAD
                     href="/product-profile#contact"
-=======
-                    href="/company-profile#contact"
->>>>>>> 0babf4d (Update frontend application)
                   >
                     Contact
                   </a>
@@ -106,10 +89,7 @@ export default function DashboardLayout({ children }) {
           </footer>
         </div>
       </div>
-<<<<<<< HEAD
       <WorkspaceBottomNav />
-=======
->>>>>>> 0babf4d (Update frontend application)
       <GlassToast
         message={demoToast}
         type="info"

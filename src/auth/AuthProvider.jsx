@@ -3,7 +3,6 @@ import React from "react";
 import {
   clearPlatformSession,
   getPlatformToken,
-<<<<<<< HEAD
   getPlatformTenantId,
   getApiErrorMessage,
   PLATFORM_JWT_FALLBACK_KEY,
@@ -75,53 +74,31 @@ export function PlatformAuthProvider({ children }) {
     setPlatformToken(nextToken);
     setProfileLoading(Boolean(nextToken));
     setUser(null);
-=======
-  PLATFORM_JWT_FALLBACK_KEY,
-  PLATFORM_TOKEN_KEY,
-  setPlatformToken,
-} from "../api/platformClient";
-
-const PlatformAuthContext = React.createContext(null);
-
-export function PlatformAuthProvider({ children }) {
-  const [token, setToken] = React.useState(() => getPlatformToken());
-
-  const login = React.useCallback((nextToken) => {
-    setPlatformToken(nextToken);
->>>>>>> 0babf4d (Update frontend application)
     setToken(nextToken);
   }, []);
 
   const logout = React.useCallback(() => {
     clearPlatformSession();
     setToken("");
-<<<<<<< HEAD
     setUser(null);
     setProfileLoading(false);
-=======
->>>>>>> 0babf4d (Update frontend application)
   }, []);
 
   React.useEffect(() => {
     const onStorage = (event) => {
       if (event.key !== PLATFORM_TOKEN_KEY && event.key !== PLATFORM_JWT_FALLBACK_KEY) return;
-<<<<<<< HEAD
       const nextToken = getPlatformToken();
       setToken(nextToken);
       setProfileLoading(Boolean(nextToken));
       if (!nextToken) {
         setUser(null);
       }
-=======
-      setToken(getPlatformToken());
->>>>>>> 0babf4d (Update frontend application)
     };
 
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-<<<<<<< HEAD
   React.useEffect(() => {
     let active = true;
 
@@ -240,16 +217,6 @@ export function PlatformAuthProvider({ children }) {
       updateProfile,
     }),
     [token, user, profileLoading, login, logout, updateProfile],
-=======
-  const value = React.useMemo(
-    () => ({
-      token,
-      isAuthenticated: Boolean(token),
-      login,
-      logout,
-    }),
-    [token, login, logout],
->>>>>>> 0babf4d (Update frontend application)
   );
 
   return <PlatformAuthContext.Provider value={value}>{children}</PlatformAuthContext.Provider>;

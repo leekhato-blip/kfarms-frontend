@@ -1,5 +1,4 @@
 import React from "react";
-<<<<<<< HEAD
 import {
   AlertTriangle,
   CheckCheck,
@@ -13,15 +12,10 @@ import {
   getBackendConnectionSnapshot,
   probeBackendConnection,
 } from "../api/apiClient";
-=======
-import { AlertTriangle, CheckCircle2, X } from "lucide-react";
-import { probeBackendConnection } from "../api/apiClient";
->>>>>>> 0babf4d (Update frontend application)
 import {
   getOfflineQueueSnapshot,
   getOfflineSyncSnapshot,
 } from "../offline/offlineStore";
-<<<<<<< HEAD
 
 const AUTO_PROBE_INTERVAL_MS = 8000;
 const BACKEND_DOWN_DEBOUNCE_MS = 4200;
@@ -41,20 +35,10 @@ export default function BackendRecoveryPrompt() {
       typeof document !== "undefined" &&
       document.documentElement.classList.contains("dark"),
   );
-=======
-
-export default function BackendRecoveryPrompt() {
-  const [backendDown, setBackendDown] = React.useState(false);
-  const [browserOffline, setBrowserOffline] = React.useState(
-    () => typeof window !== "undefined" && !window.navigator.onLine,
-  );
-  const [showRecovered, setShowRecovered] = React.useState(false);
->>>>>>> 0babf4d (Update frontend application)
   const [dismissed, setDismissed] = React.useState(false);
   const [probingConnection, setProbingConnection] = React.useState(false);
   const [queueSnapshot, setQueueSnapshot] = React.useState(() => getOfflineQueueSnapshot());
   const [syncSnapshot, setSyncSnapshot] = React.useState(() => getOfflineSyncSnapshot());
-<<<<<<< HEAD
   const [suppressSettledStatuses, setSuppressSettledStatuses] = React.useState(false);
   const [showSyncSuccess, setShowSyncSuccess] = React.useState(false);
   const backendDownTimerRef = React.useRef(null);
@@ -156,24 +140,6 @@ export default function BackendRecoveryPrompt() {
       setProbingConnection(false);
     }
   }, [clearBackendDownTimer, scheduleBackendRecovery]);
-=======
-  const hideRecoveredTimerRef = React.useRef(null);
->>>>>>> 0babf4d (Update frontend application)
-
-  const requestBackendProbe = React.useCallback(async ({ triggerSync = false } = {}) => {
-    if (typeof window === "undefined") return false;
-
-    setProbingConnection(true);
-    try {
-      const reachable = await probeBackendConnection();
-      if (reachable && triggerSync) {
-        window.dispatchEvent(new Event("kf-offline-sync-requested"));
-      }
-      return reachable;
-    } finally {
-      setProbingConnection(false);
-    }
-  }, []);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -207,7 +173,6 @@ export default function BackendRecoveryPrompt() {
     };
 
     const handleBrowserOffline = () => {
-<<<<<<< HEAD
       clearBackendDownTimer();
       clearBackendRecoveryTimer();
       setBrowserOffline(true);
@@ -227,18 +192,6 @@ export default function BackendRecoveryPrompt() {
       setQueueSnapshot(event?.detail || getOfflineQueueSnapshot());
     };
 
-=======
-      setBrowserOffline(true);
-      handleDown();
-    };
-    const handleBrowserOnline = () => {
-      setBrowserOffline(false);
-      void requestBackendProbe();
-    };
-    const handleQueueUpdated = (event) => {
-      setQueueSnapshot(event?.detail || getOfflineQueueSnapshot());
-    };
->>>>>>> 0babf4d (Update frontend application)
     const handleSyncUpdated = (event) => {
       setSyncSnapshot(event?.detail || getOfflineSyncSnapshot());
     };
@@ -251,14 +204,9 @@ export default function BackendRecoveryPrompt() {
     window.addEventListener("kf-offline-sync-state", handleSyncUpdated);
 
     if (!window.navigator.onLine) {
-<<<<<<< HEAD
       clearBackendDownTimer();
       setBrowserOffline(true);
       setDismissed(false);
-=======
-      setBrowserOffline(true);
-      handleDown();
->>>>>>> 0babf4d (Update frontend application)
     }
 
     return () => {
@@ -273,7 +221,6 @@ export default function BackendRecoveryPrompt() {
       window.removeEventListener("kf-offline-queue-updated", handleQueueUpdated);
       window.removeEventListener("kf-offline-sync-state", handleSyncUpdated);
     };
-<<<<<<< HEAD
   }, [
     clearBackendDownTimer,
     clearBackendRecoveryTimer,
@@ -284,15 +231,10 @@ export default function BackendRecoveryPrompt() {
   ]);
 
   const hasWorkspaceSession = Boolean(getWorkspaceToken());
-=======
-  }, [requestBackendProbe]);
-
->>>>>>> 0babf4d (Update frontend application)
   const queuedChanges = Number(queueSnapshot.total || 0);
   const failedChanges = Number(queueSnapshot.failed || 0);
   const syncingChanges = syncSnapshot.status === "syncing";
   const pausedSync = syncSnapshot.status === "paused";
-<<<<<<< HEAD
   const hasConnectionIssue = browserOffline || backendDown;
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
   const onLoginPage = pathname === "/auth/login";
@@ -496,45 +438,10 @@ export default function BackendRecoveryPrompt() {
       : ""
   }`;
   const showActionButton = Boolean(status.actionLabel) && !browserOffline;
-=======
-  const hasConnectionIssue = browserOffline || backendDown || pausedSync;
-  const shouldShowQueuePrompt = !hasConnectionIssue && queuedChanges > 0;
-
-  if ((!hasConnectionIssue && !showRecovered && !shouldShowQueuePrompt) || dismissed) return null;
-
-  const title = browserOffline
-    ? "Working offline"
-    : backendDown || pausedSync
-      ? "Connection interrupted"
-    : syncingChanges
-      ? "Syncing saved changes"
-      : failedChanges > 0
-        ? "Some changes need attention"
-        : queuedChanges > 0
-          ? "Saved changes are waiting"
-          : "Connection restored";
-
-  const description = browserOffline
-    ? queuedChanges > 0
-      ? `${queuedChanges} change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} saved locally. Keep working and we will sync automatically when the server is back.`
-      : "You can still review cached data and save basic work locally until the server is back."
-    : backendDown || pausedSync
-      ? queuedChanges > 0
-        ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} waiting while we reconnect to the server.`
-        : "We cannot reach the server right now. We will try again automatically."
-    : syncingChanges
-      ? `Syncing ${Math.max(Number(syncSnapshot.total || 0) - Number(syncSnapshot.remaining || 0), 0)} of ${Number(syncSnapshot.total || 0)} saved change${Number(syncSnapshot.total || 0) === 1 ? "" : "s"}.`
-      : failedChanges > 0
-        ? `${failedChanges} saved change${failedChanges === 1 ? "" : "s"} could not sync yet. You can try again now.`
-        : queuedChanges > 0
-          ? `${queuedChanges} saved change${queuedChanges === 1 ? "" : "s"} ${queuedChanges === 1 ? "is" : "are"} queued and ready to sync.`
-          : "You’re back online. Data should refresh automatically.";
->>>>>>> 0babf4d (Update frontend application)
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-[12000] flex justify-center px-3 sm:top-4">
       <div
-<<<<<<< HEAD
         className={`pointer-events-auto inline-flex max-w-[min(94vw,30rem)] items-center gap-2.5 rounded-full border px-3 py-2 shadow-[0_18px_35px_rgba(15,23,42,0.16)] backdrop-blur-xl ${
           isDark
             ? "shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
@@ -552,73 +459,6 @@ export default function BackendRecoveryPrompt() {
         <div className="min-w-0 flex-1">
           <div className="truncate text-[0.76rem] font-semibold uppercase tracking-[0.16em] opacity-80">
             {status.label}
-=======
-        className={`rounded-2xl border px-4 py-3 shadow-neo dark:shadow-dark ${
-          hasConnectionIssue
-            ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/50 dark:bg-amber-950 dark:text-amber-100"
-            : failedChanges > 0
-              ? "border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-500/40 dark:bg-rose-950 dark:text-rose-100"
-            : "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-500/50 dark:bg-emerald-950 dark:text-emerald-100"
-        }`}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={`mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full ${
-              hasConnectionIssue
-                ? "bg-amber-200 text-amber-700 dark:bg-amber-700/30 dark:text-amber-200"
-                : failedChanges > 0
-                  ? "bg-rose-200 text-rose-700 dark:bg-rose-700/30 dark:text-rose-200"
-                : "bg-emerald-200 text-emerald-700 dark:bg-emerald-700/30 dark:text-emerald-200"
-            }`}
-          >
-            {hasConnectionIssue || failedChanges > 0 ? (
-              <AlertTriangle className="h-4 w-4" />
-            ) : (
-              <CheckCircle2 className="h-4 w-4" />
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold font-header">{title}</div>
-            <div className="mt-1 text-xs leading-relaxed opacity-90">
-              {description}
-            </div>
-            {(hasConnectionIssue || shouldShowQueuePrompt || failedChanges > 0) && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={probingConnection || syncingChanges}
-                  className="rounded-md border border-current/30 bg-transparent px-3 py-1.5 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/10"
-                  onClick={async () => {
-                    if (browserOffline) {
-                      window.location.reload();
-                      return;
-                    }
-
-                    if (hasConnectionIssue) {
-                      await requestBackendProbe({ triggerSync: true });
-                      return;
-                    }
-
-                    window.dispatchEvent(new Event("kf-offline-sync-requested"));
-                  }}
-                >
-                  {probingConnection
-                    ? "Checking..."
-                    : hasConnectionIssue
-                      ? "Retry"
-                      : syncingChanges
-                        ? "Syncing..."
-                        : "Sync now"}
-                </button>
-                {queuedChanges > 0 ? (
-                  <span className="inline-flex items-center rounded-full border border-current/20 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] opacity-80">
-                    {queuedChanges} queued
-                  </span>
-                ) : null}
-              </div>
-            )}
->>>>>>> 0babf4d (Update frontend application)
           </div>
           <div className="text-sm font-medium leading-5">{status.detail}</div>
         </div>

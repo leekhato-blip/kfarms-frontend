@@ -2,10 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Lock, Sparkles } from "lucide-react";
 import { getPlanById, normalizePlanId } from "../constants/plans";
-<<<<<<< HEAD
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 export default function PlanUpgradePrompt({
   title = "Upgrade required",
@@ -20,17 +17,12 @@ export default function PlanUpgradePrompt({
   const highlights = Array.isArray(plan?.highlights) ? plan.highlights.slice(0, 3) : [];
   const upgradePath =
     normalizedPlan === "ENTERPRISE"
-<<<<<<< HEAD
       ? plan.ctaPath || "/product-profile#contact"
       : buildBillingPlanFocusPath(normalizedPlan);
   const comparePath =
     normalizedPlan === "ENTERPRISE"
       ? "/billing"
       : buildBillingPlanFocusPath(normalizedPlan);
-=======
-      ? plan.ctaPath || "/company-profile#contact"
-      : `/billing?plan=${normalizedPlan}`;
->>>>>>> 0babf4d (Update frontend application)
   const upgradeLabel =
     normalizedPlan === "ENTERPRISE"
       ? plan.ctaLabel || "Talk to Sales"
@@ -79,11 +71,7 @@ export default function PlanUpgradePrompt({
           {upgradeLabel}
         </Link>
         <Link
-<<<<<<< HEAD
           to={comparePath}
-=======
-          to="/billing"
->>>>>>> 0babf4d (Update frontend application)
           className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/20 dark:bg-white/10 dark:text-darkText dark:hover:bg-white/20"
         >
           Compare plans

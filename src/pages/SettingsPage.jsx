@@ -1,38 +1,24 @@
 import React from "react";
-<<<<<<< HEAD
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
-=======
-import { Link } from "react-router-dom";
-import {
->>>>>>> 0babf4d (Update frontend application)
   Bell,
   Building2,
   CheckCircle2,
   Crown,
   Globe,
-<<<<<<< HEAD
   Mail,
   MessageSquare,
-=======
->>>>>>> 0babf4d (Update frontend application)
   Palette,
   RefreshCw,
   Save,
   Shield,
-<<<<<<< HEAD
   Smartphone,
   Trash2,
   UserCircle2,
 } from "lucide-react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ConfirmModal from "../components/ConfirmModal";
-=======
-  UserCircle2,
-} from "lucide-react";
-import DashboardLayout from "../layouts/DashboardLayout";
->>>>>>> 0babf4d (Update frontend application)
 import GlassToast from "../components/GlassToast";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
@@ -55,7 +41,6 @@ import {
   WORKSPACE_PERMISSIONS,
   hasWorkspacePermission,
 } from "../utils/workspacePermissions";
-<<<<<<< HEAD
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 import {
   getAccountContactStatus,
@@ -81,21 +66,11 @@ import {
 import { normalizeWorkspaceRole } from "../utils/workspaceRoles";
 
 const DELETE_ACCOUNT_CONFIRMATION_TEXT = "DELETE MY ACCOUNT";
-=======
-import {
-  getOrganizationSettings,
-  getUserPreferences,
-  saveOrganizationSettings,
-  saveUserPreferences,
-  updatePassword,
-} from "../services/settingsService";
->>>>>>> 0babf4d (Update frontend application)
 
 const inputClassName =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20 dark:border-white/10 dark:bg-darkCard/70 dark:text-darkText";
 const selectClassName = `${inputClassName} [color-scheme:light] dark:[color-scheme:dark]`;
 
-<<<<<<< HEAD
 const TENANT_SETTINGS_SECTIONS = Object.freeze([
   {
     id: "profile",
@@ -133,8 +108,6 @@ function cn(...values) {
   return values.filter(Boolean).join(" ");
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function isSame(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -151,7 +124,6 @@ function formatTheme(value) {
   return option?.label || "System";
 }
 
-<<<<<<< HEAD
 function resolveTenantSettingsSection(sectionId) {
   const normalized = String(sectionId || "")
     .trim()
@@ -203,11 +175,6 @@ export default function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, updateProfile, logout } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
-=======
-export default function SettingsPage() {
-  const { user } = useAuth();
-  const { activeTenant, activeTenantId } = useTenant();
->>>>>>> 0babf4d (Update frontend application)
 
   const [loading, setLoading] = React.useState(true);
   const [organizationSettings, setOrganizationSettings] = React.useState(
@@ -222,7 +189,6 @@ export default function SettingsPage() {
   const [preferencesSnapshot, setPreferencesSnapshot] = React.useState(
     DEFAULT_USER_PREFERENCES,
   );
-<<<<<<< HEAD
   const [activeSection, setActiveSection] = React.useState(() =>
     resolveTenantSettingsSection(searchParams.get("section")),
   );
@@ -242,14 +208,11 @@ export default function SettingsPage() {
     emailCode: "",
     phoneCode: "",
   });
-=======
->>>>>>> 0babf4d (Update frontend application)
   const [securityForm, setSecurityForm] = React.useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-<<<<<<< HEAD
   const [savingProfile, setSavingProfile] = React.useState(false);
   const [savingAccountContact, setSavingAccountContact] = React.useState(false);
   const [savingOrganization, setSavingOrganization] = React.useState(false);
@@ -267,22 +230,14 @@ export default function SettingsPage() {
     understandsAccessLoss: false,
     ownershipHandled: false,
   });
-=======
-  const [savingOrganization, setSavingOrganization] = React.useState(false);
-  const [savingPreferences, setSavingPreferences] = React.useState(false);
-  const [updatingPassword, setUpdatingPassword] = React.useState(false);
->>>>>>> 0babf4d (Update frontend application)
   const [toast, setToast] = React.useState({ message: "", type: "info" });
 
   const userId = user?.id || user?.username || user?.email || "me";
   const currentPlanId = normalizePlanId(activeTenant?.plan, "FREE");
   const currentPlan = getPlanById(currentPlanId, "FREE");
   const isEnterprisePlan = currentPlanId === "ENTERPRISE";
-<<<<<<< HEAD
   const isWorkspaceOwner =
     normalizeWorkspaceRole(activeTenant?.myRole || activeTenant?.role) === "OWNER";
-=======
->>>>>>> 0babf4d (Update frontend application)
   const canManageWorkspaceSettings = hasWorkspacePermission(
     activeTenant,
     WORKSPACE_PERMISSIONS.SETTINGS_MANAGE,
@@ -301,7 +256,6 @@ export default function SettingsPage() {
     () => !isSame(userPreferences, preferencesSnapshot),
     [userPreferences, preferencesSnapshot],
   );
-<<<<<<< HEAD
   const profileDirty = React.useMemo(
     () => !isSame(userProfile, userProfileSnapshot),
     [userProfile, userProfileSnapshot],
@@ -387,8 +341,6 @@ export default function SettingsPage() {
   const canSubmitVerification =
     (!requiresEmailVerification || verificationForm.emailCode.trim()) &&
     (!requiresPhoneVerification || verificationForm.phoneCode.trim());
-=======
->>>>>>> 0babf4d (Update frontend application)
   const brandPreviewStyle = React.useMemo(
     () => ({
       borderColor: `${organizationSettings.brandPrimaryColor}40`,
@@ -396,7 +348,6 @@ export default function SettingsPage() {
     }),
     [organizationSettings.brandAccentColor, organizationSettings.brandPrimaryColor],
   );
-<<<<<<< HEAD
   const activeSectionMeta = React.useMemo(
     () =>
       TENANT_SETTINGS_SECTIONS.find((section) => section.id === activeSection) ||
@@ -410,8 +361,6 @@ export default function SettingsPage() {
       setActiveSection(nextSection);
     }
   }, [activeSection, searchParams]);
-=======
->>>>>>> 0babf4d (Update frontend application)
 
   React.useEffect(() => {
     snapshotThemeRef.current = preferencesSnapshot.themePreference;
@@ -442,7 +391,6 @@ export default function SettingsPage() {
   }, [activeTenant]);
 
   React.useEffect(() => {
-<<<<<<< HEAD
     const nextProfile = createTenantUserProfileDraft(user);
     setUserProfile(nextProfile);
     setUserProfileSnapshot(nextProfile);
@@ -458,8 +406,6 @@ export default function SettingsPage() {
   }, [user]);
 
   React.useEffect(() => {
-=======
->>>>>>> 0babf4d (Update frontend application)
     let active = true;
 
     async function loadSettings() {
@@ -470,11 +416,7 @@ export default function SettingsPage() {
 
       setLoading(true);
       try {
-<<<<<<< HEAD
         const [organization, preferences, contactStatus] = await Promise.all([
-=======
-        const [organization, preferences] = await Promise.all([
->>>>>>> 0babf4d (Update frontend application)
           getOrganizationSettings({
             tenantId: activeTenantId,
             tenantName: activeTenant?.name,
@@ -484,10 +426,7 @@ export default function SettingsPage() {
             tenantId: activeTenantId,
             userId,
           }),
-<<<<<<< HEAD
           getAccountContactStatus().catch(() => createAccountContactState(user)),
-=======
->>>>>>> 0babf4d (Update frontend application)
         ]);
 
         if (!active) return;
@@ -495,13 +434,10 @@ export default function SettingsPage() {
         setOrganizationSnapshot(organization);
         setUserPreferences(preferences);
         setPreferencesSnapshot(preferences);
-<<<<<<< HEAD
         setAccountContact(createAccountContactState(user, contactStatus));
         setAccountContactDraft(
           String(contactStatus?.phoneNumber || user?.phoneNumber || "").trim(),
         );
-=======
->>>>>>> 0babf4d (Update frontend application)
       } catch (error) {
         if (!active) return;
         setToast({
@@ -519,11 +455,7 @@ export default function SettingsPage() {
     return () => {
       active = false;
     };
-<<<<<<< HEAD
   }, [activeTenant?.name, activeTenant?.slug, activeTenantId, user, userId]);
-=======
-  }, [activeTenant?.name, activeTenant?.slug, activeTenantId, userId]);
->>>>>>> 0babf4d (Update frontend application)
 
   function handleOrganizationChange(field, value) {
     setOrganizationSettings((prev) => ({ ...prev, [field]: value }));
@@ -533,7 +465,6 @@ export default function SettingsPage() {
     setUserPreferences((prev) => ({ ...prev, [field]: value }));
   }
 
-<<<<<<< HEAD
   function handleProfileChange(field, value) {
     setUserProfile((prev) => ({ ...prev, [field]: value }));
   }
@@ -547,8 +478,6 @@ export default function SettingsPage() {
     setSearchParams(nextParams, { replace: true });
   }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   async function handleSaveOrganization() {
     if (!activeTenantId || savingOrganization || !canManageWorkspaceSettings) return;
 
@@ -560,10 +489,7 @@ export default function SettingsPage() {
       });
       setOrganizationSettings(saved);
       setOrganizationSnapshot(saved);
-<<<<<<< HEAD
       await refreshTenants({ force: true }).catch(() => null);
-=======
->>>>>>> 0babf4d (Update frontend application)
       setToast({ message: "Workspace settings saved.", type: "success" });
     } catch (error) {
       setToast({
@@ -598,7 +524,6 @@ export default function SettingsPage() {
     }
   }
 
-<<<<<<< HEAD
   async function handleSaveProfile() {
     if (!user || savingProfile) return;
 
@@ -740,13 +665,10 @@ export default function SettingsPage() {
     }
   }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   async function handleUpdatePassword(event) {
     event.preventDefault();
     if (updatingPassword) return;
 
-<<<<<<< HEAD
     const passwordError = validateAccountPassword(
       securityForm.newPassword,
       ACCOUNT_PASSWORD_MIN_LENGTH,
@@ -764,8 +686,6 @@ export default function SettingsPage() {
       return;
     }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
     setUpdatingPassword(true);
     try {
       const result = await updatePassword(securityForm);
@@ -796,7 +716,6 @@ export default function SettingsPage() {
     setUserPreferences(preferencesSnapshot);
   }
 
-<<<<<<< HEAD
   function resetProfileChanges() {
     setUserProfile(userProfileSnapshot);
   }
@@ -854,8 +773,6 @@ export default function SettingsPage() {
     }
   }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   return (
     <DashboardLayout>
       <div className="space-y-6 font-body animate-fadeIn">
@@ -872,11 +789,7 @@ export default function SettingsPage() {
 
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-emerald-400/35 bg-emerald-500/10 px-3 py-1 text-emerald-700 dark:text-emerald-200">
-<<<<<<< HEAD
               Workspace ready
-=======
-              Backend sync active
->>>>>>> 0babf4d (Update frontend application)
             </span>
             <span className="rounded-full border border-white/10 bg-white/60 px-3 py-1 text-slate-600 dark:bg-white/10 dark:text-slate-200">
               Role: {activeTenant?.myRole || "Member"}
@@ -892,7 +805,6 @@ export default function SettingsPage() {
           }`}
         >
           {canManageWorkspaceSettings
-<<<<<<< HEAD
             ? "Update your workspace details here. Personal preferences stay with your account, and verified contact details help you receive important updates."
             : "Update your profile, contact details, preferences, and password here. Workspace details are view-only for your role."}
         </div>
@@ -944,12 +856,6 @@ export default function SettingsPage() {
           </section>
         ) : null}
 
-=======
-            ? "Workspace changes save directly to the backend for everyone in this organization."
-            : "You can update your own preferences and password here. Workspace details are view-only for your role."}
-        </div>
-
->>>>>>> 0babf4d (Update frontend application)
         {loading ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -970,7 +876,6 @@ export default function SettingsPage() {
             ))}
           </div>
         ) : (
-<<<<<<< HEAD
           <div className="space-y-4">
             <div className={cn("space-y-4", activeSection === "overview" && "hidden")}>
               <section
@@ -1304,11 +1209,6 @@ export default function SettingsPage() {
                   activeSection !== "workspace" && "hidden",
                 )}
               >
-=======
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div className="space-y-4 xl:col-span-2">
-              <section className="rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
                 <div className="mb-4 flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-accent-primary" />
                   <div>
@@ -1425,7 +1325,6 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="md:col-span-2">
-<<<<<<< HEAD
                       <div className="rounded-xl border border-amber-400/20 bg-amber-500/5 p-4">
                         <div className="flex items-start gap-3">
                           <div className="mt-0.5 rounded-xl bg-amber-500/10 p-2 text-amber-500">
@@ -1470,8 +1369,6 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="md:col-span-2">
-=======
->>>>>>> 0babf4d (Update frontend application)
                       <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
                         Address
                       </label>
@@ -1729,16 +1626,12 @@ export default function SettingsPage() {
                 </div>
               </section>
 
-<<<<<<< HEAD
               <section
                 className={cn(
                   "rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark",
                   activeSection !== "preferences" && "hidden",
                 )}
               >
-=======
-              <section className="rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
                 <div className="mb-4 flex items-center gap-2">
                   <Bell className="h-4 w-4 text-accent-primary" />
                   <div>
@@ -1873,16 +1766,12 @@ export default function SettingsPage() {
                 </div>
               </section>
 
-<<<<<<< HEAD
               <section
                 className={cn(
                   "rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark",
                   activeSection !== "security" && "hidden",
                 )}
               >
-=======
-              <section className="rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
                 <div className="mb-4 flex items-center gap-2">
                   <Shield className="h-4 w-4 text-accent-primary" />
                   <div>
@@ -1966,7 +1855,6 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </form>
-<<<<<<< HEAD
 
                 <div className="mt-6 rounded-2xl border border-rose-400/25 bg-rose-500/5 p-4">
                   <div className="flex items-start gap-3">
@@ -2287,130 +2175,10 @@ export default function SettingsPage() {
                 </section>
               </div>
             ) : null}
-=======
-              </section>
-            </div>
-
-            <div className="space-y-4">
-              <section className="rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
-                <div className="mb-3 flex items-center gap-2">
-                  <UserCircle2 className="h-4 w-4 text-accent-primary" />
-                  <h2 className="font-header font-semibold">Account snapshot</h2>
-                </div>
-
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      User
-                    </p>
-                    <p className="font-medium text-slate-800 dark:text-slate-100">
-                      {user?.username || user?.email || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Email
-                    </p>
-                    <p className="text-slate-700 dark:text-slate-200">
-                      {user?.email || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Workspace
-                    </p>
-                    <p className="text-slate-700 dark:text-slate-200">
-                      {activeTenant?.name || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Landing page
-                    </p>
-                    <p className="text-slate-700 dark:text-slate-200">
-                      {formatLandingPage(userPreferences.landingPage)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Theme
-                    </p>
-                    <p className="text-slate-700 dark:text-slate-200">
-                      {formatTheme(userPreferences.themePreference)}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
-                <div className="mb-3 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-accent-primary" />
-                  <h2 className="font-header font-semibold">Access</h2>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  {canManageWorkspaceSettings
-                    ? "Your role can manage workspace-level settings."
-                    : "Your role can edit only personal preferences and security."}
-                </p>
-                <div className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-slate-500 dark:text-slate-400">
-                  Organization slug:{" "}
-                  <span className="font-medium text-slate-700 dark:text-slate-200">
-                    {organizationSettings.organizationSlug || "N/A"}
-                  </span>
-                </div>
-                {isEnterprisePlan ? (
-                  <div className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-accent-primary" />
-                      Custom domain:
-                      <span className="font-medium text-slate-700 dark:text-slate-200">
-                        {organizationSettings.customDomain || "Not set"}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
-              </section>
-
-              <section className="rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
-                <div className="mb-3 flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-accent-primary" />
-                  <h2 className="font-header font-semibold">Plan</h2>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Active plan
-                </p>
-                <p className="mt-1 text-xl font-semibold font-header">
-                  {currentPlan.name}
-                </p>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  {currentPlan.tagline}
-                </p>
-                <div className="mt-4 space-y-2">
-                  {currentPlan.highlights.slice(0, 3).map((item) => (
-                    <div
-                      key={item}
-                      className="text-xs text-slate-600 dark:text-slate-300"
-                    >
-                      • {item}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4">
-                  <Link
-                    to="/billing"
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                  >
-                    Manage billing
-                  </Link>
-                </div>
-              </section>
-            </div>
->>>>>>> 0babf4d (Update frontend application)
           </div>
         )}
       </div>
 
-<<<<<<< HEAD
       <ConfirmModal
         open={deleteAccountModalOpen}
         title="Delete owner account"
@@ -2425,8 +2193,6 @@ export default function SettingsPage() {
         onConfirm={handleDeleteOwnerAccount}
       />
 
-=======
->>>>>>> 0babf4d (Update frontend application)
       <GlassToast
         message={toast.message}
         type={toast.type}

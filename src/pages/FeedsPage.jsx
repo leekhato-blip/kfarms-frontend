@@ -4,10 +4,7 @@ import SummaryCard from "../components/SummaryCard";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import FilteredResultsHint from "../components/FilteredResultsHint";
 import FeedPie from "../components/FeedPie";
-<<<<<<< HEAD
 import MobileAccordionCard from "../components/MobileAccordionCard";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import FeedFormModal from "../components/FeedFormModal";
 import ConfirmModal from "../components/ConfirmModal";
 import GlassToast from "../components/GlassToast";
@@ -151,10 +148,7 @@ function FeedSectionEmptyState({
 
 export default function FeedsPage() {
   const { activeTenant } = useTenant();
-<<<<<<< HEAD
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
-=======
->>>>>>> 0babf4d (Update frontend application)
   const [loading, setLoading] = useState(true);
   const [feedData, setFeedData] = useState(null);
   const [listLoading, setListLoading] = useState(true);
@@ -178,11 +172,7 @@ export default function FeedsPage() {
   const [toast, setToast] = useState({ message: "", type: "info" });
   const [trashOpen, setTrashOpen] = useState(false);
 
-<<<<<<< HEAD
   const fetchFeedSummary = React.useCallback(async () => {
-=======
-  const fetchFeedSummary = async () => {
->>>>>>> 0babf4d (Update frontend application)
     try {
       const res = await getFeedSummary();
       const summary =
@@ -197,7 +187,6 @@ export default function FeedsPage() {
     } finally {
       setLoading(false);
     }
-<<<<<<< HEAD
   }, []);
 
   useEffect(() => {
@@ -209,19 +198,6 @@ export default function FeedsPage() {
   const canDeleteOrRestore = ADMIN_ROLES.has(tenantRole);
 
   const fetchFeeds = React.useCallback(async (page = 0) => {
-=======
-  };
-
-  useEffect(() => {
-    fetchFeedSummary();
-  }, []);
-
-  const tenantRole = normalizeRole(activeTenant?.myRole);
-  const canCreateOrEdit = EDITOR_ROLES.has(tenantRole);
-  const canDeleteOrRestore = ADMIN_ROLES.has(tenantRole);
-
-  const fetchFeeds = async (page = 0) => {
->>>>>>> 0babf4d (Update frontend application)
     setListLoading(true);
     try {
       const res = await getAllFeeds({
@@ -250,13 +226,10 @@ export default function FeedsPage() {
     }
   }, [filters.batchType, filters.date]);
 
-<<<<<<< HEAD
   useEffect(() => {
     void fetchFeeds(0);
   }, [fetchFeeds]);
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
@@ -265,12 +238,9 @@ export default function FeedsPage() {
         fetchFeedSummary(),
         fetchFeeds(meta.page),
       ]);
-<<<<<<< HEAD
       setToast({ message: "Feeds refreshed", type: "success" });
     } catch {
       setToast({ message: "Failed to refresh feeds", type: "error" });
-=======
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setRefreshing(false);
     }
@@ -377,11 +347,7 @@ export default function FeedsPage() {
     },
     {
       title: "Monthly Spend",
-<<<<<<< HEAD
       value: formatCurrency(data?.monthlySpend, workspaceCurrency),
-=======
-      value: formatCurrency(data?.monthlySpend),
->>>>>>> 0babf4d (Update frontend application)
       subtitle: "Feed expenses",
       icon: <Wallet />,
       hasData: Number(data?.monthlySpend) > 0,
@@ -770,7 +736,6 @@ export default function FeedsPage() {
         </div>
 
         {/* Charts Row */}
-<<<<<<< HEAD
         <div className="sm:hidden">
           <MobileAccordionCard
             title="Feed breakdown"
@@ -881,10 +846,6 @@ export default function FeedsPage() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark sm:block lg:col-span-2">
-=======
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
->>>>>>> 0babf4d (Update frontend application)
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="text-lg font-semibold font-header">
@@ -1414,12 +1375,9 @@ export default function FeedsPage() {
               ? "Feed record saved offline. It will sync automatically."
               : `Feed record ${editing ? "updated" : "created"} successfully`,
             type: pendingOffline ? "info" : "success",
-<<<<<<< HEAD
             actionLabel: pendingOffline ? "" : "View item",
             onAction: pendingOffline ? undefined : () => openDetails(saved),
             duration: pendingOffline ? 3000 : 5200,
-=======
->>>>>>> 0babf4d (Update frontend application)
           });
           if (!pendingOffline) {
             Promise.all([fetchFeeds(meta.page), fetchFeedSummary()]);

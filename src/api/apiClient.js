@@ -12,16 +12,10 @@ import {
   getCachedApiResponse,
   shouldServeOfflineImmediately,
 } from "../offline/offlineStore";
-<<<<<<< HEAD
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
 const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 const PING_PATH = "/auth/login";
-=======
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
-const PING_PATH = "/auth/me";
->>>>>>> 0babf4d (Update frontend application)
 const ACTIVE_TENANT_STORAGE_KEY = "activeTenantId";
 const WORKSPACE_TOKEN_STORAGE_KEY = "kf_workspace_token";
 const TENANT_MEMBERSHIP_ERROR = "Not a member of this tenant";
@@ -99,13 +93,9 @@ const pingClient = axios.create({
 let backendDown = false;
 let pingTimer = null;
 let sessionValidationPromise = null;
-<<<<<<< HEAD
 let backendWaitPromise = null;
 let lastBackendConfirmedAt = 0;
 let backendDownConfirmTimer = null;
-=======
-let lastBackendConfirmedAt = 0;
->>>>>>> 0babf4d (Update frontend application)
 
 function dispatchWindowEvent(event) {
   if (typeof window === "undefined") return;
@@ -175,7 +165,6 @@ function getHeaderValue(headers, key) {
   return headers[key] || headers[String(key).toLowerCase()] || headers[String(key).toUpperCase()] || "";
 }
 
-<<<<<<< HEAD
 function getRenderRoutingHeader(headers) {
   return String(getHeaderValue(headers, "x-render-routing") || "").toLowerCase();
 }
@@ -207,8 +196,6 @@ function isBackendReachableResponse(response) {
   return true;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function isCanceledError(error) {
   return (
     axios.isCancel?.(error) ||
@@ -227,7 +214,6 @@ function isNetworkError(error) {
     return true;
   }
 
-<<<<<<< HEAD
   const code = String(error.code || "").toUpperCase();
   const message = String(error.message || "").toLowerCase();
 
@@ -250,9 +236,6 @@ export function isBackendUnavailableError(error) {
   }
 
   return isNetworkError(error);
-=======
-  return error.code === "ERR_NETWORK" || error.message === "Network Error";
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function isGetRequest(config) {
@@ -299,7 +282,6 @@ function getRequestStartedAt(config) {
   return Number.isFinite(startedAt) && startedAt > 0 ? startedAt : 0;
 }
 
-<<<<<<< HEAD
 export function getBackendConnectionSnapshot() {
   return {
     backendDown,
@@ -320,17 +302,11 @@ function confirmBackendUp() {
     stopPing();
     return;
   }
-=======
-function confirmBackendUp() {
-  lastBackendConfirmedAt = Date.now();
-  if (!backendDown) return;
->>>>>>> 0babf4d (Update frontend application)
   backendDown = false;
   stopPing();
   dispatchWindowEvent(new Event("kf-backend-up"));
 }
 
-<<<<<<< HEAD
 function transitionBackendDown() {
   clearPendingBackendDownConfirmation();
   if (backendDown) return true;
@@ -363,8 +339,6 @@ function scheduleBackendDownConfirmation() {
   return false;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function markBackendDown(config) {
   const requestStartedAt = getRequestStartedAt(config);
   if (requestStartedAt && requestStartedAt < lastBackendConfirmedAt) {
@@ -373,7 +347,6 @@ function markBackendDown(config) {
 
   if (backendDown) return true;
 
-<<<<<<< HEAD
   const now = Date.now();
   const backendRecentlyConfirmed =
     lastBackendConfirmedAt > 0 &&
@@ -384,12 +357,6 @@ function markBackendDown(config) {
   }
 
   return transitionBackendDown();
-=======
-  backendDown = true;
-  dispatchWindowEvent(new Event("kf-backend-down"));
-  startPing();
-  return true;
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function stopPing() {
@@ -398,7 +365,6 @@ function stopPing() {
   pingTimer = null;
 }
 
-<<<<<<< HEAD
 export async function probeBackendConnection({
   silent = false,
   bypassBrowserCheck = false,
@@ -408,10 +374,6 @@ export async function probeBackendConnection({
     typeof window !== "undefined" &&
     window.navigator?.onLine === false
   ) {
-=======
-export async function probeBackendConnection({ silent = false } = {}) {
-  if (typeof window !== "undefined" && window.navigator?.onLine === false) {
->>>>>>> 0babf4d (Update frontend application)
     if (!silent) {
       markBackendDown({ _kfRequestStartedAt: Date.now() });
     }
@@ -419,7 +381,6 @@ export async function probeBackendConnection({ silent = false } = {}) {
   }
 
   try {
-<<<<<<< HEAD
     const response = await pingClient.options(PING_PATH, {
       validateStatus: () => true,
     });
@@ -435,22 +396,12 @@ export async function probeBackendConnection({ silent = false } = {}) {
     return false;
   } catch (error) {
     if (!silent && isBackendUnavailableError(error)) {
-=======
-    await pingClient.get(PING_PATH, {
-      validateStatus: () => true,
-    });
-    confirmBackendUp();
-    return true;
-  } catch (error) {
-    if (!silent && isNetworkError(error)) {
->>>>>>> 0babf4d (Update frontend application)
       markBackendDown({ _kfRequestStartedAt: Date.now() });
     }
     return false;
   }
 }
 
-<<<<<<< HEAD
 export async function waitForBackendConnection({
   timeoutMs = 180000,
   intervalMs = 5000,
@@ -485,17 +436,11 @@ export async function waitForBackendConnection({
   }
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function startPing() {
   if (pingTimer) return;
 
   const runProbe = () => {
-<<<<<<< HEAD
     void probeBackendConnection({ silent: true, bypassBrowserCheck: true });
-=======
-    void probeBackendConnection({ silent: true });
->>>>>>> 0babf4d (Update frontend application)
   };
 
   pingTimer = setInterval(runProbe, 3000);
@@ -543,15 +488,11 @@ apiClient.interceptors.request.use((config) => {
   config._kfRequestStartedAt = Date.now();
 
   const pathname = resolveRequestPath(config);
-<<<<<<< HEAD
   const workspaceToken = getWorkspaceToken();
-=======
->>>>>>> 0babf4d (Update frontend application)
   if (config.offline?.enabled) {
     ensureOfflineRequestId(config);
   }
 
-<<<<<<< HEAD
   if (
     workspaceToken &&
     shouldAttachWorkspaceAuthorization(pathname) &&
@@ -561,8 +502,6 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${workspaceToken}`;
   }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   if (shouldAttachTenantHeader(pathname)) {
     const tenantId = window.localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY);
     if (tenantId) {
@@ -622,13 +561,9 @@ apiClient.interceptors.response.use(
       });
     }
 
-<<<<<<< HEAD
     if (isBackendUnavailableResponse(response)) {
       markBackendDown(response.config);
     } else if (!isOfflineSyntheticResponse(response)) {
-=======
-    if (!isOfflineSyntheticResponse(response)) {
->>>>>>> 0babf4d (Update frontend application)
       confirmBackendUp();
     }
     return response;
@@ -640,11 +575,7 @@ apiClient.interceptors.response.use(
     const requestPath = resolveRequestPath(error.config);
 
     // If we received any HTTP response, the backend is reachable again.
-<<<<<<< HEAD
     if (status && !isBackendUnavailableResponse(error.response)) {
-=======
-    if (status) {
->>>>>>> 0babf4d (Update frontend application)
       confirmBackendUp();
     }
 
@@ -680,19 +611,11 @@ apiClient.interceptors.response.use(
       emitDemoAccountBlocked(message || DEMO_ACCOUNT_BLOCKED_MESSAGE);
     }
 
-<<<<<<< HEAD
     if (isBackendUnavailableError(error)) {
       markBackendDown(error.config);
     }
 
     if (isBackendUnavailableError(error) && isGetRequest(error.config)) {
-=======
-    if (isNetworkError(error)) {
-      markBackendDown(error.config);
-    }
-
-    if (isNetworkError(error) && isGetRequest(error.config)) {
->>>>>>> 0babf4d (Update frontend application)
       const cachedData = getCachedApiResponse({
         tenantId: error.config?.headers?.["X-Tenant-Id"],
         path: requestPath,
@@ -712,15 +635,11 @@ apiClient.interceptors.response.use(
       }
     }
 
-<<<<<<< HEAD
     if (
       isBackendUnavailableError(error) &&
       isMutationRequest(error.config) &&
       error.config?.offline?.enabled
     ) {
-=======
-    if (isNetworkError(error) && isMutationRequest(error.config) && error.config?.offline?.enabled) {
->>>>>>> 0babf4d (Update frontend application)
       return Promise.resolve(createQueuedAxiosResponse(error.config, requestPath));
     }
 

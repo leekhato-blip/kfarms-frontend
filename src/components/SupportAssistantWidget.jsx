@@ -10,7 +10,6 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-<<<<<<< HEAD
 import {
   normalizeKfarmsLegacyPath,
   toKfarmsAppPath,
@@ -20,10 +19,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
 import { getUserDisplayName } from "../services/userProfileService";
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
-=======
-import { useAuth } from "../hooks/useAuth";
-import { useTenant } from "../tenant/TenantContext";
->>>>>>> 0babf4d (Update frontend application)
 import {
   askSupportAssistant,
   getSupportAssistantConversation,
@@ -36,7 +31,6 @@ const DEFAULT_PROMPTS = [
   "How can I ask for help?",
 ];
 
-<<<<<<< HEAD
 const ASSISTANT_NAME = "KAI";
 
 const PATH_SUPPORT_CATEGORY = Object.freeze([
@@ -52,101 +46,6 @@ const PATH_SUPPORT_CATEGORY = Object.freeze([
   { match: "/settings", category: "Farm access" },
 ]);
 
-=======
->>>>>>> 0babf4d (Update frontend application)
-function formatTime(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("en-NG", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-<<<<<<< HEAD
-function truncateText(value, maxLength) {
-  const text = String(value || "").trim();
-  if (!text || text.length <= maxLength) return text;
-  return `${text.slice(0, Math.max(maxLength - 1, 0)).trimEnd()}…`;
-}
-
-function inferSupportCategory(pathname = "") {
-  const normalizedPath = normalizeKfarmsLegacyPath(pathname);
-  const matched = PATH_SUPPORT_CATEGORY.find((entry) => normalizedPath.startsWith(entry.match));
-  return matched?.category || "General";
-}
-
-function inferSupportPriority(text = "") {
-  const normalized = String(text || "").toLowerCase();
-  if (/\b(critical|urgent|down|failed payment|cannot log in|can't log in|outage)\b/.test(normalized)) {
-    return "CRITICAL";
-  }
-  if (/\b(error|not working|broken|stuck|failed|issue|problem|bug)\b/.test(normalized)) {
-    return "HIGH";
-  }
-  if (/\b(question|clarify|guide|help me understand)\b/.test(normalized)) {
-    return "LOW";
-  }
-  return "MEDIUM";
-}
-
-function buildSupportEscalationSearch({ pathname = "", tenantName = "", input = "", messages = [] } = {}) {
-  const normalizedPath = normalizeKfarmsLegacyPath(pathname);
-  const cleanInput = String(input || "").trim();
-  const userMessages = (Array.isArray(messages) ? messages : []).filter(
-    (message) => String(message?.role || "").toLowerCase() === "user" && String(message?.content || "").trim(),
-  );
-  const summary =
-    cleanInput ||
-    userMessages.at(-1)?.content ||
-    `I need help with something I was discussing with ${ASSISTANT_NAME}.`;
-  const transcript = (Array.isArray(messages) ? messages : [])
-    .slice(-6)
-    .map((message) => {
-      const role = String(message?.role || "").toLowerCase() === "assistant" ? ASSISTANT_NAME : "Farmer";
-      const content = String(message?.content || "").trim();
-      return content ? `${role}: ${content}` : "";
-    })
-    .filter(Boolean)
-    .join("\n");
-
-  const descriptionParts = [
-    `Please help me continue this issue from my ${ASSISTANT_NAME} chat.`,
-    tenantName ? `Workspace: ${tenantName}` : "",
-    normalizedPath ? `Page: ${normalizedPath}` : "",
-    "",
-    `Issue summary: ${summary}`,
-    transcript ? `\nRecent assistant chat:\n${transcript}` : "",
-  ].filter(Boolean);
-
-  const params = new URLSearchParams();
-  params.set("tab", "tickets");
-  params.set("subject", truncateText(`${ASSISTANT_NAME} escalation: ${summary}`, 140));
-  params.set("category", inferSupportCategory(normalizedPath));
-  params.set("priority", inferSupportPriority(`${summary}\n${transcript}`));
-  params.set("description", truncateText(descriptionParts.join("\n"), 2400));
-  return params.toString();
-}
-
-function getAssistantModeLabel(source = "api") {
-  if (source === "placeholder") return "Local mode";
-  if (source === "hybrid") return "Smart mode";
-  return "Live mode";
-}
-
-function getAssistantModeHint(source = "api", assistantLabel = ASSISTANT_NAME) {
-  if (source === "placeholder") {
-    return `${assistantLabel} is giving plan-aware guidance while live totals load.`;
-  }
-  if (source === "hybrid") {
-    return `${assistantLabel} is blending live support with tier-aware coaching.`;
-  }
-  return `${assistantLabel} is connected to your live workspace support flow.`;
-}
-
-=======
->>>>>>> 0babf4d (Update frontend application)
 export default function SupportAssistantWidget() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -167,7 +66,6 @@ export default function SupportAssistantWidget() {
   const bottomRef = React.useRef(null);
 
   const tenantName = activeTenant?.name || "your farm";
-<<<<<<< HEAD
   const billingPath =
     normalizePlanId(activeTenant?.plan, "FREE") === "FREE"
       ? buildBillingPlanFocusPath("PRO")
@@ -177,9 +75,6 @@ export default function SupportAssistantWidget() {
     () => getPlanById(activeTenant?.plan || "FREE"),
     [activeTenant?.plan],
   );
-=======
-  const userName = user?.username || user?.email || "Farmer";
->>>>>>> 0babf4d (Update frontend application)
   const assistantContext = React.useMemo(
     () => ({
       currentPath: location.pathname,
@@ -189,7 +84,6 @@ export default function SupportAssistantWidget() {
     }),
     [activeTenant?.modules, activeTenant?.myRole, activeTenant?.plan, location.pathname, user?.role],
   );
-<<<<<<< HEAD
   const assistantLabel = assistantPlan.assistantLabel || `${ASSISTANT_NAME} ${assistantPlan.name}`;
   const assistantSummary =
     assistantPlan.assistantSummary ||
@@ -206,14 +100,6 @@ export default function SupportAssistantWidget() {
       }),
     [input, location.pathname, messages, tenantName],
   );
-=======
-  const assistantModeLabel =
-    source === "placeholder"
-      ? "Local assistant mode"
-      : source === "hybrid"
-        ? "Smart assistant mode"
-        : "Live assistant mode";
->>>>>>> 0babf4d (Update frontend application)
 
   const applyAssistantPayload = React.useCallback((result = {}) => {
     setMessages(Array.isArray(result.messages) ? result.messages : []);
@@ -273,11 +159,7 @@ export default function SupportAssistantWidget() {
     const content = String(text || "").trim();
     if (!content || sending) return;
     if (!activeTenantId) {
-<<<<<<< HEAD
       setErrorMessage(`Choose or create a farm before using ${ASSISTANT_NAME}.`);
-=======
-      setErrorMessage("Choose or create a farm before using the assistant.");
->>>>>>> 0babf4d (Update frontend application)
       return;
     }
 
@@ -295,11 +177,7 @@ export default function SupportAssistantWidget() {
       });
       applyAssistantPayload(result);
     } catch (error) {
-<<<<<<< HEAD
       setErrorMessage(error?.message || `Could not reach ${ASSISTANT_NAME}.`);
-=======
-      setErrorMessage(error?.message || "Could not reach support assistant.");
->>>>>>> 0babf4d (Update frontend application)
     } finally {
       setSending(false);
     }
@@ -313,11 +191,7 @@ export default function SupportAssistantWidget() {
   async function handleReset() {
     if (resetting) return;
     if (!activeTenantId) {
-<<<<<<< HEAD
       setErrorMessage(`Choose or create a farm before clearing this ${ASSISTANT_NAME} chat.`);
-=======
-      setErrorMessage("Choose or create a farm before clearing this chat.");
->>>>>>> 0babf4d (Update frontend application)
       return;
     }
     setResetting(true);
@@ -361,7 +235,6 @@ export default function SupportAssistantWidget() {
     navigate(target);
   }
 
-<<<<<<< HEAD
   function handleEscalateToSupport() {
     setOpen(false);
     navigate(`${toKfarmsAppPath("/support")}?${supportEscalationSearch}`);
@@ -371,28 +244,17 @@ export default function SupportAssistantWidget() {
     <div className="fixed bottom-32 right-3 z-[75] md:bottom-20 md:right-5">
       {open && (
         <div className="fixed inset-x-3 top-3 bottom-32 flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/80 shadow-neo backdrop-blur-xl dark:border-white/10 dark:bg-darkCard/85 dark:shadow-dark md:absolute md:inset-auto md:bottom-full md:right-0 md:mb-3 md:w-[min(92vw,390px)] md:max-h-[min(80vh,720px)]">
-=======
-  return (
-    <div className="fixed bottom-24 right-3 z-[75] md:bottom-20 md:right-5">
-      {open && (
-        <div className="fixed inset-x-3 top-3 bottom-24 flex flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/80 shadow-neo backdrop-blur-xl dark:border-white/10 dark:bg-darkCard/85 dark:shadow-dark md:absolute md:inset-auto md:bottom-full md:right-0 md:mb-3 md:w-[min(92vw,390px)] md:max-h-[min(80vh,720px)]">
->>>>>>> 0babf4d (Update frontend application)
           <div className="relative shrink-0 bg-gradient-to-r from-indigo-500/90 via-sky-500/85 to-emerald-500/90 px-4 py-3 pr-12 text-white">
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="absolute right-3 top-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/55 bg-black/25 text-white shadow-sm transition hover:bg-black/35"
-<<<<<<< HEAD
               aria-label={`Close ${ASSISTANT_NAME}`}
-=======
-              aria-label="Close assistant"
->>>>>>> 0babf4d (Update frontend application)
             >
               <X className="h-4 w-4" />
             </button>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-<<<<<<< HEAD
                 <div className="flex flex-wrap items-center gap-1.5">
                   <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
                     <Bot className="h-3 w-3" />
@@ -405,15 +267,6 @@ export default function SupportAssistantWidget() {
                 <h3 className="mt-1 text-sm font-semibold">{assistantLabel}</h3>
                 <p className="text-[11px] text-blue-50/90">
                   {assistantSummary}
-=======
-                <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
-                  <Bot className="h-3 w-3" />
-                  Kfarms Assistant
-                </div>
-                <h3 className="mt-1 text-sm font-semibold">Farmer Chat Support</h3>
-                <p className="text-[11px] text-blue-50/90">
-                  Ask about pond care, feeds, inventory, sales, and support steps.
->>>>>>> 0babf4d (Update frontend application)
                 </p>
               </div>
             </div>
@@ -427,11 +280,7 @@ export default function SupportAssistantWidget() {
                   Farm needed
                 </div>
                 <p className="mt-1">
-<<<<<<< HEAD
                   {ASSISTANT_NAME} works after you choose or create a farm.
-=======
-                  Assistant chat works after you choose or create a farm.
->>>>>>> 0babf4d (Update frontend application)
                 </p>
                 <button
                   type="button"
@@ -444,7 +293,6 @@ export default function SupportAssistantWidget() {
               </div>
             )}
 
-<<<<<<< HEAD
             <div className="flex items-start justify-between gap-3 text-[11px] text-slate-500 dark:text-slate-300">
               <div className="min-w-0">
                 <span className="inline-flex items-center gap-1 font-semibold">
@@ -455,13 +303,6 @@ export default function SupportAssistantWidget() {
                   {assistantModeHint}
                 </p>
               </div>
-=======
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-300">
-              <span className="inline-flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                {assistantModeLabel}
-              </span>
->>>>>>> 0babf4d (Update frontend application)
               <button
                 type="button"
                 onClick={handleReset}
@@ -476,19 +317,11 @@ export default function SupportAssistantWidget() {
             <div className="max-h-[42vh] min-h-[220px] space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-white/40 p-2 dark:bg-white/5 md:max-h-[46vh] md:min-h-[240px]">
               {loadingConversation ? (
                 <div className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
-<<<<<<< HEAD
                   Loading {ASSISTANT_NAME} conversation...
                 </div>
               ) : messages.length === 0 ? (
                 <div className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
                   Start by asking {ASSISTANT_NAME} a farm operations question.
-=======
-                  Loading assistant conversation...
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs text-slate-500 dark:text-slate-300">
-                  Start by asking a farm operations question.
->>>>>>> 0babf4d (Update frontend application)
                 </div>
               ) : (
                 messages.map((message) => {
@@ -560,11 +393,7 @@ export default function SupportAssistantWidget() {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 rows={2}
-<<<<<<< HEAD
                 placeholder={`Ask ${ASSISTANT_NAME} anything about your farm operations...`}
-=======
-                placeholder="Ask the assistant anything about your farm operations..."
->>>>>>> 0babf4d (Update frontend application)
                 disabled={!activeTenantId}
                 className="w-full rounded-xl border border-white/15 bg-white/60 px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-accent-primary/50 dark:bg-white/10 dark:text-slate-100"
               />
@@ -572,7 +401,6 @@ export default function SupportAssistantWidget() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-<<<<<<< HEAD
                     onClick={handleEscalateToSupport}
                     disabled={!activeTenantId}
                     className="inline-flex items-center gap-1 rounded-md border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-500/15 disabled:opacity-60 dark:text-emerald-200"
@@ -583,9 +411,6 @@ export default function SupportAssistantWidget() {
                   <button
                     type="button"
                     onClick={() => navigate(toKfarmsAppPath("/support"))}
-=======
-                    onClick={() => navigate("/support")}
->>>>>>> 0babf4d (Update frontend application)
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/20 dark:text-slate-200"
                   >
                     <LifeBuoy className="h-3.5 w-3.5" />
@@ -594,11 +419,7 @@ export default function SupportAssistantWidget() {
                   </button>
                   <button
                     type="button"
-<<<<<<< HEAD
                     onClick={() => navigate(billingPath)}
-=======
-                    onClick={() => navigate("/billing")}
->>>>>>> 0babf4d (Update frontend application)
                     className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white/20 dark:text-slate-200"
                   >
                     Billing
@@ -622,19 +443,11 @@ export default function SupportAssistantWidget() {
         type="button"
         onClick={() => setOpen((state) => !state)}
         className="group inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-accent-primary/40 bg-accent-primary text-sm font-semibold text-white shadow-soft transition-all duration-300 hover:w-36 hover:justify-start hover:px-4 focus-visible:w-36 focus-visible:justify-start focus-visible:px-4"
-<<<<<<< HEAD
         aria-label={`Open ${ASSISTANT_NAME}`}
       >
         <MessageCircle className="h-4 w-4" />
         <span className="ml-0 max-w-0 whitespace-nowrap opacity-0 transition-all duration-300 group-hover:ml-2 group-hover:max-w-[84px] group-hover:opacity-100 group-focus-visible:ml-2 group-focus-visible:max-w-[84px] group-focus-visible:opacity-100">
           {ASSISTANT_NAME}
-=======
-        aria-label="Open support assistant"
-      >
-        <MessageCircle className="h-4 w-4" />
-        <span className="ml-0 max-w-0 whitespace-nowrap opacity-0 transition-all duration-300 group-hover:ml-2 group-hover:max-w-[84px] group-hover:opacity-100 group-focus-visible:ml-2 group-focus-visible:max-w-[84px] group-focus-visible:opacity-100">
-          Assistant
->>>>>>> 0babf4d (Update frontend application)
         </span>
       </button>
     </div>

@@ -1,12 +1,9 @@
 import apiClient from "../api/apiClient";
-<<<<<<< HEAD
 import {
   normalizeKfarmsLegacyPath,
   toKfarmsAppPath,
 } from "../apps/kfarms/paths";
 import { getPlanById, isPlanAtLeast, normalizePlanId } from "../constants/plans";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 const ASSISTANT_STORAGE_KEY = "kf-placeholder-support-assistant";
 
@@ -21,11 +18,8 @@ const DEFAULT_FALLBACK_PROMPTS = Object.freeze([
   "How can I ask for help?",
 ]);
 
-<<<<<<< HEAD
 const KAI_NAME = "KAI";
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 const GREETING_PHRASES = Object.freeze([
   "hi",
   "hello",
@@ -98,17 +92,12 @@ const PLANNING_PATTERN =
   /\b(avoid|prevent|plan|reorder|budget|control|improve|best practice|priority)\b/i;
 const DETAIL_PATTERN =
   /\b(what details|what fields|what should include|what do i track|what to track|mandatory)\b/i;
-<<<<<<< HEAD
 const ACTION_PATTERN =
   /\b(add|create|record|log|enter|save|update|change|invite|onboard|set up|setup)\b/i;
 const LIVE_DATA_PATTERN =
   /\b(how much|how many|how are|today|this week|last 7 days|current|latest|profit|revenue|stock|count|total)\b/i;
 const SNAPSHOT_REPLY_PATTERN =
   /\b(workspace snapshot|inventory:|tasks:|priority attention|unread alerts|ask me about inventory)\b/i;
-=======
-const LIVE_DATA_PATTERN =
-  /\b(how much|how many|how are|today|this week|last 7 days|current|latest|profit|revenue|stock|count|total)\b/i;
->>>>>>> 0babf4d (Update frontend application)
 
 const TOPIC_CONFIG = Object.freeze({
   dashboard: {
@@ -180,15 +169,11 @@ const TOPIC_CONFIG = Object.freeze({
     label: "sales",
     route: "/sales",
     keywords: [
-<<<<<<< HEAD
       "sale",
       "sales",
       "sell",
       "new sale",
       "record sale",
-=======
-      "sales",
->>>>>>> 0babf4d (Update frontend application)
       "cash",
       "invoice",
       "revenue",
@@ -277,11 +262,7 @@ function normalizeAction(entry = {}) {
     id: String(entry.id || `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
     label,
     type: type === "prompt" ? "prompt" : "navigate",
-<<<<<<< HEAD
     target: type === "prompt" || !target ? target : toKfarmsAppPath(target),
-=======
-    target,
->>>>>>> 0babf4d (Update frontend application)
     message,
   };
 }
@@ -385,7 +366,6 @@ function normalizeModules(context = {}) {
   return ["POULTRY", "FISH_FARMING"];
 }
 
-<<<<<<< HEAD
 function getAssistantPlanId(context = {}) {
   return normalizePlanId(context.plan, "FREE");
 }
@@ -414,8 +394,6 @@ function buildAssistantTransportLabel({ source = "api", context = {} } = {}) {
   return `${label} live mode`;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function hasModule(context, moduleId) {
   return normalizeModules(context).includes(moduleId);
 }
@@ -430,11 +408,7 @@ function formatTitleCase(value) {
 }
 
 function inferTopicFromRoute(pathname) {
-<<<<<<< HEAD
   const normalizedPath = normalizeKfarmsLegacyPath(pathname).toLowerCase();
-=======
-  const normalizedPath = String(pathname ?? "").trim().toLowerCase();
->>>>>>> 0babf4d (Update frontend application)
   if (!normalizedPath) return "";
 
   return (
@@ -510,10 +484,7 @@ function inferIntent(message, topic) {
   const text = normalizeText(message);
 
   if (NAVIGATION_PATTERN.test(text)) return "navigate";
-<<<<<<< HEAD
   if (ACTION_PATTERN.test(text)) return "action";
-=======
->>>>>>> 0babf4d (Update frontend application)
   if (CHECKLIST_PATTERN.test(text)) return "checklist";
   if (TROUBLESHOOT_PATTERN.test(text)) return "troubleshoot";
   if (SUMMARY_PATTERN.test(text)) return "summary";
@@ -529,7 +500,6 @@ function asksForLiveData(message, topic, intent) {
     intent === "summary";
 }
 
-<<<<<<< HEAD
 function looksLikeWorkspaceSnapshotReply(reply = "") {
   const normalized = normalizeText(reply);
   if (!normalized) return false;
@@ -562,8 +532,6 @@ function shouldPreferLocalTopicReply({
   return !isDashboardSnapshotRequest(message, topic, intent);
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function buildSupportTicketTarget({
   category = "General",
   priority = "MEDIUM",
@@ -577,23 +545,15 @@ function buildSupportTicketTarget({
     subject,
     description,
   });
-<<<<<<< HEAD
   return `${toKfarmsAppPath("/support")}?${params.toString()}`;
 }
 
 function buildStarterSuggestions(context = {}) {
   const planId = getAssistantPlanId(context);
-=======
-  return `/support?${params.toString()}`;
-}
-
-function buildStarterSuggestions(context = {}) {
->>>>>>> 0babf4d (Update frontend application)
   const suggestions = ["What needs attention today?"];
   if (hasModule(context, "FISH_FARMING")) {
     suggestions.push("Show me a daily pond checklist");
   }
-<<<<<<< HEAD
   if (isPlanAtLeast(planId, "PRO")) {
     suggestions.push("Build a priority plan for today");
     suggestions.push("How do I avoid feed stockout this week?");
@@ -608,36 +568,21 @@ function buildStarterSuggestions(context = {}) {
   if (planId === "ENTERPRISE") {
     suggestions.push("What should leaders escalate today?");
   }
-=======
-  suggestions.push("How do I avoid feed stockout?");
-  suggestions.push(
-    hasModule(context, "POULTRY")
-      ? "What should I check in poultry today?"
-      : "How are sales this week?",
-  );
->>>>>>> 0babf4d (Update frontend application)
   return normalizeSuggestions(suggestions, DEFAULT_FALLBACK_PROMPTS);
 }
 
 function buildStarterActions(context = {}) {
-<<<<<<< HEAD
   const planId = getAssistantPlanId(context);
-=======
->>>>>>> 0babf4d (Update frontend application)
   const actions = [
     { type: "navigate", label: "Open Dashboard", target: "/dashboard" },
     hasModule(context, "FISH_FARMING")
       ? { type: "navigate", label: "Open Fish Ponds", target: "/fish-ponds" }
       : { type: "navigate", label: "Open Feeds", target: "/feeds" },
-<<<<<<< HEAD
     planId === "ENTERPRISE"
       ? { type: "navigate", label: "Open Users", target: "/users" }
       : planId === "PRO"
         ? { type: "navigate", label: "Open Inventory", target: "/inventory" }
         : { type: "navigate", label: "Open Support", target: "/support" },
-=======
-    { type: "navigate", label: "Open Support", target: "/support" },
->>>>>>> 0babf4d (Update frontend application)
   ];
   return normalizeActions(actions);
 }
@@ -710,11 +655,8 @@ function buildConversationalReply({
   tenantName = "your farm",
 } = {}) {
   const routeLabel = inferRouteLabel(context);
-<<<<<<< HEAD
   const assistantLabel = getAssistantLabel(context);
   const assistantSummary = getAssistantSummary(context);
-=======
->>>>>>> 0babf4d (Update frontend application)
   const routeHint = routeLabel
     ? `We can start with ${routeLabel} since that is where you are now, or jump anywhere else.`
     : "We can do a quick farm check-in or jump into any area you want.";
@@ -723,36 +665,21 @@ function buildConversationalReply({
   switch (intent) {
     case "greeting":
       return userHasSpokenBefore
-<<<<<<< HEAD
         ? `Hi again ${userName}. ${assistantLabel} is here with you for ${tenantName}. ${routeHint} What would you like help with today?`
         : `Hi ${userName}. Nice to hear from you. ${assistantLabel} is here with you for ${tenantName}. ${routeHint} What would you like help with today?`;
     case "how_are_you":
       return `I am doing well and ready to help. ${assistantLabel} is tuned for ${tenantName}. ${routeHint}`;
-=======
-        ? `Hi again ${userName}. I am here with you for ${tenantName}. ${routeHint} What would you like help with today?`
-        : `Hi ${userName}. Nice to hear from you. I am here with you for ${tenantName}. ${routeHint} What would you like help with today?`;
-    case "how_are_you":
-      return `I am doing well and ready to help. ${routeHint}`;
->>>>>>> 0babf4d (Update frontend application)
     case "thanks":
       return "Anytime. If you want, I can help with the next step too.";
     case "goodbye":
       return `See you soon ${userName}. Come back anytime you want a quick checklist, a review flow, or help finding the right page.`;
     case "identity":
-<<<<<<< HEAD
       return `I am ${assistantLabel} for ${tenantName}. ${assistantSummary}`;
     case "capabilities":
       return [
         "Absolutely.",
         `${assistantLabel} can help with quick farm check-ins, pond routines, feed planning, inventory control, poultry reviews, sales follow-up, billing questions, team access, and support steps.`,
         assistantSummary,
-=======
-      return `I am the KFarms Assistant for ${tenantName}. I can chat with you naturally, help you think through farm work, and point you to the right page when you need to act.`;
-    case "capabilities":
-      return [
-        "Absolutely.",
-        "I can help with quick farm check-ins, pond routines, feed planning, inventory control, poultry reviews, sales follow-up, billing questions, team access, and support steps.",
->>>>>>> 0babf4d (Update frontend application)
         "Tell me what you are trying to do, and I will keep it practical.",
       ].join(" ");
     default:
@@ -765,11 +692,8 @@ function buildWelcomeMessage({
   tenantName = "your farm",
   context = {},
 } = {}) {
-<<<<<<< HEAD
   const assistantLabel = getAssistantLabel(context);
   const assistantSummary = getAssistantSummary(context);
-=======
->>>>>>> 0babf4d (Update frontend application)
   const focusAreas = [
     hasModule(context, "FISH_FARMING") ? "pond checks and fish health" : "",
     "feed planning and stock control",
@@ -781,12 +705,8 @@ function buildWelcomeMessage({
   return normalizeMessage({
     role: "assistant",
     content:
-<<<<<<< HEAD
       `Hi ${userName}. I am ${assistantLabel} for ${tenantName}. ` +
       `${assistantSummary} ` +
-=======
-      `Hi ${userName}. I am your KFarms Assistant for ${tenantName}. ` +
->>>>>>> 0babf4d (Update frontend application)
       `I can help with ${focusAreas.join(", ")}. ` +
       "Ask me for a checklist, a troubleshooting plan, a weekly review flow, or the best page to open next.",
     createdAt: nowIso(),
@@ -807,7 +727,6 @@ function ensureInitializedConversation({
 
 function buildLiveDataNote(message, topic, intent) {
   if (!asksForLiveData(message, topic, intent)) return "";
-<<<<<<< HEAD
   return "";
 }
 
@@ -943,17 +862,6 @@ function appendGradeCoaching(reply = "", options = {}) {
 function buildDashboardReply({ tenantName, context, message, intent }) {
   const liveNote = buildPlanAwareLiveDataNote(message, "dashboard", intent, context);
   const lines = [liveNote || `For ${tenantName}, start with this quick daily review:`];
-=======
-  return "I cannot read live totals in local assistant mode, but I can point you to the fastest review flow:";
-}
-
-function buildDashboardReply({ tenantName, context, message, intent }) {
-  const lines = [buildLiveDataNote(message, "dashboard", intent) || `For ${tenantName}, start with this quick daily review:`];
-
-  if (!buildLiveDataNote(message, "dashboard", intent)) {
-    lines[0] = `For ${tenantName}, start with this quick daily review:`;
-  }
->>>>>>> 0babf4d (Update frontend application)
 
   lines.push("- Dashboard: scan overdue tasks first, then anything due soon or marked urgent.");
   if (hasModule(context, "FISH_FARMING")) {
@@ -965,11 +873,7 @@ function buildDashboardReply({ tenantName, context, message, intent }) {
   lines.push("- Feeds and inventory: restock anything at or below reorder level before the workday gets busy.");
   lines.push("- Sales and cash: reconcile recent sales, receipts, and unpaid balances.");
   lines.push("Ask me to zoom into ponds, feeds, inventory, poultry, sales, billing, or support.");
-<<<<<<< HEAD
   return appendGradeCoaching(lines.join("\n"), { topic: "dashboard", context });
-=======
-  return lines.join("\n");
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function buildFishReply({ intent, isFollowUp }) {
@@ -1014,13 +918,8 @@ function buildFishReply({ intent, isFollowUp }) {
   ].join("\n");
 }
 
-<<<<<<< HEAD
 function buildFeedsReply({ message, intent, isFollowUp, context = {} }) {
   const liveNote = buildPlanAwareLiveDataNote(message, "feeds", intent, context);
-=======
-function buildFeedsReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "feeds", intent);
->>>>>>> 0babf4d (Update frontend application)
 
   if (intent === "checklist") {
     return [
@@ -1062,7 +961,6 @@ function buildFeedsReply({ message, intent, isFollowUp }) {
   ].join("\n");
 }
 
-<<<<<<< HEAD
 function buildInventoryReply({ message, intent, isFollowUp, context = {} }) {
   const liveNote = buildPlanAwareLiveDataNote(message, "inventory", intent, context);
 
@@ -1076,10 +974,6 @@ function buildInventoryReply({ message, intent, isFollowUp, context = {} }) {
       "- Review low-stock and reorder items before you leave the page.",
     ].join("\n");
   }
-=======
-function buildInventoryReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "inventory", intent);
->>>>>>> 0babf4d (Update frontend application)
 
   if (intent === "planning" || /reorder|priority|critical/.test(normalizeText(message))) {
     return [
@@ -1150,7 +1044,6 @@ function buildPoultryReply({ intent, isFollowUp }) {
   ].join("\n");
 }
 
-<<<<<<< HEAD
 function buildSalesReply({ message, intent, isFollowUp, context = {} }) {
   const liveNote = buildPlanAwareLiveDataNote(message, "sales", intent, context);
 
@@ -1164,10 +1057,6 @@ function buildSalesReply({ message, intent, isFollowUp, context = {} }) {
       "- Reopen the sale later if you need to update payment or notes.",
     ].join("\n");
   }
-=======
-function buildSalesReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "sales", intent);
->>>>>>> 0babf4d (Update frontend application)
 
   if (intent === "details") {
     return [
@@ -1199,7 +1088,6 @@ function buildSalesReply({ message, intent, isFollowUp }) {
   ].join("\n");
 }
 
-<<<<<<< HEAD
 function buildBillingReply({ message, intent, isFollowUp, context = {} }) {
   const liveNote = buildPlanAwareLiveDataNote(message, "billing", intent, context);
 
@@ -1213,10 +1101,6 @@ function buildBillingReply({ message, intent, isFollowUp, context = {} }) {
       "- If anything looks wrong, open a billing support request with the reference.",
     ].join("\n");
   }
-=======
-function buildBillingReply({ message, intent, isFollowUp }) {
-  const liveNote = buildLiveDataNote(message, "billing", intent);
->>>>>>> 0babf4d (Update frontend application)
 
   if (intent === "troubleshoot") {
     return [
@@ -1249,7 +1133,6 @@ function buildBillingReply({ message, intent, isFollowUp }) {
 }
 
 function buildTeamReply({ intent, isFollowUp }) {
-<<<<<<< HEAD
   if (intent === "action") {
     return [
       "To add a new teammate:",
@@ -1261,8 +1144,6 @@ function buildTeamReply({ intent, isFollowUp }) {
     ].join("\n");
   }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
   if (intent === "checklist" || isFollowUp) {
     return [
       "Use this workspace access routine:",
@@ -1281,17 +1162,10 @@ function buildTeamReply({ intent, isFollowUp }) {
   ].join("\n");
 }
 
-<<<<<<< HEAD
 function buildSupportReply({ topic, intent, isFollowUp }) {
   if (intent === "action" || isFollowUp || topic === "support") {
     return [
       "To get help faster, send one complete support request:",
-=======
-function buildSupportReply({ topic, isFollowUp }) {
-  if (isFollowUp || topic === "support") {
-    return [
-      "For faster help, send one complete support request:",
->>>>>>> 0babf4d (Update frontend application)
       "- what page you were on",
       "- what you expected to happen",
       "- what actually happened",
@@ -1312,11 +1186,7 @@ function buildClarifyingReply(context = {}) {
     ? `Since you are on ${TOPIC_CONFIG[routeTopic].label}, I can start there.`
     : "";
 
-<<<<<<< HEAD
   return appendGradeCoaching([
-=======
-  return [
->>>>>>> 0babf4d (Update frontend application)
     routeHint || "I can help best when you point me to one farm area.",
     "Try one of these:",
     "- What needs attention today?",
@@ -1326,28 +1196,17 @@ function buildClarifyingReply(context = {}) {
     "- How do I ask for help?",
   ]
     .filter(Boolean)
-<<<<<<< HEAD
     .join("\n"), { topic: "general", context });
-=======
-    .join("\n");
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function buildReplyForTopic({ message, context, topic, intent }) {
   const isFollowUp = intent === "follow_up" || FOLLOW_UP_PATTERN.test(normalizeText(message));
 
   if (intent === "navigate" && topic !== "general") {
-<<<<<<< HEAD
     return appendGradeCoaching([
       `The best page for that is ${TOPIC_CONFIG[topic].label}.`,
       "Use the action button below to open it, then ask me for a checklist, review flow, or next steps once you are there.",
     ].join("\n"), { topic, context });
-=======
-    return [
-      `The best page for that is ${TOPIC_CONFIG[topic].label}.`,
-      "Use the action button below to open it, then ask me for a checklist, review flow, or next steps once you are there.",
-    ].join("\n");
->>>>>>> 0babf4d (Update frontend application)
   }
 
   switch (topic) {
@@ -1359,7 +1218,6 @@ function buildReplyForTopic({ message, context, topic, intent }) {
         intent,
       });
     case "fish":
-<<<<<<< HEAD
       return appendGradeCoaching(buildFishReply({ intent, isFollowUp }), { topic: "fish", context });
     case "feeds":
       return appendGradeCoaching(buildFeedsReply({ message, intent, isFollowUp, context }), { topic: "feeds", context });
@@ -1375,30 +1233,12 @@ function buildReplyForTopic({ message, context, topic, intent }) {
       return appendGradeCoaching(buildTeamReply({ intent, isFollowUp }), { topic: "team", context });
     case "support":
       return appendGradeCoaching(buildSupportReply({ topic, intent, isFollowUp: true }), { topic: "support", context });
-=======
-      return buildFishReply({ intent, isFollowUp });
-    case "feeds":
-      return buildFeedsReply({ message, intent, isFollowUp });
-    case "inventory":
-      return buildInventoryReply({ message, intent, isFollowUp });
-    case "poultry":
-      return buildPoultryReply({ intent, isFollowUp });
-    case "sales":
-      return buildSalesReply({ message, intent, isFollowUp });
-    case "billing":
-      return buildBillingReply({ message, intent, isFollowUp });
-    case "team":
-      return buildTeamReply({ intent, isFollowUp });
-    case "support":
-      return buildSupportReply({ topic, isFollowUp: true });
->>>>>>> 0babf4d (Update frontend application)
     default:
       return buildClarifyingReply(context);
   }
 }
 
 function buildSuggestionsForTopic({ topic, context }) {
-<<<<<<< HEAD
   const planId = getAssistantPlanId(context);
   switch (topic) {
     case "dashboard":
@@ -1416,17 +1256,6 @@ function buildSuggestionsForTopic({ topic, context }) {
         ],
         DEFAULT_FALLBACK_PROMPTS,
       );
-=======
-  switch (topic) {
-    case "dashboard":
-      return normalizeSuggestions([
-        hasModule(context, "FISH_FARMING")
-          ? "Show me a daily pond checklist"
-          : "How do I avoid feed stockout?",
-        "How do I avoid feed stockout?",
-        "How are sales this week?",
-      ], DEFAULT_FALLBACK_PROMPTS);
->>>>>>> 0babf4d (Update frontend application)
     case "fish":
       return normalizeSuggestions([
         "Show me a daily pond checklist",
@@ -1481,10 +1310,7 @@ function buildSuggestionsForTopic({ topic, context }) {
 }
 
 function buildActionsForTopic({ topic, context }) {
-<<<<<<< HEAD
   const planId = getAssistantPlanId(context);
-=======
->>>>>>> 0babf4d (Update frontend application)
   switch (topic) {
     case "dashboard":
       return normalizeActions([
@@ -1496,13 +1322,9 @@ function buildActionsForTopic({ topic, context }) {
               message: "Show me a daily pond checklist",
             }
           : { type: "navigate", label: "Open Feeds", target: "/feeds" },
-<<<<<<< HEAD
         planId === "ENTERPRISE"
           ? { type: "navigate", label: "Open Users", target: "/users" }
           : { type: "navigate", label: "Open Inventory", target: "/inventory" },
-=======
-        { type: "navigate", label: "Open Inventory", target: "/inventory" },
->>>>>>> 0babf4d (Update frontend application)
       ]);
     case "fish":
       return normalizeActions([
@@ -1813,7 +1635,6 @@ export async function askSupportAssistant({
       throw new Error("Assistant reply was empty.");
     }
 
-<<<<<<< HEAD
     if (
       shouldPreferLocalTopicReply({
         assistantText,
@@ -1838,8 +1659,6 @@ export async function askSupportAssistant({
       };
     }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
     const apiMessages = normalizeHistory(payload.messages);
     const assistantEntry = normalizeMessage({
       role: "assistant",

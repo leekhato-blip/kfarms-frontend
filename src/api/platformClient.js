@@ -1,21 +1,14 @@
 import axios from "axios";
 import { PLATFORM_API_BASE_URL } from "./endpoints";
-<<<<<<< HEAD
 import { clearPlatformDevSession, isPlatformDevToken } from "../auth/platformDevSession";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 export const PLATFORM_TOKEN_KEY = "roots_platform_token";
 export const PLATFORM_JWT_FALLBACK_KEY = "jwt";
 export const PLATFORM_FLASH_KEY = "roots_platform_flash";
-<<<<<<< HEAD
 export const PLATFORM_ACTIVE_TENANT_KEY = "roots_platform_active_tenant_id";
 
 const DEFAULT_PLATFORM_ROUTE_MODE = "api";
 let preferredPlatformRouteMode = DEFAULT_PLATFORM_ROUTE_MODE;
-=======
-export const PLATFORM_ACTIVE_TENANT_KEY = "activeTenantId";
->>>>>>> 0babf4d (Update frontend application)
 
 export function getPlatformToken() {
   if (typeof window === "undefined") return "";
@@ -31,7 +24,6 @@ export function getPlatformTenantId() {
   return window.localStorage.getItem(PLATFORM_ACTIVE_TENANT_KEY) || "";
 }
 
-<<<<<<< HEAD
 export function setPlatformTenantId(tenantId) {
   if (typeof window === "undefined") return;
 
@@ -42,18 +34,12 @@ export function setPlatformTenantId(tenantId) {
   }
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function setPlatformToken(token) {
   if (typeof window === "undefined") return;
 
   if (token) {
     window.localStorage.setItem(PLATFORM_TOKEN_KEY, token);
-<<<<<<< HEAD
     window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
-=======
-    window.localStorage.setItem(PLATFORM_JWT_FALLBACK_KEY, token);
->>>>>>> 0babf4d (Update frontend application)
   } else {
     window.localStorage.removeItem(PLATFORM_TOKEN_KEY);
     window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
@@ -64,11 +50,8 @@ export function clearPlatformSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(PLATFORM_TOKEN_KEY);
   window.localStorage.removeItem(PLATFORM_JWT_FALLBACK_KEY);
-<<<<<<< HEAD
   window.localStorage.removeItem(PLATFORM_ACTIVE_TENANT_KEY);
   clearPlatformDevSession();
-=======
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function setFlashMessage(message) {
@@ -82,7 +65,6 @@ function redirectToPlatformLogin() {
   window.location.assign("/platform/login");
 }
 
-<<<<<<< HEAD
 function resolveRequestPath(requestUrl) {
   if (!requestUrl) return "";
   if (/^https?:\/\//i.test(requestUrl)) {
@@ -178,8 +160,6 @@ export function shouldAttachPlatformTenantHeader(pathname) {
   return true;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function unwrapApiResponse(payload, fallbackMessage = "Request failed") {
   const isWrapped =
     payload && typeof payload === "object" && Object.prototype.hasOwnProperty.call(payload, "success");
@@ -195,7 +175,6 @@ export function unwrapApiResponse(payload, fallbackMessage = "Request failed") {
   return payload.data;
 }
 
-<<<<<<< HEAD
 function getNonEmptyMessage(value) {
   if (typeof value !== "string") return "";
   return value.trim();
@@ -211,20 +190,10 @@ export function getApiErrorMessage(error, fallbackMessage = "Something went wron
     getNonEmptyMessage(error?.message);
 
   if (message) return message;
-=======
-export function getApiErrorMessage(error, fallbackMessage = "Something went wrong") {
-  const payload = error?.response?.data;
-
-  if (typeof payload?.message === "string") return payload.message;
-  if (typeof payload?.error === "string") return payload.error;
-  if (typeof payload === "string") return payload;
-  if (typeof error?.message === "string") return error.message;
->>>>>>> 0babf4d (Update frontend application)
 
   return fallbackMessage;
 }
 
-<<<<<<< HEAD
 export function enrichPlatformRequestConfig(config, context = {}) {
   const token =
     Object.prototype.hasOwnProperty.call(context, "token") ? context.token : getPlatformToken();
@@ -252,8 +221,6 @@ export function enrichPlatformRequestConfig(config, context = {}) {
   return config;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 const platformAxios = axios.create({
   baseURL: PLATFORM_API_BASE_URL,
   timeout: 15000,
@@ -263,7 +230,6 @@ const platformAxios = axios.create({
 });
 
 platformAxios.interceptors.request.use((config) => {
-<<<<<<< HEAD
   const nextConfig = enrichPlatformRequestConfig(config);
   const requestPath = resolveRequestPath(String(nextConfig?.url || ""));
   const preferredPath = applyPlatformRouteMode(requestPath);
@@ -303,45 +269,6 @@ platformAxios.interceptors.response.use(
     }
 
     if (status === 401 && !skipAuthHandling && !isPlatformDevToken(getPlatformToken())) {
-=======
-  const token = getPlatformToken();
-  const tenantId = getPlatformTenantId();
-  const requestUrl = String(config?.url || "");
-  const isAuthRoute = requestUrl.includes("/auth/");
-  const normalizedPath = (() => {
-    if (!requestUrl) return "";
-    if (/^https?:\/\//i.test(requestUrl)) {
-      try {
-        return new URL(requestUrl).pathname;
-      } catch {
-        return requestUrl;
-      }
-    }
-    return requestUrl;
-  })();
-  const isPlatformRoute = normalizedPath.startsWith("/platform/");
-
-  config.headers = config.headers || {};
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  if (!isAuthRoute && !isPlatformRoute && tenantId && !config.headers["X-Tenant-Id"]) {
-    config.headers["X-Tenant-Id"] = tenantId;
-  }
-
-  return config;
-});
-
-platformAxios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error?.response?.status;
-    const skipAuthHandling = Boolean(error?.config?.skipPlatformAuthHandling);
-
-    if (status === 401 && !skipAuthHandling) {
->>>>>>> 0babf4d (Update frontend application)
       clearPlatformSession();
       setFlashMessage("Session expired. Please log in again.");
       redirectToPlatformLogin();

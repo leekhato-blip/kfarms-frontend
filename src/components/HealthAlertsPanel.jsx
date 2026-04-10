@@ -184,7 +184,6 @@ export default function HealthAlertsPanel({
 
 /* Alert Item */
 function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId }) {
-<<<<<<< HEAD
   const MAX_STEPS_HEIGHT = 176;
   const [open, setOpen] = useState(false);
   const [stepsHeight, setStepsHeight] = useState(0);
@@ -219,15 +218,6 @@ function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId 
 
     return () => observer.disconnect();
   }, [MAX_STEPS_HEIGHT, alert.adviceSteps, open]);
-=======
-  const [open, setOpen] = useState(false);
-  const normalizedStatus = String(alert.status || "NEW").toUpperCase();
-  const busy = String(processingId || "") === String(alert.id || "");
-  const isPreviewOnly = Boolean(alert.readOnly);
-  const acknowledgementLocked =
-    isPreviewOnly || normalizedStatus === "ACKNOWLEDGED" || normalizedStatus === "HANDLED";
-  const handleLocked = isPreviewOnly || normalizedStatus === "HANDLED";
->>>>>>> 0babf4d (Update frontend application)
 
   return (
     <div className="flex h-full w-full flex-col rounded-lg border border-slate-200 p-3 shadow-sm font-body dark:border-slate-700">
@@ -249,11 +239,7 @@ function AlertItem({ alert, meta, onAcknowledge, onHandle, onCall, processingId 
       </div>
 
       {alert.contextNote && (
-<<<<<<< HEAD
         <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-=======
-        <div className="mt-1 line-clamp-2 text-xs text-slate-500">
->>>>>>> 0babf4d (Update frontend application)
           {alert.contextNote}
         </div>
       )}

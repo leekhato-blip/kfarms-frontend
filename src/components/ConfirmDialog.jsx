@@ -1,8 +1,5 @@
 import React from "react";
-<<<<<<< HEAD
 import { createPortal } from "react-dom";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import Button from "./Button";
 
 export default function ConfirmDialog({
@@ -27,7 +24,6 @@ export default function ConfirmDialog({
   }, [open, onCancel]);
 
   if (!open) return null;
-<<<<<<< HEAD
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -63,24 +59,5 @@ export default function ConfirmDialog({
       </div>
     </div>,
     document.body,
-=======
-
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[color:var(--atlas-overlay)] px-4">
-      <div className="atlas-glass-card w-full max-w-md rounded-xl border border-[color:var(--atlas-border-strong)] p-5">
-        <h3 className="text-lg font-semibold text-[var(--atlas-text-strong)]">{title}</h3>
-        <p className="mt-2 text-sm text-[var(--atlas-muted)]">{message}</p>
-
-        <div className="mt-5 flex justify-end gap-3">
-          <Button variant="outline" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button onClick={onConfirm} disabled={loading}>
-            {loading ? "Processing..." : confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </div>
->>>>>>> 0babf4d (Update frontend application)
   );
 }

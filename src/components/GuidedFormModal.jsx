@@ -1,17 +1,12 @@
-<<<<<<< HEAD
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import { createPortal } from "react-dom";
-=======
-import React from "react";
->>>>>>> 0babf4d (Update frontend application)
 import { Check, X } from "lucide-react";
 
 function cn(...values) {
   return values.filter(Boolean).join(" ");
 }
 
-<<<<<<< HEAD
 export const GUIDED_FORM_LABEL_CLASS =
   "mb-1 flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-200";
 export const GUIDED_FORM_ICON_CLASS = "h-4 w-4 text-slate-500 dark:text-slate-400";
@@ -42,8 +37,6 @@ export function handleGuidedFormAdvanceClick(event, onAdvance) {
   onAdvance();
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function GuidedFormSection({
   title,
   description = "",
@@ -93,20 +86,12 @@ export default function GuidedFormModal({
   children,
 }) {
   if (!open) return null;
-<<<<<<< HEAD
   if (typeof document === "undefined") return null;
 
   const safeCurrentStep = Math.min(Math.max(currentStep, 0), Math.max(steps.length - 1, 0));
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] overflow-y-auto px-4 py-6 sm:py-8">
-=======
-
-  const safeCurrentStep = Math.min(Math.max(currentStep, 0), Math.max(steps.length - 1, 0));
-
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4">
->>>>>>> 0babf4d (Update frontend application)
       <div
         className="absolute inset-0 bg-black/55 backdrop-blur-md"
         onClick={saving ? undefined : onClose}
@@ -114,23 +99,15 @@ export default function GuidedFormModal({
 
       <form
         onSubmit={onSubmit}
-<<<<<<< HEAD
         className={cn(
           "relative mx-auto flex min-h-full w-full items-center justify-center rounded-2xl p-1 animate-fadeIn",
           maxWidth,
         )}
-=======
-        className={cn("relative w-full rounded-2xl p-1 animate-fadeIn", maxWidth)}
->>>>>>> 0babf4d (Update frontend application)
         aria-modal="true"
         role="dialog"
       >
         <div className="rounded-2xl bg-darkCard/60 shadow-neo p-px">
-<<<<<<< HEAD
           <div className="max-h-[92vh] overflow-y-auto rounded-2xl border border-white/20 bg-white/80 p-5 text-slate-900 backdrop-blur-xl dark:bg-black/70 dark:text-slate-100 sm:p-6">
-=======
-          <div className="max-h-[92vh] overflow-y-auto rounded-2xl border border-white/20 bg-white/80 p-5 backdrop-blur-xl dark:bg-black/70 sm:p-6">
->>>>>>> 0babf4d (Update frontend application)
             <div className="space-y-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
@@ -146,11 +123,7 @@ export default function GuidedFormModal({
                         {editing ? "Editing" : "New"}
                       </span>
                     </div>
-<<<<<<< HEAD
                     <p className="mt-1 hidden text-sm leading-relaxed text-slate-600 dark:text-slate-300 sm:block">
-=======
-                    <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
->>>>>>> 0babf4d (Update frontend application)
                       {description}
                     </p>
                   </div>
@@ -161,11 +134,7 @@ export default function GuidedFormModal({
                   onClick={onClose}
                   disabled={saving}
                   aria-label="Close form"
-<<<<<<< HEAD
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
-=======
-                  className="rounded-lg p-2 text-slate-500 transition hover:bg-white/10 disabled:opacity-60"
->>>>>>> 0babf4d (Update frontend application)
                   title="Close"
                 >
                   <X className="h-5 w-5" />
@@ -204,11 +173,7 @@ export default function GuidedFormModal({
                             <div className="min-w-0">
                               <p className="text-sm font-semibold">{step.title}</p>
                               {step.description ? (
-<<<<<<< HEAD
                                 <p className="mt-0.5 hidden text-xs leading-relaxed opacity-80 sm:block">
-=======
-                                <p className="mt-0.5 text-xs leading-relaxed opacity-80">
->>>>>>> 0babf4d (Update frontend application)
                                   {step.description}
                                 </p>
                               ) : null}
@@ -234,11 +199,7 @@ export default function GuidedFormModal({
           </div>
         </div>
       </form>
-<<<<<<< HEAD
     </div>,
     document.body,
-=======
-    </div>
->>>>>>> 0babf4d (Update frontend application)
   );
 }

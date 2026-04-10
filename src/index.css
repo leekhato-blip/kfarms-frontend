@@ -150,92 +150,6 @@ html {
 }
 
 
-<<<<<<< HEAD
-=======
-.page-loader {
-  position: fixed;
-  inset: 0;
-  z-index: 9990;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(1200px 600px at 15% 0%, rgba(34, 197, 94, 0.12), transparent 60%),
-    radial-gradient(900px 600px at 85% 20%, rgba(14, 116, 144, 0.18), transparent 55%),
-    rgba(2, 6, 23, 0.92);
-  backdrop-filter: blur(6px);
-}
-
-.page-loader-card {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-  padding: 18px 22px;
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.78);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
-}
-
-.page-loader-mark {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  position: relative;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(140deg, #34d399 0%, #0ea5e9 100%);
-  overflow: hidden;
-}
-
-.page-loader-mark::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.2);
-}
-
-.page-loader-ring {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.45);
-  border-top-color: #ffffff;
-  animation: preloader-spin 0.9s linear infinite;
-  z-index: 1;
-}
-
-.page-loader-core {
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
-  z-index: 2;
-}
-
-.page-loader-title {
-  font-family: var(--font-header);
-  font-weight: 700;
-  font-size: 17px;
-  color: #e2e8f0;
-  letter-spacing: 0.3px;
-}
-
-.page-loader-subtitle {
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: rgba(226, 232, 240, 0.7);
-}
-
-@keyframes preloader-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
->>>>>>> 0babf4d (Update frontend application)
 /* Hide scrollbars while keeping scroll enabled */
 .hide-scrollbar {
   scrollbar-width: none; /* Firefox */
@@ -384,7 +298,6 @@ input[type="number"] {
 .atlas-theme {
   --atlas-text: #334155;
   --atlas-text-strong: #0f172a;
-<<<<<<< HEAD
   --atlas-muted: #5f6f86;
   --atlas-muted-soft: #8494ad;
 
@@ -404,22 +317,6 @@ input[type="number"] {
   --atlas-glow-pink: rgba(217, 70, 239, 0.12);
   --atlas-glow-cyan: rgba(59, 130, 246, 0.12);
   --atlas-wave-secondary: rgba(148, 163, 184, 0.42);
-=======
-  --atlas-muted: #64748b;
-  --atlas-muted-soft: #94a3b8;
-
-  --atlas-surface: rgba(255, 255, 255, 0.78);
-  --atlas-surface-soft: rgba(248, 250, 252, 0.78);
-  --atlas-surface-strong: rgba(241, 245, 249, 0.88);
-  --atlas-surface-hover: rgba(226, 232, 240, 0.72);
-  --atlas-input-bg: rgba(255, 255, 255, 0.9);
-
-  --atlas-border: rgba(148, 163, 184, 0.22);
-  --atlas-border-strong: rgba(148, 163, 184, 0.34);
-  --atlas-topbar: rgba(255, 255, 255, 0.7);
-  --atlas-sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(248, 250, 252, 0.76) 100%);
-  --atlas-overlay: rgba(15, 23, 42, 0.34);
->>>>>>> 0babf4d (Update frontend application)
 
   --atlas-frame-shadow:
     0 18px 38px rgba(15, 23, 42, 0.08),
@@ -446,7 +343,6 @@ input[type="number"] {
 }
 
 .dark .atlas-theme {
-<<<<<<< HEAD
   --atlas-text: #d4ddf1;
   --atlas-text-strong: #f8fafc;
   --atlas-muted: #8fa2c5;
@@ -473,29 +369,6 @@ input[type="number"] {
   --atlas-glow-pink: rgba(99, 102, 241, 0.1);
   --atlas-glow-cyan: rgba(96, 165, 250, 0.18);
   --atlas-wave-secondary: rgba(255, 255, 255, 0.28);
-=======
-  --atlas-text: #cbd5e1;
-  --atlas-text-strong: #f8fafc;
-  --atlas-muted: #9cb0cc;
-  --atlas-muted-soft: #647895;
-
-  --atlas-surface: rgba(9, 14, 24, 0.92);
-  --atlas-surface-soft: rgba(12, 18, 31, 0.88);
-  --atlas-surface-strong: rgba(16, 24, 40, 0.95);
-  --atlas-surface-hover: rgba(37, 54, 82, 0.74);
-  --atlas-input-bg: rgba(6, 10, 18, 0.88);
-
-  --atlas-border: rgba(154, 177, 208, 0.14);
-  --atlas-border-strong: rgba(154, 177, 208, 0.22);
-  --atlas-topbar: rgba(6, 10, 18, 0.86);
-  --atlas-sidebar-bg: linear-gradient(
-    180deg,
-    rgba(2, 5, 11, 0.96) 0%,
-    rgba(4, 8, 16, 0.94) 52%,
-    rgba(5, 10, 19, 0.92) 100%
-  );
-  --atlas-overlay: rgba(1, 4, 10, 0.72);
->>>>>>> 0babf4d (Update frontend application)
 
   --atlas-frame-shadow:
     0 34px 80px rgba(0, 0, 0, 0.56),
@@ -537,21 +410,14 @@ html.dark select optgroup {
   position: relative;
   isolation: isolate;
   background:
-<<<<<<< HEAD
     radial-gradient(980px 560px at 10% 8%, rgba(59, 130, 246, 0.08), transparent 62%),
     radial-gradient(860px 520px at 86% 10%, rgba(99, 102, 241, 0.1), transparent 60%),
     radial-gradient(720px 420px at 62% 78%, rgba(217, 70, 239, 0.06), transparent 62%),
     linear-gradient(180deg, #eef2ff 0%, #f4f7ff 48%, #f8fafc 100%);
-=======
-    radial-gradient(900px 520px at 6% 6%, rgba(139, 92, 246, 0.1), transparent 62%),
-    radial-gradient(820px 480px at 92% 12%, rgba(16, 185, 129, 0.11), transparent 62%),
-    linear-gradient(180deg, #eef3ff 0%, #edf4ff 55%, #eef8f2 100%);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 .dark .atlas-root-network {
   background:
-<<<<<<< HEAD
     radial-gradient(1320px 760px at 8% 4%, rgba(37, 99, 235, 0.14), transparent 66%),
     radial-gradient(1120px 660px at 92% 10%, rgba(37, 99, 235, 0.2), transparent 68%),
     radial-gradient(920px 560px at 72% 84%, rgba(79, 70, 229, 0.12), transparent 72%),
@@ -612,12 +478,6 @@ html:not(.dark) .atlas-shell-main::before {
     radial-gradient(500px 240px at 20% 0%, rgba(109, 40, 217, 0.06), transparent 72%),
     radial-gradient(460px 220px at 88% 0%, rgba(37, 99, 235, 0.05), transparent 70%);
   opacity: 0.62;
-=======
-    radial-gradient(1180px 660px at 8% 4%, rgba(139, 92, 246, 0.1), transparent 66%),
-    radial-gradient(1020px 580px at 92% 10%, rgba(56, 189, 248, 0.055), transparent 68%),
-    radial-gradient(980px 560px at 74% 86%, rgba(16, 185, 129, 0.04), transparent 72%),
-    linear-gradient(180deg, #000102 0%, #010207 40%, #01040a 100%);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 .atlas-neon-frame {
@@ -625,11 +485,7 @@ html:not(.dark) .atlas-shell-main::before {
   border: 1px solid var(--atlas-border);
   background:
     linear-gradient(var(--atlas-surface), var(--atlas-surface)),
-<<<<<<< HEAD
     linear-gradient(135deg, rgba(109, 40, 217, 0.24), rgba(79, 70, 229, 0.18), rgba(37, 99, 235, 0.16), rgba(56, 189, 248, 0.1));
-=======
-    linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(14, 165, 233, 0.12), rgba(16, 185, 129, 0.18));
->>>>>>> 0babf4d (Update frontend application)
   background-origin: border-box;
   background-clip: padding-box, border-box;
   box-shadow: var(--atlas-frame-shadow);
@@ -642,7 +498,6 @@ html:not(.dark) .atlas-shell-main::before {
 .dark .atlas-neon-frame {
   background:
     linear-gradient(
-<<<<<<< HEAD
       color-mix(in srgb, var(--atlas-surface) 96%, #020617 4%),
       color-mix(in srgb, var(--atlas-surface-soft) 92%, #030712 8%)
     ),
@@ -656,19 +511,6 @@ html:not(.dark) .atlas-shell-main::before {
 .atlas-glass-card {
   position: relative;
   isolation: isolate;
-=======
-      color-mix(in srgb, var(--atlas-surface) 95%, #0b1220 5%),
-      color-mix(in srgb, var(--atlas-surface-soft) 92%, #0b1220 8%)
-    ),
-    linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(56, 189, 248, 0.08), rgba(16, 185, 129, 0.12));
-  border-color: rgba(154, 177, 208, 0.12);
-  box-shadow:
-    var(--atlas-frame-shadow),
-    0 0 0 1px rgba(12, 18, 32, 0.42);
-}
-
-.atlas-glass-card {
->>>>>>> 0babf4d (Update frontend application)
   background: var(--atlas-surface);
   border: 1px solid var(--atlas-border);
   box-shadow: var(--atlas-panel-shadow);
@@ -681,7 +523,6 @@ html:not(.dark) .atlas-shell-main::before {
     transform 220ms ease;
 }
 
-<<<<<<< HEAD
 .atlas-glass-card::before {
   content: "";
   position: absolute;
@@ -694,13 +535,10 @@ html:not(.dark) .atlas-shell-main::before {
   opacity: 0.9;
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 .dark .atlas-glass-card {
   background:
     linear-gradient(
       180deg,
-<<<<<<< HEAD
       color-mix(in srgb, var(--atlas-surface) 96%, #020617 4%) 0%,
       color-mix(in srgb, var(--atlas-surface-soft) 92%, #020617 8%) 100%
     );
@@ -709,16 +547,6 @@ html:not(.dark) .atlas-shell-main::before {
     var(--atlas-panel-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.035),
     inset 0 -1px 0 rgba(217, 70, 239, 0.05);
-=======
-      color-mix(in srgb, var(--atlas-surface) 92%, #111827 8%) 0%,
-      color-mix(in srgb, var(--atlas-surface-soft) 90%, #0f172a 10%) 100%
-    );
-  border-color: rgba(154, 177, 208, 0.14);
-  box-shadow:
-    var(--atlas-panel-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025),
-    inset 0 -1px 0 rgba(56, 189, 248, 0.03);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 .dark .atlas-command-chrome {
@@ -758,11 +586,7 @@ html:not(.dark) .atlas-shell-main::before {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-<<<<<<< HEAD
   border: 1px solid rgba(129, 140, 248, 0.14);
-=======
-  border: 1px solid rgba(99, 102, 241, 0.1);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 .atlas-lift {
@@ -773,11 +597,7 @@ html:not(.dark) .atlas-shell-main::before {
 }
 
 .atlas-lift:hover {
-<<<<<<< HEAD
   transform: translateY(-4px);
-=======
-  transform: translateY(-2px);
->>>>>>> 0babf4d (Update frontend application)
   box-shadow: var(--atlas-panel-shadow-hover);
 }
 
@@ -793,7 +613,6 @@ html:not(.dark) .atlas-shell-main::before {
   background: color-mix(in srgb, var(--atlas-surface-soft) 85%, #8b5cf6 15%);
 }
 
-<<<<<<< HEAD
 html:not(.dark) .atlas-premium-row:hover {
   background: color-mix(in srgb, var(--atlas-surface-hover) 88%, #c7d2fe 12%);
 }
@@ -1614,16 +1433,6 @@ select.atlas-input {
   position: relative;
   overflow: hidden;
   border-radius: 24px;
-=======
-.dark .atlas-premium-row:hover {
-  background: color-mix(in srgb, var(--atlas-surface-soft) 88%, #10b981 12%);
-}
-
-.atlas-premium-badge {
-  border: 1px solid var(--atlas-border-strong);
-  background: var(--atlas-surface-soft);
-  color: var(--atlas-text-strong);
->>>>>>> 0babf4d (Update frontend application)
 }
 
 .atlas-shimmer {

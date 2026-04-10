@@ -3,10 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   BookOpenText,
   CheckCircle2,
-<<<<<<< HEAD
   ChevronDown,
-=======
->>>>>>> 0babf4d (Update frontend application)
   CircleHelp,
   ExternalLink,
   LifeBuoy,
@@ -23,10 +20,7 @@ import GlassToast from "../components/GlassToast";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
-<<<<<<< HEAD
 import { getUserDisplayName } from "../services/userProfileService";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import {
   FARMER_GUIDES,
   SUPPORT_CHANNELS,
@@ -40,11 +34,7 @@ import {
 
 const TABS = [
   { id: "guides", label: "Guides", icon: BookOpenText },
-<<<<<<< HEAD
   { id: "tickets", label: "Messages", icon: MessageCircle },
-=======
-  { id: "tickets", label: "Help requests", icon: MessageCircle },
->>>>>>> 0babf4d (Update frontend application)
   { id: "faq", label: "Common questions", icon: CircleHelp },
 ];
 
@@ -101,7 +91,6 @@ function priorityLabel(priority) {
   return "Normal";
 }
 
-<<<<<<< HEAD
 function supportLaneLabel(lane) {
   const normalized = String(lane || "").toUpperCase();
   if (normalized === "DEDICATED") return "Dedicated lane";
@@ -109,8 +98,6 @@ function supportLaneLabel(lane) {
   return "Standard lane";
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 function buildGuideSearchText(guide) {
   const steps = Array.isArray(guide?.steps) ? guide.steps.join(" ") : "";
   return `${guide?.title || ""} ${guide?.summary || ""} ${guide?.category || ""} ${steps} ${guide?.tip || ""}`.toLowerCase();
@@ -146,7 +133,6 @@ export default function SupportPage() {
   const [sendingReply, setSendingReply] = React.useState(false);
   const [updatingTicketStatus, setUpdatingTicketStatus] = React.useState(false);
   const [toast, setToast] = React.useState({ message: "", type: "info" });
-<<<<<<< HEAD
   const [composeFocusSignal, setComposeFocusSignal] = React.useState(0);
   const ticketFormRef = React.useRef(null);
   const ticketSubjectInputRef = React.useRef(null);
@@ -157,10 +143,6 @@ export default function SupportPage() {
     setActiveTab("tickets");
     setComposeFocusSignal((current) => current + 1);
   }, []);
-=======
-
-  const displayName = user?.username || user?.email || "Farmer";
->>>>>>> 0babf4d (Update frontend application)
 
   const loadSupport = React.useCallback(async (options = {}) => {
     if (options.silent) {
@@ -318,20 +300,13 @@ export default function SupportPage() {
       setActiveTab(tab);
     }
 
-<<<<<<< HEAD
     const shouldCompose = params.get("compose") === "1";
-=======
->>>>>>> 0babf4d (Update frontend application)
     const subject = String(params.get("subject") || "").trim();
     const category = String(params.get("category") || "").trim();
     const priority = String(params.get("priority") || "").trim().toUpperCase();
     const description = String(params.get("description") || "").trim();
 
-<<<<<<< HEAD
     if (!subject && !category && !priority && !description && !shouldCompose) return;
-=======
-    if (!subject && !category && !priority && !description) return;
->>>>>>> 0babf4d (Update frontend application)
 
     setActiveTab("tickets");
     setTicketForm((prev) => ({
@@ -340,7 +315,6 @@ export default function SupportPage() {
       priority: ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(priority) ? priority : prev.priority,
       description: description || prev.description,
     }));
-<<<<<<< HEAD
     setComposeFocusSignal((current) => current + 1);
   }, [searchParamsKey]);
 
@@ -363,10 +337,6 @@ export default function SupportPage() {
     return () => window.cancelAnimationFrame(animationId);
   }, [activeTab, composeFocusSignal]);
 
-=======
-  }, [searchParamsKey]);
-
->>>>>>> 0babf4d (Update frontend application)
   async function handleCreateTicket(event) {
     event.preventDefault();
     if (submittingTicket || !activeTenantId) return;
@@ -468,21 +438,17 @@ export default function SupportPage() {
   }
 
   const workspaceName = activeTenant?.name || "your farm";
-<<<<<<< HEAD
   const supportLane =
     String(activeTenant?.plan || "").toUpperCase() === "ENTERPRISE"
       ? "DEDICATED"
       : String(activeTenant?.plan || "").toUpperCase() === "PRO"
         ? "PRIORITY"
         : "STANDARD";
-=======
->>>>>>> 0babf4d (Update frontend application)
   const headerPanelClass =
     "rounded-2xl border border-sky-200/70 bg-slate-50/85 shadow-neo dark:border-sky-500/20 dark:bg-[#061024]/90 dark:shadow-[0_22px_40px_rgba(2,8,24,0.45)]";
   const panelClass = "rounded-2xl border border-white/10 bg-white/10 shadow-neo dark:bg-darkCard/70 dark:shadow-dark";
   const panelSoftClass = "rounded-xl border border-white/10 bg-white/5";
   const fieldClass =
-<<<<<<< HEAD
     "w-full rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-500 focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:border-white/10 dark:bg-white/10 dark:text-darkText dark:placeholder:text-slate-400";
   const searchFieldClass =
     "w-full rounded-lg border border-slate-200/80 bg-white/80 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-500 focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:border-white/10 dark:bg-white/10 dark:text-darkText dark:placeholder:text-slate-400";
@@ -497,19 +463,6 @@ export default function SupportPage() {
       valueClass: "text-lightText dark:text-darkText",
       iconClass:
         "border-sky-300/55 bg-sky-500/12 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/18 dark:text-sky-200",
-=======
-    "w-full rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-sm text-lightText outline-none transition focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:text-darkText";
-  const searchFieldClass =
-    "w-full rounded-lg border border-white/10 bg-white/10 py-2 pl-9 pr-3 text-sm text-lightText outline-none transition focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/10 dark:text-darkText";
-  const supportStats = [
-    {
-      id: "total",
-      label: "Help requests",
-      value: ticketStats.total,
-      icon: MessageCircle,
-      valueClass: "text-lightText dark:text-darkText",
-      iconClass: "bg-sky-500/15 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200",
->>>>>>> 0babf4d (Update frontend application)
     },
     {
       id: "open",
@@ -517,12 +470,8 @@ export default function SupportPage() {
       value: ticketStats.open,
       icon: LifeBuoy,
       valueClass: "text-sky-600 dark:text-sky-200",
-<<<<<<< HEAD
       iconClass:
         "border-accent-primary/20 bg-accent-primary/15 text-accent-primary dark:border-accent-primary/20 dark:bg-accent-primary/20 dark:text-blue-200",
-=======
-      iconClass: "bg-accent-primary/15 text-accent-primary dark:bg-accent-primary/20 dark:text-blue-200",
->>>>>>> 0babf4d (Update frontend application)
     },
     {
       id: "pending",
@@ -530,12 +479,8 @@ export default function SupportPage() {
       value: ticketStats.pending,
       icon: TriangleAlert,
       valueClass: "text-amber-600 dark:text-amber-200",
-<<<<<<< HEAD
       iconClass:
         "border-amber-300/55 bg-amber-500/15 text-amber-600 dark:border-amber-400/20 dark:bg-amber-500/20 dark:text-amber-200",
-=======
-      iconClass: "bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200",
->>>>>>> 0babf4d (Update frontend application)
     },
     {
       id: "resolved",
@@ -543,12 +488,8 @@ export default function SupportPage() {
       value: ticketStats.resolved,
       icon: CheckCircle2,
       valueClass: "text-emerald-600 dark:text-emerald-200",
-<<<<<<< HEAD
       iconClass:
         "border-emerald-300/55 bg-emerald-500/15 text-emerald-600 dark:border-emerald-400/20 dark:bg-emerald-500/20 dark:text-emerald-200",
-=======
-      iconClass: "bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200",
->>>>>>> 0babf4d (Update frontend application)
     },
   ];
 
@@ -564,7 +505,6 @@ export default function SupportPage() {
                 Help and support
               </div>
               <h1 className="mt-3 text-2xl font-header font-semibold text-slate-900 dark:text-slate-100 md:text-[1.9rem]">
-<<<<<<< HEAD
                 Message platform support
               </h1>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700/90 dark:text-slate-300/85">
@@ -574,32 +514,16 @@ export default function SupportPage() {
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                 {supportLaneLabel(supportLane)}
               </p>
-=======
-                Get help
-              </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-700/90 dark:text-slate-300/85">
-                Read simple guides, find answers fast, and ask for help when something is not working on{" "}
-                <span className="font-semibold text-slate-900 dark:text-slate-100">{workspaceName}</span>.
-              </p>
->>>>>>> 0babf4d (Update frontend application)
             </div>
 
             <div className="grid w-full grid-cols-2 auto-rows-fr items-center gap-2 md:flex md:w-auto md:flex-wrap md:justify-start">
               <button
                 type="button"
-<<<<<<< HEAD
                 onClick={openTicketComposer}
                 className="order-1 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-primary via-blue-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:brightness-105 md:h-auto md:min-h-0 md:w-auto"
               >
                 <PlusCircle className="h-4 w-4" />
                 New message
-=======
-                onClick={() => setActiveTab("tickets")}
-                className="order-1 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-accent-primary via-blue-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:brightness-105 md:h-auto md:min-h-0 md:w-auto"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Ask for help
->>>>>>> 0babf4d (Update frontend application)
               </button>
               <button
                 type="button"
@@ -617,21 +541,12 @@ export default function SupportPage() {
         <FarmerGuideCard
           icon={LifeBuoy}
           title="How to get help quickly"
-<<<<<<< HEAD
           description="Start with a guide if you need instructions. Open a message thread when you want the platform team to track the issue and reply."
           storageKey="support-guide"
           steps={[
             "Search guides for the task or problem you need help with.",
             "Open a message thread and explain what happened in simple words.",
             "Check replies here and add more details when the platform team asks questions.",
-=======
-          description="Start with a guide if you need instructions. Ask for help when you want us to track the problem and reply."
-          storageKey="support-guide"
-          steps={[
-            "Search guides for the task or problem you need help with.",
-            "Ask for help and explain what happened in simple words.",
-            "Check replies here and add more details if the team asks questions.",
->>>>>>> 0babf4d (Update frontend application)
           ]}
           tip="If the top boxes show numbers but a list looks empty, clear the find boxes first. The page may only be showing a smaller set."
         />
@@ -643,11 +558,7 @@ export default function SupportPage() {
         )}
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-<<<<<<< HEAD
         {supportStats.map((item) => {
-=======
-          {supportStats.map((item) => {
->>>>>>> 0babf4d (Update frontend application)
             const Icon = item.icon;
             return (
               <article key={item.id} className={`${panelClass} p-4`}>
@@ -658,25 +569,14 @@ export default function SupportPage() {
                     </div>
                     <div className={`mt-2 text-xl font-semibold ${item.valueClass}`}>{item.value}</div>
                   </div>
-<<<<<<< HEAD
                   <span className={`${statIconCircleClass} ${item.iconClass}`}>
-=======
-                  <span
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${item.iconClass}`}
-                  >
->>>>>>> 0babf4d (Update frontend application)
                     <Icon className="h-4 w-4" />
                   </span>
                 </div>
               </article>
             );
-<<<<<<< HEAD
         })}
       </div>
-=======
-          })}
-        </div>
->>>>>>> 0babf4d (Update frontend application)
 
         <div className={`${panelClass} p-2`}>
           <div className="flex flex-wrap gap-2">
@@ -705,13 +605,8 @@ export default function SupportPage() {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <section className="space-y-4 xl:col-span-8">
             {activeTab === "guides" && (
-<<<<<<< HEAD
               <>
                 <div className={`${panelClass} p-4 xl:hidden`}>
-=======
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-                <div className={`${panelClass} p-4 xl:col-span-5`}>
->>>>>>> 0babf4d (Update frontend application)
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <input
@@ -722,21 +617,16 @@ export default function SupportPage() {
                     />
                   </div>
 
-<<<<<<< HEAD
                   <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                     Tap a guide to open the steps right inside the same card.
                   </p>
 
                   <div className="mt-4 space-y-3">
-=======
-                  <div className="mt-4 space-y-2">
->>>>>>> 0babf4d (Update frontend application)
                     {filteredGuides.length === 0 ? (
                       <div className={`${panelSoftClass} px-3 py-2 text-sm text-slate-500 dark:text-slate-400`}>
                         Nothing matches that search yet.
                       </div>
                     ) : (
-<<<<<<< HEAD
                       filteredGuides.map((guide) => {
                         const expanded = selectedGuide?.id === guide.id;
 
@@ -895,85 +785,14 @@ export default function SupportPage() {
                   </div>
                 </div>
               </>
-=======
-                      filteredGuides.map((guide) => (
-                        <button
-                          key={guide.id}
-                          type="button"
-                          onClick={() => setSelectedGuideId(guide.id)}
-                          className={`w-full rounded-lg border px-3 py-3 text-left transition ${
-                            selectedGuide?.id === guide.id
-                              ? "border-accent-primary/45 bg-gradient-to-r from-accent-primary/18 to-cyan-500/12"
-                              : "border-white/10 bg-white/5 hover:bg-white/10"
-                          }`}
-                        >
-                          <div className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                            {guide.category || "General"}
-                          </div>
-                          <div className="mt-1 text-sm font-semibold text-lightText dark:text-darkText">
-                            {guide.title}
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{guide.summary}</p>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className={`${panelClass} p-5 xl:col-span-7`}>
-                  {selectedGuide ? (
-                    <>
-                      <div className="inline-flex rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 text-xs font-semibold text-accent-primary dark:text-blue-200">
-                        {selectedGuide.category || "General"}
-                      </div>
-                      <h2 className="mt-3 text-lg font-header font-semibold text-lightText dark:text-darkText">
-                        {selectedGuide.title}
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {selectedGuide.summary}
-                      </p>
-
-                      <div className="mt-4 space-y-2">
-                        {(Array.isArray(selectedGuide.steps) ? selectedGuide.steps : []).map((step, index) => (
-                          <div
-                            key={`${selectedGuide.id}-step-${index + 1}`}
-                            className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 transition hover:border-accent-primary/35"
-                          >
-                            <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 text-[11px] font-semibold text-accent-primary">
-                              {index + 1}
-                            </span>
-                            <p className="text-sm text-lightText dark:text-darkText">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedGuide.tip && (
-                        <div className="mt-4 rounded-lg border border-emerald-300/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200">
-                          <span className="font-semibold">Farmer Tip:</span> {selectedGuide.tip}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className={`${panelSoftClass} px-4 py-3 text-sm text-slate-500 dark:text-slate-400`}>
-                      Choose a guide on the left to read the steps here.
-                    </div>
-                  )}
-                </div>
-              </div>
->>>>>>> 0babf4d (Update frontend application)
             )}
 
             {activeTab === "tickets" && (
               <div className="space-y-4">
                 <form
-<<<<<<< HEAD
                   ref={ticketFormRef}
                   onSubmit={handleCreateTicket}
                   className={`${panelClass} scroll-mt-24 p-5`}
-=======
-                  onSubmit={handleCreateTicket}
-                  className={`${panelClass} p-5`}
->>>>>>> 0babf4d (Update frontend application)
                 >
                   <div className="flex items-center gap-2">
                     <PlusCircle className="h-4 w-4 text-accent-primary" />
@@ -987,10 +806,7 @@ export default function SupportPage() {
                     <div className="md:col-span-3">
                       <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Short title</label>
                       <input
-<<<<<<< HEAD
                         ref={ticketSubjectInputRef}
-=======
->>>>>>> 0babf4d (Update frontend application)
                         type="text"
                         value={ticketForm.subject}
                         onChange={(event) =>

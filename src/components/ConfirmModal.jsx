@@ -92,11 +92,7 @@ export default function ConfirmModal({
                 <div>
                   <h3
                     id="confirm-modal-title"
-<<<<<<< HEAD
                     className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-slate-100"
-=======
-                    className="text-lg font-semibold flex items-center gap-2"
->>>>>>> 0babf4d (Update frontend application)
                   >
                     {title}
                     <span
@@ -109,11 +105,7 @@ export default function ConfirmModal({
                           : "Confirm"}
                     </span>
                   </h3>
-<<<<<<< HEAD
                   <p className="text-xs text-slate-500 dark:text-slate-300">
-=======
-                  <p className="text-xs text-slate-500">
->>>>>>> 0babf4d (Update frontend application)
                     {isRestoreAction
                       ? "Recover this record back into the active list"
                       : isDangerAction
@@ -124,18 +116,11 @@ export default function ConfirmModal({
               </div>
 
               <button
-<<<<<<< HEAD
                 type="button"
                 onClick={onCancel}
                 disabled={loading}
                 aria-label="Close modal"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white/85 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:shadow-none dark:hover:bg-white/15"
-=======
-                onClick={onCancel}
-                disabled={loading}
-                aria-label="Close modal"
-                className="p-2 rounded-md hover:bg-white/10 disabled:opacity-60"
->>>>>>> 0babf4d (Update frontend application)
                 title="Close"
               >
                 <X className="w-5 h-5" />
@@ -151,22 +136,7 @@ export default function ConfirmModal({
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
-<<<<<<< HEAD
                 type="button"
-=======
->>>>>>> 0babf4d (Update frontend application)
-                onClick={onCancel}
-                disabled={loading}
-                className="px-4 py-2.5 rounded-lg bg-white/80 dark:bg-black/60 border border-white/20 text-slate-700 dark:text-slate-200 transition hover:bg-white/90 dark:hover:bg-black/70 disabled:opacity-60"
-              >
-                {cancelText}
-              </button>
-
-              <button
-<<<<<<< HEAD
-                type="button"
-=======
->>>>>>> 0babf4d (Update frontend application)
                 disabled={loading}
                 onClick={onConfirm}
                 className={`px-4 py-2.5 rounded-lg font-semibold transition disabled:opacity-60 ${accentClasses.confirmButton}`}

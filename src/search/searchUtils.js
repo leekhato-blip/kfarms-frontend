@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import { toKfarmsAppPath } from "../apps/kfarms/paths";
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 const LEGACY_ROUTE_ALIASES = [
   [/^\/fish-hatches(?:\/.*)?$/i, "/fish-ponds"],
   [/^\/health-events(?:\/.*)?$/i, "/dashboard"],
@@ -21,11 +18,7 @@ function normalizeRoute(url) {
   }
 
   const matchedAlias = LEGACY_ROUTE_ALIASES.find(([pattern]) => pattern.test(pathname));
-<<<<<<< HEAD
   return toKfarmsAppPath(matchedAlias ? matchedAlias[1] : raw);
-=======
-  return matchedAlias ? matchedAlias[1] : raw;
->>>>>>> 0babf4d (Update frontend application)
 }
 
 export function resolveSearchTarget(result) {
@@ -48,7 +41,6 @@ export function resolveSearchTarget(result) {
     .toLowerCase();
 
   if (haystack.includes("egg") || haystack.includes("production")) {
-<<<<<<< HEAD
     return toKfarmsAppPath("/productions");
   }
 
@@ -66,25 +58,6 @@ export function resolveSearchTarget(result) {
 
   if (haystack.includes("sale") || haystack.includes("invoice") || haystack.includes("revenue")) {
     return toKfarmsAppPath("/sales");
-=======
-    return "/productions";
-  }
-
-  if (haystack.includes("feed")) {
-    return "/feeds";
-  }
-
-  if (haystack.includes("inventory") || haystack.includes("stock item")) {
-    return "/inventory";
-  }
-
-  if (haystack.includes("supply") || haystack.includes("purchase")) {
-    return "/supplies";
-  }
-
-  if (haystack.includes("sale") || haystack.includes("invoice") || haystack.includes("revenue")) {
-    return "/sales";
->>>>>>> 0babf4d (Update frontend application)
   }
 
   if (
@@ -93,7 +66,6 @@ export function resolveSearchTarget(result) {
     haystack.includes("flock") ||
     haystack.includes("batch")
   ) {
-<<<<<<< HEAD
     return toKfarmsAppPath("/poultry");
   }
 
@@ -102,16 +74,6 @@ export function resolveSearchTarget(result) {
   }
 
   return toKfarmsAppPath("/dashboard");
-=======
-    return "/poultry";
-  }
-
-  if (haystack.includes("pond") || haystack.includes("hatch") || haystack.includes("fish")) {
-    return "/fish-ponds";
-  }
-
-  return "/dashboard";
->>>>>>> 0babf4d (Update frontend application)
 }
 
 export function normalizeSearchResult(result) {

@@ -3,29 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   hasDemoAccountHintMock: vi.fn(() => false),
   requestMock: vi.fn(),
-<<<<<<< HEAD
   isBackendUnavailableErrorMock: vi.fn((error) => !error?.response),
   getWorkspaceTokenMock: vi.fn(() => "workspace-token"),
-=======
->>>>>>> 0babf4d (Update frontend application)
-  getOfflineQueueSnapshotMock: vi.fn(() => ({ failed: 0 })),
-  listQueuedMutationsMock: vi.fn(),
-  markQueuedMutationFailedMock: vi.fn(),
-  markQueuedMutationQueuedMock: vi.fn(),
-  markQueuedMutationSyncingMock: vi.fn(),
-  removeQueuedMutationMock: vi.fn(),
-  setOfflineSyncSnapshotMock: vi.fn(),
-}));
-
-vi.mock("../api/apiClient", () => ({
-  default: {
-    request: mocks.requestMock,
-  },
-<<<<<<< HEAD
-  getWorkspaceToken: mocks.getWorkspaceTokenMock,
-  isBackendUnavailableError: mocks.isBackendUnavailableErrorMock,
-=======
->>>>>>> 0babf4d (Update frontend application)
 }));
 
 vi.mock("../auth/demoMode", () => ({
@@ -48,43 +27,10 @@ describe("offlineSync", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     mocks.requestMock.mockReset();
-<<<<<<< HEAD
     mocks.isBackendUnavailableErrorMock.mockReset();
     mocks.isBackendUnavailableErrorMock.mockImplementation((error) => !error?.response);
     mocks.getWorkspaceTokenMock.mockReset();
     mocks.getWorkspaceTokenMock.mockReturnValue("workspace-token");
-=======
->>>>>>> 0babf4d (Update frontend application)
-    mocks.hasDemoAccountHintMock.mockReset();
-    mocks.hasDemoAccountHintMock.mockReturnValue(false);
-    mocks.getOfflineQueueSnapshotMock.mockReturnValue({ failed: 0 });
-    mocks.listQueuedMutationsMock.mockReset();
-    mocks.markQueuedMutationFailedMock.mockReset();
-    mocks.markQueuedMutationQueuedMock.mockReset();
-    mocks.markQueuedMutationSyncingMock.mockReset();
-    mocks.removeQueuedMutationMock.mockReset();
-    mocks.setOfflineSyncSnapshotMock.mockReset();
-
-    globalThis.window = {
-      navigator: { onLine: true },
-      dispatchEvent: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    };
-
-    globalThis.CustomEvent = class CustomEvent {
-      constructor(type, init = {}) {
-        this.type = type;
-        this.detail = init.detail;
-      }
-    };
-  });
-
-<<<<<<< HEAD
-  it("retries immediately when the backend comes back after a paused sync", async () => {
-=======
-  it("keeps paused state on network failure and throttles immediate backend-up retries", async () => {
->>>>>>> 0babf4d (Update frontend application)
     mocks.listQueuedMutationsMock.mockReturnValue([
       {
         requestId: "req-1",
@@ -112,7 +58,6 @@ describe("offlineSync", () => {
 
     const secondResult = await flushOfflineQueue({ source: "backend-up" });
 
-<<<<<<< HEAD
     expect(secondResult).toBe(true);
     expect(mocks.requestMock).toHaveBeenCalledTimes(2);
   });
@@ -175,17 +120,6 @@ describe("offlineSync", () => {
     });
   });
 
-=======
-    expect(secondResult).toBe(false);
-    expect(mocks.requestMock).toHaveBeenCalledTimes(1);
-
-    const thirdResult = await flushOfflineQueue({ source: "manual" });
-
-    expect(thirdResult).toBe(true);
-    expect(mocks.requestMock).toHaveBeenCalledTimes(2);
-  });
-
->>>>>>> 0babf4d (Update frontend application)
   it("skips replay entirely while demo mode is active", async () => {
     mocks.hasDemoAccountHintMock.mockReturnValue(true);
     mocks.listQueuedMutationsMock.mockReturnValue([
@@ -211,7 +145,6 @@ describe("offlineSync", () => {
       lastSyncedAt: "",
     });
   });
-<<<<<<< HEAD
 
   it("waits for a workspace session before replaying queued changes", async () => {
     mocks.getWorkspaceTokenMock.mockReturnValue("");
@@ -270,6 +203,4 @@ describe("offlineSync", () => {
       failedCount: 0,
     });
   });
-=======
->>>>>>> 0babf4d (Update frontend application)
 });

@@ -8,20 +8,12 @@
   "theme_color": "#071226",
   "icons": [
     {
-<<<<<<< HEAD
       "src": "/kfarms-icon-192.png",
-=======
-      "src": "/kfarms-logo.png",
->>>>>>> 0babf4d (Update frontend application)
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-<<<<<<< HEAD
       "src": "/kfarms-icon-512.png",
-=======
-      "src": "/kfarms-logo.png",
->>>>>>> 0babf4d (Update frontend application)
       "sizes": "512x512",
       "type": "image/png"
     }

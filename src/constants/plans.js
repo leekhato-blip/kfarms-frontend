@@ -6,11 +6,8 @@ export const PLAN_TIER_CONFIG = [
   {
     id: "FREE",
     name: "Free",
-<<<<<<< HEAD
     assistantLabel: "KAI Free",
     assistantSummary: "Practical guidance, checklists, and navigation help for one farm workspace.",
-=======
->>>>>>> 0babf4d (Update frontend application)
     tagline: "For starter farmers, hobby farmers, and small teams testing digital farm records.",
     priceLabel: "Free",
     cycleLabel: "forever",
@@ -26,21 +23,15 @@ export const PLAN_TIER_CONFIG = [
       "Sales records, supplies, feed inventory, fish ponds, and poultry tracking",
       "Dashboard summary cards and quick add actions",
       "Workspace setup with owner-only access control",
-<<<<<<< HEAD
       "Offline-ready capture with sync recovery for day-to-day work",
       "KAI Free for clear daily guidance",
-=======
->>>>>>> 0babf4d (Update frontend application)
     ],
   },
   {
     id: "PRO",
     name: "Pro",
-<<<<<<< HEAD
     assistantLabel: "KAI Pro",
     assistantSummary: "Sharper operational coaching, prioritization, and team support for active farms.",
-=======
->>>>>>> 0babf4d (Update frontend application)
     tagline: "For serious farmers running daily operations with workers, analytics, and alerts.",
     priceLabel: "NGN 10,000",
     cycleLabel: "per month or NGN 100,000 yearly",
@@ -56,32 +47,21 @@ export const PLAN_TIER_CONFIG = [
     highlights: [
       "Team management, role control, and invitations",
       "Hatch workflows, revenue analytics, watchlists, and health alerts",
-<<<<<<< HEAD
       "Task planning, CSV/XLSX export, trash restore, and priority support messaging",
       "Operational continuity through offline-safe record flows",
       "KAI Pro for sharper decisions",
-=======
-      "Task planning, CSV/XLSX export, and trash restore workflow",
->>>>>>> 0babf4d (Update frontend application)
     ],
   },
   {
     id: "ENTERPRISE",
     name: "Enterprise",
-<<<<<<< HEAD
     assistantLabel: "KAI Enterprise",
     assistantSummary: "Leadership-grade reviews, escalation support, and multi-site operational guidance.",
-=======
->>>>>>> 0babf4d (Update frontend application)
     tagline: "For agribusiness groups running branded, multi-branch operations with portfolio visibility and custom workspace setup.",
     priceLabel: "Custom pricing",
     cycleLabel: "typically NGN 80,000-150,000 per month",
     ctaLabel: "Talk to Sales",
-<<<<<<< HEAD
     ctaPath: "/product-profile#contact",
-=======
-    ctaPath: "/company-profile#contact",
->>>>>>> 0babf4d (Update frontend application)
     limits: [
       { label: "Organizations", value: "Unlimited" },
       { label: "Users", value: "Unlimited" },
@@ -89,16 +69,10 @@ export const PLAN_TIER_CONFIG = [
       { label: "Poultry Flocks", value: "Unlimited" },
     ],
     highlights: [
-<<<<<<< HEAD
       "Multi-workspace operations with unlimited users and portfolio visibility",
       "Enterprise permission profiles, brand controls, and workspace policy settings",
       "Dedicated platform messaging lane for enterprise subscribers",
       "KAI Enterprise for leadership reviews and escalation",
-=======
-      "Multi-farm and multi-branch management with roll-up dashboards across every farm",
-      "Forecasting for feed usage, harvests, eggs, mortality warnings, and branch planning",
-      "White-label branding, custom integrations, dedicated support, and enterprise access control",
->>>>>>> 0babf4d (Update frontend application)
     ],
   },
 ];
@@ -117,14 +91,11 @@ export const PLAN_FEATURE_MATRIX = [
     minPlan: "FREE",
   },
   {
-<<<<<<< HEAD
     id: "offline-ready",
     feature: "Offline-ready record capture with sync recovery when the network returns",
     minPlan: "FREE",
   },
   {
-=======
->>>>>>> 0babf4d (Update frontend application)
     id: "daily-farm-log",
     feature: "Fast daily farm logging through quick-add actions and record forms",
     minPlan: "FREE",
@@ -140,14 +111,11 @@ export const PLAN_FEATURE_MATRIX = [
     minPlan: "FREE",
   },
   {
-<<<<<<< HEAD
     id: "kai-free",
     feature: "KAI Free for checklists, guidance, and navigation",
     minPlan: "FREE",
   },
   {
-=======
->>>>>>> 0babf4d (Update frontend application)
     id: "team-management",
     feature: "Users page with invitations, roles, and member access control",
     minPlan: "PRO",
@@ -183,7 +151,6 @@ export const PLAN_FEATURE_MATRIX = [
     minPlan: "PRO",
   },
   {
-<<<<<<< HEAD
     id: "priority-platform-messaging",
     feature: "Support messaging with a Pro priority lane",
     minPlan: "PRO",
@@ -196,20 +163,10 @@ export const PLAN_FEATURE_MATRIX = [
   {
     id: "multi-org-ops",
     feature: "Multi-workspace operations and enterprise site portfolio",
-=======
-    id: "multi-org-ops",
-    feature: "Multi-farm / multi-branch management",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "rollup-dashboards",
-    feature: "Roll-up dashboards across farms with per-site reporting",
->>>>>>> 0babf4d (Update frontend application)
     minPlan: "ENTERPRISE",
   },
   {
     id: "advanced-role-permissions",
-<<<<<<< HEAD
     feature: "Advanced permission profiles and custom role labels",
     minPlan: "ENTERPRISE",
   },
@@ -231,59 +188,6 @@ export const PLAN_FEATURE_MATRIX = [
   {
     id: "kai-enterprise",
     feature: "KAI Enterprise for leadership reviews and escalation",
-=======
-    feature: "Custom roles beyond owner/admin/manager/staff with page-level and action-level permissions",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "forecasting-planning",
-    feature: "Forecasting and planning for feed demand, egg output, fish harvest, and branch planning",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "white-labeling",
-    feature: "White-labeling with custom logo, company colors, branded login, branded PDF reports, and custom domain",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "custom-integrations",
-    feature: "Custom integrations for enterprise workflows and external systems",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "dedicated-support",
-    feature: "Dedicated support and priority onboarding",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "feed-usage-prediction",
-    feature: "Feed usage prediction",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "mortality-warnings",
-    feature: "Mortality warnings",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "profit-per-batch",
-    feature: "Profit per batch",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "egg-production-tracking",
-    feature: "Egg production tracking",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "fish-growth-estimation",
-    feature: "Fish growth estimation",
-    minPlan: "ENTERPRISE",
-  },
-  {
-    id: "branch-performance-views",
-    feature: "Performance views by farm, pond, poultry house, and batch",
->>>>>>> 0babf4d (Update frontend application)
     minPlan: "ENTERPRISE",
   },
 ];

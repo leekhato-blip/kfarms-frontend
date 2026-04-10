@@ -15,10 +15,7 @@ import {
   Droplets,
   ShieldAlert,
   Info,
-<<<<<<< HEAD
   Monitor,
-=======
->>>>>>> 0babf4d (Update frontend application)
   Wheat,
   Package,
   CheckCheck,
@@ -35,7 +32,6 @@ import InventoryFormModal from "./InventoryFormModal";
 import GlassToast from "./GlassToast";
 import api from "../api/apiClient";
 import { search as searchApi } from "../services/searchService";
-<<<<<<< HEAD
 import { getLivestock, getLivestockOverview } from "../services/livestockService";
 import { resolveSearchTarget } from "../search/searchUtils";
 import useSmartBackNavigation from "../hooks/useSmartBackNavigation";
@@ -51,17 +47,6 @@ import { getUserDisplayName } from "../services/userProfileService";
 import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
 import { resolveWorkspaceTopbarMeta } from "../utils/pageMeta";
 import { useTheme } from "../hooks/useTheme";
-=======
-import { getLivestock } from "../services/livestockService";
-import { resolveSearchTarget } from "../search/searchUtils";
-import useSmartBackNavigation from "../hooks/useSmartBackNavigation";
-import {
-  SETTINGS_THEME_EVENT,
-  THEME_STORAGE_KEY,
-  getStoredThemeMode,
-} from "../constants/settings";
-import { FARM_MODULES, hasFarmModule } from "../tenant/tenantModules";
->>>>>>> 0babf4d (Update frontend application)
 
 async function fetchNotifications() {
   try {
@@ -95,7 +80,6 @@ const NOTIFICATION_RESYNC_MS = 180000;
 const NOTIFICATION_FALLBACK_POLL_MS = 45000;
 const NOTIFICATION_DROPDOWN_LIMIT = 8;
 
-<<<<<<< HEAD
 function normalizeNotificationContent(value) {
   return String(value || "")
     .trim()
@@ -132,20 +116,12 @@ function notificationSignature(notification) {
     ? normalizeNotificationContent
     : toLowerText;
 
-=======
-function notificationSignature(notification) {
->>>>>>> 0babf4d (Update frontend application)
   return [
     notification?.tenant?.id ?? notification?.tenantId ?? "",
     notification?.user?.id ?? notification?.userId ?? "",
     notification?.type ?? "",
-<<<<<<< HEAD
     normalize(title),
     normalize(message),
-=======
-    (notification?.title ?? "").trim().toLowerCase(),
-    (notification?.message ?? notification?.body ?? "").trim().toLowerCase(),
->>>>>>> 0babf4d (Update frontend application)
   ].join("::");
 }
 
@@ -239,11 +215,7 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("livestock")
     || haystack.includes("bird")
   ) {
-<<<<<<< HEAD
     return KFARMS_ROUTE_REGISTRY.poultry.appPath;
-=======
-    return "/poultry";
->>>>>>> 0babf4d (Update frontend application)
   }
   if (
     haystack.includes("fish")
@@ -251,11 +223,7 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("water")
     || haystack.includes("hatch")
   ) {
-<<<<<<< HEAD
     return KFARMS_ROUTE_REGISTRY.fishPonds.appPath;
-=======
-    return "/fish-ponds";
->>>>>>> 0babf4d (Update frontend application)
   }
   if (
     haystack.includes("sale")
@@ -263,11 +231,7 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("finance")
     || haystack.includes("cash")
   ) {
-<<<<<<< HEAD
     return KFARMS_ROUTE_REGISTRY.sales.appPath;
-=======
-    return "/sales";
->>>>>>> 0babf4d (Update frontend application)
   }
   if (
     haystack.includes("inventory")
@@ -275,7 +239,6 @@ function resolveNotificationTarget(notification) {
     || haystack.includes("feed")
     || haystack.includes("stock")
   ) {
-<<<<<<< HEAD
     return KFARMS_ROUTE_REGISTRY.inventory.appPath;
   }
 
@@ -399,12 +362,6 @@ function filterWorkspaceNotifications(notifications = [], livestockContext = nul
       !isEmptyWorkspaceLowLivestockNotification(notification, livestockContext)
       && !isLowSignalWorkspaceNotification(notification),
   );
-=======
-    return "/inventory";
-  }
-
-  return "/dashboard";
->>>>>>> 0babf4d (Update frontend application)
 }
 
 function getNotificationMeta(type) {
@@ -497,22 +454,15 @@ export default function Topbar() {
   const { user } = useAuth();
   const { activeTenant, activeTenantId } = useTenant();
   const navigate = useNavigate();
-<<<<<<< HEAD
   const location = useLocation();
   const { goBack, showBackButton } = useSmartBackNavigation({
     fallbackPath: KFARMS_ROUTE_REGISTRY.dashboard.appPath,
     hiddenPaths: [KFARMS_ROUTE_REGISTRY.dashboard.appPath],
-=======
-  const { goBack, showBackButton } = useSmartBackNavigation({
-    fallbackPath: "/dashboard",
-    hiddenPaths: ["/dashboard"],
->>>>>>> 0babf4d (Update frontend application)
   });
 
   const hr = new Date().getHours();
   const greet =
     hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-<<<<<<< HEAD
   const name = getUserDisplayName(user, "Farmer");
   const workspaceName = activeTenant?.name || "your farm";
   const topbarMeta = React.useMemo(
@@ -522,9 +472,6 @@ export default function Topbar() {
       }),
     [location.pathname, workspaceName],
   );
-=======
-  const name = user?.username || "Farmer";
->>>>>>> 0babf4d (Update frontend application)
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
 
   const rootRef = React.useRef(null);
@@ -606,7 +553,6 @@ export default function Topbar() {
         setNotificationsLoading(true);
       }
 
-<<<<<<< HEAD
       const [res, livestockContext] = await Promise.all([
         fetchNotifications(),
         poultryEnabled
@@ -615,23 +561,15 @@ export default function Topbar() {
               .catch(() => null)
           : Promise.resolve(null),
       ]);
-=======
-      const res = await fetchNotifications();
->>>>>>> 0babf4d (Update frontend application)
       if (!isActive) {
         return;
       }
 
-<<<<<<< HEAD
       livestockNotificationContextRef.current = livestockContext;
 
       if (res.success) {
         const filtered = filterWorkspaceNotifications(res.data || [], livestockContext);
         setNotifications((prev) => mergeNotifications(background ? prev : [], filtered));
-=======
-      if (res.success) {
-        setNotifications((prev) => mergeNotifications(background ? prev : [], res.data || []));
->>>>>>> 0babf4d (Update frontend application)
       } else if (!background) {
         setNotifications([]);
       }
@@ -670,7 +608,6 @@ export default function Topbar() {
 
         try {
           const payload = JSON.parse(event.data);
-<<<<<<< HEAD
           if (
             isEmptyWorkspaceLowLivestockNotification(
               payload,
@@ -679,8 +616,6 @@ export default function Topbar() {
           ) {
             return;
           }
-=======
->>>>>>> 0babf4d (Update frontend application)
           setNotifications((prev) => mergeNotifications(prev, [payload]));
         } catch (err) {
           console.error("Failed to parse notification stream:", err);
@@ -721,11 +656,7 @@ export default function Topbar() {
         window.clearInterval(pollId);
       }
     };
-<<<<<<< HEAD
   }, [activeTenantId, poultryEnabled, user?.id]);
-=======
-  }, [activeTenantId, user?.id]);
->>>>>>> 0babf4d (Update frontend application)
 
   const unreadCount = notifications.length;
   const visibleNotifications = notifications.slice(0, NOTIFICATION_DROPDOWN_LIMIT);
@@ -770,11 +701,7 @@ export default function Topbar() {
   }
 
   const [quickOpen, setQuickOpen] = React.useState(false);
-<<<<<<< HEAD
   const quickAdd = React.useCallback(async (action) => {
-=======
-  async function quickAdd(action) {
->>>>>>> 0babf4d (Update frontend application)
     setQuickOpen(false);
     if (action === "sales") {
       setSalesModalOpen(true);
@@ -816,7 +743,6 @@ export default function Topbar() {
       setEggModalOpen(true);
       return;
     }
-<<<<<<< HEAD
 
     navigate(KFARMS_ROUTE_REGISTRY.dashboard.appPath);
   }, [layerBatchesLoading, navigate]);
@@ -827,25 +753,6 @@ export default function Topbar() {
     toggleTheme,
   } = useTheme();
   const themeLabel = formatThemePreferenceLabel(themePreference);
-=======
-
-    navigate("/dashboard");
-  }
-
-  const [theme, setTheme] = React.useState(getStoredThemeMode);
-  React.useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.body.classList.toggle("dark", theme === "dark");
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-    window.dispatchEvent(
-      new CustomEvent(SETTINGS_THEME_EVENT, {
-        detail: { mode: theme },
-      }),
-    );
-    document.documentElement.style.transition =
-      "background-color 200ms, color 200ms";
-  }, [theme]);
->>>>>>> 0babf4d (Update frontend application)
 
   React.useEffect(() => {
     const syncTheme = () => {
@@ -972,11 +879,7 @@ export default function Topbar() {
   }
 
   const topActionIconClass =
-<<<<<<< HEAD
     "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
-=======
-    "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
->>>>>>> 0babf4d (Update frontend application)
   const topActionButtonClass =
     "inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_18px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/35 hover:bg-white dark:border-slate-700/80 dark:bg-darkCard/85 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:hover:border-accent-primary/40 dark:hover:bg-slate-900/90";
   const topActionDropdownClass =
@@ -989,11 +892,7 @@ export default function Topbar() {
       ref={rootRef}
       className="w-full sticky top-0 z-50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
-<<<<<<< HEAD
       <div className="min-w-0 pr-24 sm:pr-0">
-=======
-      <div className="min-w-0">
->>>>>>> 0babf4d (Update frontend application)
         {showBackButton && (
           <button
             type="button"
@@ -1005,7 +904,6 @@ export default function Topbar() {
             Back
           </button>
         )}
-<<<<<<< HEAD
         {!topbarMeta.hideGreeting ? (
           <>
             <h1 className="text-2xl md:text-3xl font-bold font-header flex flex-wrap items-center gap-2">
@@ -1019,17 +917,6 @@ export default function Topbar() {
             </p>
           </>
         ) : null}
-=======
-        <h1 className="text-2xl md:text-3xl font-bold font-header flex flex-wrap items-center gap-2">
-          {greet},{" "}
-          <span className="text-status-success max-w-[12rem] truncate whitespace-nowrap">
-            {name}!
-          </span>
-        </h1>
-        <p className="text-sm font-body text-slate-400">
-          Check today, record something, or open alerts.
-        </p>
->>>>>>> 0babf4d (Update frontend application)
       </div>
 
       <div className="w-full sm:w-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -1296,98 +1183,59 @@ export default function Topbar() {
               transition-all duration-200 ease-out`}
             >
               <div className={`${topActionDropdownClass} overflow-hidden`}>
-<<<<<<< HEAD
                 <div className="border-b border-slate-200/70 px-3 py-3 sm:px-4 sm:py-3.5 dark:border-slate-800/90">
-=======
-                <div className="border-b border-slate-200/70 px-4 py-3.5 dark:border-slate-800/90">
->>>>>>> 0babf4d (Update frontend application)
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           Notifications
                         </p>
-<<<<<<< HEAD
                         <span className="hidden sm:inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-100">
                           Live
                         </span>
                       </div>
                       <p className="mt-1 hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-=======
-                        <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-100">
-                          Live
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
->>>>>>> 0babf4d (Update frontend application)
                         {unreadCount > 0
                           ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"} waiting`
                           : "You are all caught up for now."}
                       </p>
-<<<<<<< HEAD
                       <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 sm:hidden">
                         {unreadCount > 0
                           ? `${unreadCount} unread`
                           : "All caught up"}
                       </p>
-=======
->>>>>>> 0babf4d (Update frontend application)
                     </div>
                     {unreadCount > 0 && (
                       <button
                         type="button"
                         onClick={handleMarkAllRead}
-<<<<<<< HEAD
                         className="inline-flex items-center gap-1 rounded-xl border border-slate-200/80 bg-white/85 px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-accent-primary/30 hover:text-accent-primary sm:gap-1.5 sm:rounded-full sm:px-2.5 sm:text-[11px] dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-accent-primary/35 dark:hover:text-white"
                       >
                         <CheckCheck className="h-3.5 w-3.5" />
                         <span className="sm:hidden">Clear</span>
                         <span className="hidden sm:inline">Mark all</span>
-=======
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-accent-primary/30 hover:text-accent-primary dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-accent-primary/35 dark:hover:text-white"
-                      >
-                        <CheckCheck className="h-3.5 w-3.5" />
-                        Mark all
->>>>>>> 0babf4d (Update frontend application)
                       </button>
                     )}
                   </div>
                 </div>
                 {notificationsLoading ? (
-<<<<<<< HEAD
                   <div className="px-3 py-6 text-center text-sm text-slate-500 sm:px-4 sm:py-8 dark:text-slate-400">
                     Pulling in your latest alerts...
                   </div>
                 ) : visibleNotifications.length === 0 ? (
                   <div className="px-3 py-6 text-center sm:px-4 sm:py-8">
                     <div className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-slate-500 sm:h-12 sm:w-12 sm:rounded-2xl dark:bg-slate-800 dark:text-slate-300">
-=======
-                  <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                    Pulling in your latest alerts...
-                  </div>
-                ) : visibleNotifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center">
-                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
->>>>>>> 0babf4d (Update frontend application)
                       <Bell className="h-5 w-5" />
                     </div>
                     <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
                       No fresh notifications
                     </p>
-<<<<<<< HEAD
                     <p className="mt-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-=======
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
->>>>>>> 0babf4d (Update frontend application)
                       New farm alerts will land here without repeating the same noise.
                     </p>
                   </div>
                 ) : (
-<<<<<<< HEAD
                   <ul className="max-h-[17rem] overflow-y-auto px-1.5 py-1.5 sm:max-h-[26rem] sm:px-2 sm:py-2">
-=======
-                  <ul className="max-h-[26rem] overflow-y-auto px-2 py-2">
->>>>>>> 0babf4d (Update frontend application)
                     {visibleNotifications.map((notification) => {
                       const meta = getNotificationMeta(notification.type);
                       const NotificationIcon = meta.icon;
@@ -1398,7 +1246,6 @@ export default function Topbar() {
 
                       return (
                         <li key={`${notificationSignature(notification)}::${notification.id ?? "live"}`}>
-<<<<<<< HEAD
                           <div className="sm:hidden">
                             <button
                               type="button"
@@ -1419,35 +1266,6 @@ export default function Topbar() {
                                 </div>
                                 <p
                                   className="mt-0.5 text-[12px] leading-5 text-slate-600 dark:text-slate-300"
-=======
-                          <div className="group my-1 rounded-2xl border border-transparent px-3 py-3 transition-all duration-200 hover:border-slate-200/80 hover:bg-slate-50/90 dark:hover:border-slate-700/80 dark:hover:bg-slate-900/65">
-                            <div className="flex items-start gap-3">
-                              <div className={`mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${meta.iconClass}`}>
-                                <NotificationIcon className="h-[18px] w-[18px]" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-col gap-2">
-                                  <p className="text-sm font-semibold leading-5 text-slate-900 break-words dark:text-slate-100">
-                                    {notification.title || "Workspace update"}
-                                  </p>
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${meta.chipClass}`}>
-                                      {meta.label}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleMarkRead(notification.id)}
-                                      className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 bg-white/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 transition hover:border-emerald-500/30 hover:text-emerald-600 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:border-emerald-400/30 dark:hover:text-emerald-200"
-                                      aria-label={`Mark ${notification.title || "notification"} as read`}
-                                    >
-                                      <Check className="h-3.5 w-3.5" />
-                                      Mark
-                                    </button>
-                                  </div>
-                                </div>
-                                <p
-                                  className="mt-1 text-sm leading-5 text-slate-600 dark:text-slate-300"
->>>>>>> 0babf4d (Update frontend application)
                                   style={{
                                     display: "-webkit-box",
                                     WebkitBoxOrient: "vertical",
@@ -1457,7 +1275,6 @@ export default function Topbar() {
                                 >
                                   {description}
                                 </p>
-<<<<<<< HEAD
                               </div>
                             </button>
                           </div>
@@ -1509,18 +1326,6 @@ export default function Topbar() {
                                       <ArrowUpRight className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
-=======
-                                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
-                                  <span>{formatNotificationAge(notification.createdAt)}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleNotificationOpen(notification)}
-                                    className="inline-flex items-center gap-1 font-medium text-accent-primary transition-transform duration-200 hover:translate-x-0.5"
-                                  >
-                                    Open
-                                    <ArrowUpRight className="h-3.5 w-3.5" />
-                                  </button>
->>>>>>> 0babf4d (Update frontend application)
                                 </div>
                               </div>
                             </div>
@@ -1531,11 +1336,7 @@ export default function Topbar() {
                   </ul>
                 )}
                 {notifications.length > NOTIFICATION_DROPDOWN_LIMIT && (
-<<<<<<< HEAD
                   <div className="border-t border-slate-200/70 px-3 py-2 text-[10px] text-slate-500 sm:px-4 sm:py-2.5 sm:text-[11px] dark:border-slate-800/90 dark:text-slate-400">
-=======
-                  <div className="border-t border-slate-200/70 px-4 py-2.5 text-[11px] text-slate-500 dark:border-slate-800/90 dark:text-slate-400">
->>>>>>> 0babf4d (Update frontend application)
                     Showing the latest {NOTIFICATION_DROPDOWN_LIMIT} unread alerts first.
                   </div>
                 )}
@@ -1688,7 +1489,6 @@ export default function Topbar() {
 
           {/* Theme toggle */}
           <button
-<<<<<<< HEAD
             onClick={toggleTheme}
             className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
               themeMode === "dark"
@@ -1697,15 +1497,6 @@ export default function Topbar() {
             }`}
             aria-label={`Theme: ${themeLabel}. Click to cycle theme.`}
             title={`Theme: ${themeLabel}`}
-=======
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
-              theme === "dark"
-                ? "border-accent-primary/40 bg-accent-primary text-white shadow-[0_10px_22px_rgba(37,99,235,0.34)] hover:bg-accent-primary/90"
-                : "border-amber-300/70 bg-amber-200/90 text-amber-900 shadow-[0_8px_18px_rgba(217,119,6,0.24)] hover:bg-amber-200"
-            }`}
-            aria-label="Toggle theme"
->>>>>>> 0babf4d (Update frontend application)
           >
             {themePreference === "system" ? (
               <Monitor className="w-5 h-5" />

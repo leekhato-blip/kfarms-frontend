@@ -4,11 +4,7 @@ const WORKSPACE_ROLE_LABELS = Object.freeze({
   MANAGER: "Manager",
   USER: "Staff",
   STAFF: "Staff",
-<<<<<<< HEAD
   PLATFORM_ADMIN: "ROOTS Admin",
-=======
-  PLATFORM_ADMIN: "Platform Admin",
->>>>>>> 0babf4d (Update frontend application)
 });
 
 export const MUTABLE_WORKSPACE_ROLE_OPTIONS = Object.freeze([
@@ -17,7 +13,6 @@ export const MUTABLE_WORKSPACE_ROLE_OPTIONS = Object.freeze([
   { value: "STAFF", label: "Staff" },
 ]);
 
-<<<<<<< HEAD
 const WORKSPACE_ROLE_RANKS = Object.freeze({
   STAFF: 100,
   MANAGER: 200,
@@ -26,8 +21,6 @@ const WORKSPACE_ROLE_RANKS = Object.freeze({
   PLATFORM_ADMIN: 500,
 });
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function normalizeWorkspaceRole(value, fallback = "STAFF") {
   const normalized = String(value ?? "").trim().toUpperCase();
 
@@ -48,7 +41,6 @@ export function getWorkspaceRoleLabel(value) {
   return WORKSPACE_ROLE_LABELS[normalized] || WORKSPACE_ROLE_LABELS[normalizeWorkspaceRole(value)];
 }
 
-<<<<<<< HEAD
 export function getWorkspaceRoleRank(value) {
   return WORKSPACE_ROLE_RANKS[normalizeWorkspaceRole(value)] || WORKSPACE_ROLE_RANKS.STAFF;
 }
@@ -67,8 +59,6 @@ export function getManageableWorkspaceRoleOptions(actorRole) {
   );
 }
 
-=======
->>>>>>> 0babf4d (Update frontend application)
 export function canViewWorkspaceUsers(value) {
   const normalized = normalizeWorkspaceRole(value);
   return normalized === "OWNER" || normalized === "ADMIN" || normalized === "MANAGER";

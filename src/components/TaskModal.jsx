@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-<<<<<<< HEAD
 import { createPortal } from "react-dom";
 import { CalendarClock, ClipboardList, Flag, X } from "lucide-react";
 import { TASK_TYPE_OPTIONS } from "../constants/formOptions";
@@ -7,8 +6,6 @@ import {
   nowDateTimeLocalValue,
   toDateTimeLocalValue,
 } from "../utils/formInputs";
-=======
->>>>>>> 0babf4d (Update frontend application)
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/15 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100";
@@ -39,7 +36,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
       return;
     }
 
-<<<<<<< HEAD
     setTitle(initial.title ?? "");
     setDescription(initial.description ?? "");
     setType(initial.type ?? "OTHER");
@@ -71,42 +67,8 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     (event) => {
       if (event && typeof event.preventDefault === "function") {
         event.preventDefault();
-=======
-  // Validate form inputs
-  const validate = useCallback(() => {
-    const e = {};
-    if (!title || title.trim().length < 3) {
-      e.title = "Title is required (min 3 chars).";
-      setTimeout(() => setErrors({}), 3000); // error disappears after 3.5s
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }, [title]);
-
-  // Handle form submission
-  const handleSubmit = useCallback((ev) => {
-    if (ev && typeof ev.preventDefault === "function") ev.preventDefault();
-    if (!validate()) return;
-    const payload = {
-      title: title.trim(),
-      description: description?.trim() || null,
-      type,
-      priority,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-    };
-    onSave(payload);
-  }, [description, dueDate, onSave, priority, title, type, validate]);
-
-  // Effect: handle keyboard shortcuts (Escape to close, Ctrl/Cmd+Enter to save)
-  useEffect(() => {
-    function onKey(e) {
-      if (e.key === "Escape") onClose?.();
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        handleSubmit(new Event("submit", { cancelable: true }));
->>>>>>> 0babf4d (Update frontend application)
       }
 
-<<<<<<< HEAD
       if (!validate()) {
         return;
       }
@@ -121,11 +83,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     },
     [description, dueDate, onSave, priority, title, type, validate],
   );
-=======
-    if (open) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [handleSubmit, onClose, open]);
->>>>>>> 0babf4d (Update frontend application)
 
   useEffect(() => {
     if (!open) return undefined;
@@ -177,7 +134,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     return () => node.removeEventListener("keydown", handleTab);
   }, [open]);
 
-<<<<<<< HEAD
   if (!open || typeof document === "undefined") return null;
 
   const priorityMeta = PRIORITY_META[priority] || PRIORITY_META[3];
@@ -186,32 +142,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
     <div className="fixed inset-0 z-[12000] flex items-end justify-center px-3 py-[max(0.75rem,env(safe-area-inset-top))] sm:items-center sm:px-4 sm:py-6">
       <div
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
-=======
-  if (!open) return null;
-
-  // Mapping task types to color styles
-  const typeColors = {
-    FEED: "bg-amber-100 text-amber-800",
-    COLLECT: "bg-emerald-100 text-emerald-800",
-    HEALTH: "bg-rose-100 text-rose-800",
-    MAINTENANCE: "bg-sky-100 text-sky-800",
-    VACCINATION: "bg-violet-100 text-violet-800",
-    OTHER: "bg-slate-100 text-slate-800",
-  };
-
-  // Mapping priority levels to label and color dot
-  const priorityLabel = {
-    1: { text: "High", dot: "bg-status-danger" },
-    2: { text: "Normal", dot: "bg-status-warning" },
-    3: { text: "Low", dot: "bg-status-success" },
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      {/* Backdrop with blur effect */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-md"
->>>>>>> 0babf4d (Update frontend application)
         onClick={onClose}
         aria-hidden="true"
       />
@@ -226,7 +156,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
           mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
         } max-h-[min(92dvh,48rem)]`}
       >
-<<<<<<< HEAD
         <div className="border-b border-slate-200/80 px-4 pb-4 pt-4 dark:border-white/10 sm:px-6 sm:pb-5 sm:pt-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
@@ -237,65 +166,6 @@ export default function TaskModal({ open, onClose, onSave, initial = {} }) {
                 <h3
                   id="task-modal-title"
                   className="text-lg font-semibold text-slate-900 dark:text-slate-50 sm:text-xl"
-=======
-        <div className="rounded-2xl p-px bg-darkCard/50 shadow-lg">
-          <div className="bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl p-6 shadow-inner border border-white/20">
-            {/* Header: icon, title, description, priority and close button */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/30 dark:bg-black/30 border border-white/10">
-                  {/* Decorative SVG icon */}
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden
-                  >
-                    <path
-                      d="M4 20c6-6 8-10 16-12"
-                      stroke="#6D28D9"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M7 7c3 0 5 2 6 5"
-                      stroke="#06B6D4"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3
-                    id="task-modal-title"
-                    className="text-lg font-semibold leading-tight"
-                  >
-                    {initial.id ? "Edit Task" : "Add Task"}
-                  </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Add a task to stay on track.
-                  </p>
-                </div>
-              </div>
-
-              {/* Priority display and close button */}
-              <div className="flex items-center gap-2">
-                <div className="text-xs flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <span
-                    className={`inline-block w-2 h-2 rounded-full ${priorityLabel[priority].dot}`}
-                  />
-                  <span>{priorityLabel[priority].text}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Close dialog"
-                  className="p-2 rounded-md hover:bg-white/30 dark:hover:bg-black/30"
->>>>>>> 0babf4d (Update frontend application)
                 >
                   {initial.id ? "Edit task" : "Add task"}
                 </h3>

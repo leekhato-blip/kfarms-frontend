@@ -1,8 +1,5 @@
 import api from "../api/apiClient";
-<<<<<<< HEAD
 import { normalizeEmail, normalizePhoneNumber } from "../utils/accountValidation";
-=======
->>>>>>> 0babf4d (Update frontend application)
 import {
   clearOfflineAuthBootstrap,
   primeCachedApiResponse,

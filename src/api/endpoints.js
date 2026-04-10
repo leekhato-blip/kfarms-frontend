@@ -1,10 +1,6 @@
-<<<<<<< HEAD
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
 const rawBaseUrl = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
-=======
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
->>>>>>> 0babf4d (Update frontend application)
 
 export const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
 export const PLATFORM_API_BASE_URL = API_BASE_URL.replace(/\/api$/i, "");
@@ -29,7 +25,6 @@ export const AUTH_LOGIN_IDENTIFIER_KEY =
   import.meta.env.VITE_PLATFORM_LOGIN_IDENTIFIER_KEY || "emailOrUsername";
 
 export const PLATFORM_ENDPOINTS = {
-<<<<<<< HEAD
   overview: "/api/platform/dashboard/overview",
   apps: "/api/platform/apps",
   supportTickets: "/api/platform/support/tickets",
@@ -45,16 +40,6 @@ export const PLATFORM_ENDPOINTS = {
   userEnabled: (userId) => `/api/platform/users/${userId}/enabled`,
   platformInviteResolve: "/api/auth/platform-invites/resolve",
   platformInviteAccept: "/api/auth/platform-invites/accept",
-=======
-  overview: "/platform/dashboard/overview",
-  tenants: "/platform/tenants",
-  tenantDetails: (tenantId) => `/platform/tenants/${tenantId}`,
-  tenantPlan: (tenantId) => `/platform/tenants/${tenantId}/plan`,
-  tenantStatus: (tenantId) => `/platform/tenants/${tenantId}/status`,
-  users: "/platform/users",
-  userPlatformAdmin: (userId) => `/platform/users/${userId}/platform-admin`,
-  userEnabled: (userId) => `/platform/users/${userId}/enabled`,
->>>>>>> 0babf4d (Update frontend application)
 };
 
 export function cleanQueryParams(params = {}) {
