@@ -28,6 +28,7 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     force: true,
+    exclude: ["react-icons", "react-icons/tb"],
     include: [
       "react",
       "react/jsx-dev-runtime",
