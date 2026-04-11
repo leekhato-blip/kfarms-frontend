@@ -684,6 +684,8 @@ export default function DashboardPage() {
     return `${MONTH_SHORT_NAMES[monthIndex]} ${year}`;
   }
 
+  const singleModuleFocus = null;
+
   return (
     <DashboardLayout>
       <div className="font-body">
