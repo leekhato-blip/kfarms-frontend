@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
+import { ArrowLeft, FileText, ShieldCheck, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
 import AuthWatermark from "../components/AuthWatermark";
 import PageWrapper from "../components/PageWrapper";
@@ -55,10 +56,11 @@ const TERMS_SECTIONS = [
 
 export default function TermsPage() {
   const effectiveDate = "April 3, 2026";
+  const navigate = useNavigate();
 
   return (
     <PageWrapper>
-      <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-darkbg dark:via-[#0A0A0F] dark:to-[#111827] dark:text-darkText">
+      <div className="relative min-h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 text-slate-800 dark:from-[#020617] dark:via-[#050A14] dark:to-[#0F172A] dark:text-darkText">
         <AuthWatermark />
         <AuthThemeSwitcher />
 
@@ -71,7 +73,16 @@ export default function TermsPage() {
         </Link>
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl items-center py-20 sm:py-24">
-          <div className="w-full rounded-[2rem] border border-slate-200/80 bg-white/85 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-[#081120]/88 dark:shadow-[0_28px_70px_rgba(2,6,23,0.42)] sm:p-8 lg:p-10">
+          <div className="relative w-full rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/12 dark:bg-[#0B1322]/95 dark:shadow-[0_28px_70px_rgba(2,6,23,0.55)] sm:p-8 lg:p-10">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+              aria-label="Close terms and conditions"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
             <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
@@ -101,7 +112,7 @@ export default function TermsPage() {
               {TERMS_SECTIONS.map((section) => (
                 <section
                   key={section.title}
-                  className="rounded-2xl border border-slate-200/80 bg-slate-50/85 p-5 dark:border-white/10 dark:bg-white/[0.04]"
+                  className="rounded-2xl border border-slate-200/80 bg-slate-50/90 p-5 dark:border-white/12 dark:bg-white/[0.08]"
                 >
                   <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
                     {section.title}
@@ -113,7 +124,7 @@ export default function TermsPage() {
               ))}
             </div>
 
-            <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white/80 p-5 dark:border-white/10 dark:bg-white/[0.05]">
+            <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white/85 p-5 dark:border-white/12 dark:bg-white/[0.08]">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
                 Contact
               </h2>

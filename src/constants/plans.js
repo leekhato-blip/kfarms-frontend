@@ -58,8 +58,8 @@ export const PLAN_TIER_CONFIG = [
     assistantLabel: "KAI Enterprise",
     assistantSummary: "Leadership-grade reviews, escalation support, and multi-site operational guidance.",
     tagline: "For agribusiness groups running branded, multi-branch operations with portfolio visibility and custom workspace setup.",
-    priceLabel: "Custom pricing",
-    cycleLabel: "typically NGN 80,000-150,000 per month",
+    priceLabel: "",
+    cycleLabel: "",
     ctaLabel: "Talk to Sales",
     ctaPath: "/product-profile#contact",
     limits: [

@@ -983,19 +983,25 @@ export default function BillingPage() {
                           )}
                         </div>
 
-                        <div className="mt-2 flex items-end gap-2">
-                          {plan.compareAtPriceLabel && (
-                            <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
-                              {plan.compareAtPriceLabel}
-                            </span>
-                          )}
-                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {plan.priceLabel}
+                        {(plan.compareAtPriceLabel || plan.priceLabel) && (
+                          <div className="mt-2 flex items-end gap-2">
+                            {plan.compareAtPriceLabel && (
+                              <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
+                                {plan.compareAtPriceLabel}
+                              </span>
+                            )}
+                            {plan.priceLabel && (
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                {plan.priceLabel}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {plan.cycleLabel && (
+                          <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            {plan.cycleLabel}
                           </p>
-                        </div>
-                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          {plan.cycleLabel}
-                        </p>
+                        )}
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                           {plan.promoNote || billingInfo.label}
                         </p>
