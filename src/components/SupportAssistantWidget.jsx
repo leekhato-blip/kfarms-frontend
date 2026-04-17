@@ -46,6 +46,92 @@ const PATH_SUPPORT_CATEGORY = Object.freeze([
   { match: "/settings", category: "Farm access" },
 ]);
 
+function getAssistantModeLabel(source = "") {
+  const normalized = String(source || "").trim().toLowerCase();
+  if (normalized === "placeholder") return "Backup guidance mode";
+  if (normalized === "cache") return "Saved guidance mode";
+  return "Live assistant mode";
+}
+
+function getAssistantModeHint(source = "", assistantLabel = ASSISTANT_NAME) {
+  const normalized = String(source || "").trim().toLowerCase();
+  if (normalized === "placeholder") {
+    return `${assistantLabel} is using fallback farm guidance while the live assistant service catches up.`;
+  }
+  if (normalized === "cache") {
+    return `${assistantLabel} is showing the last saved conversation for this workspace.`;
+  }
+  return `${assistantLabel} is connected to live workspace-aware support guidance.`;
+}
+
+function resolveSupportCategory(pathname = "") {
+  const normalizedPath = normalizeKfarmsLegacyPath(pathname || "");
+  const matchedCategory = PATH_SUPPORT_CATEGORY.find((entry) =>
+    normalizedPath.startsWith(entry.match),
+  );
+  return matchedCategory?.category || "General";
+}
+
+function buildSupportEscalationSearch({
+  pathname = "",
+  tenantName = "",
+  input = "",
+  messages = [],
+} = {}) {
+  const params = new URLSearchParams();
+  const category = resolveSupportCategory(pathname);
+  const trimmedInput = String(input || "").trim();
+  const latestAssistantMessage = [...(Array.isArray(messages) ? messages : [])]
+    .reverse()
+    .find((message) => message?.role === "assistant" && String(message?.content || "").trim());
+  const latestUserMessage = [...(Array.isArray(messages) ? messages : [])]
+    .reverse()
+    .find((message) => message?.role === "user" && String(message?.content || "").trim());
+  const summarySeed =
+    trimmedInput ||
+    String(latestUserMessage?.content || "").trim() ||
+    String(latestAssistantMessage?.content || "").trim();
+  const subject =
+    summarySeed.length > 72 ? `${summarySeed.slice(0, 69).trimEnd()}...` : summarySeed;
+
+  params.set("tab", "tickets");
+  params.set("compose", "1");
+  params.set("category", category);
+  params.set("priority", category === "Billing & plan" ? "HIGH" : "MEDIUM");
+
+  if (subject) {
+    params.set("subject", subject);
+  } else if (tenantName) {
+    params.set("subject", `Help request for ${tenantName}`);
+  }
+
+  const descriptionParts = [
+    tenantName ? `Workspace: ${tenantName}` : "",
+    pathname ? `Page: ${pathname}` : "",
+    latestUserMessage?.content ? `User message: ${String(latestUserMessage.content).trim()}` : "",
+    latestAssistantMessage?.content
+      ? `Assistant context: ${String(latestAssistantMessage.content).trim()}`
+      : "",
+  ].filter(Boolean);
+
+  if (descriptionParts.length > 0) {
+    params.set("description", descriptionParts.join("\n\n"));
+  }
+
+  return params.toString();
+}
+
+function formatTime(value) {
+  if (!value) return "Just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Just now";
+
+  return date.toLocaleTimeString("en-NG", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function SupportAssistantWidget() {
   const location = useLocation();
   const navigate = useNavigate();

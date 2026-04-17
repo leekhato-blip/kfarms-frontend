@@ -7,6 +7,46 @@ import {
   normalizeUserPreferences,
 } from "../constants/settings";
 import { normalizePhoneNumber } from "../utils/accountValidation";
+
+const USER_PREFERENCES_CACHE_KEY = "kf_user_preferences_cache_v1";
+const ORGANIZATION_SETTINGS_CACHE_KEY = "kf_organization_settings_cache_v1";
+
+const SETTINGS_ENDPOINTS = Object.freeze({
+  organization: "/settings/organization",
+  preferences: "/settings/preferences",
+  password: "/settings/password",
+  accountContact: "/settings/account-contact",
+  accountContactSendCodes: "/settings/account-contact/send-codes",
+  accountContactVerify: "/settings/account-contact/verify",
+  accountDelete: "/settings/account",
+});
+
+function normalizeAccountContactStatus(payload = {}) {
+  const normalizedPayload = payload && typeof payload === "object" ? payload : {};
+  const preview =
+    normalizedPayload.preview && typeof normalizedPayload.preview === "object"
+      ? normalizedPayload.preview
+      : null;
+  const phoneNumber = String(normalizedPayload.phoneNumber || "").trim();
+  const hasPhoneNumber = normalizedPayload.hasPhoneNumber ?? Boolean(phoneNumber);
+
+  return {
+    email: String(normalizedPayload.email || "").trim(),
+    phoneNumber,
+    hasPhoneNumber: Boolean(hasPhoneNumber),
+    maskedEmail: String(normalizedPayload.maskedEmail || "").trim(),
+    maskedPhoneNumber: String(normalizedPayload.maskedPhoneNumber || "").trim(),
+    emailVerified: Boolean(normalizedPayload.emailVerified),
+    phoneVerified: Boolean(hasPhoneNumber && normalizedPayload.phoneVerified),
+    verificationRequired: Boolean(
+      normalizedPayload.verificationRequired ??
+        (!normalizedPayload.emailVerified || (hasPhoneNumber && !normalizedPayload.phoneVerified)),
+    ),
+    preview,
+    previewMode: Boolean(preview && (preview.emailCode || preview.phoneCode)),
+  };
+}
+
 function extractErrorMessage(error, fallback) {
   const payload = error?.response?.data;
   if (typeof payload === "string" && payload.trim()) return payload;

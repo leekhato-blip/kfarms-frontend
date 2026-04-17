@@ -25,11 +25,11 @@ export const PLAN_BILLING_CATALOG = {
     label: "Free",
   },
   PRO: {
-    amount: 10000,
+    amount: 7000,
     currency: "NGN",
     interval: "MONTHLY",
     paymentRequired: true,
-    label: "NGN 10,000 / month",
+    label: "NGN 7,000 intro / month",
   },
   ENTERPRISE: {
     amount: 0,

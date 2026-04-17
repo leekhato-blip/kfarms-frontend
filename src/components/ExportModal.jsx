@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { X, Download } from "lucide-react";
+import { X, Download, CalendarRange, FileSpreadsheet, FileText, Layers3 } from "lucide-react";
 import { useTenant } from "../tenant/TenantContext";
 import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
-import { normalizeExportCategory, normalizeExportType } from "../services/reportService";
+import {
+  getExportCategoryMeta,
+  getExportTypeMeta,
+  normalizeExportCategory,
+  normalizeExportType,
+} from "../services/reportService";
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
 import PlanUpgradePrompt from "./PlanUpgradePrompt";
 
@@ -73,9 +78,20 @@ export default function ExportModal({
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
+  const selectedCategoryMeta = getExportCategoryMeta(category);
+  const selectedTypeMeta = getExportTypeMeta(type);
+  const hasInvalidDateRange = Boolean(start && end && end < start);
+  const resolvedDateRange = start && end
+    ? `${start} to ${end}`
+    : start
+      ? `From ${start}`
+      : end
+        ? `Up to ${end}`
+        : "All available dates";
+
   function handleSubmit(e) {
     e.preventDefault();
-    if (!canUseAdvancedExport) {
+    if (!canUseAdvancedExport || hasInvalidDateRange) {
       return;
     }
 
@@ -101,12 +117,12 @@ export default function ExportModal({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Export report
+                Export data
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {canUseAdvancedExport
-                  ? "Pick the section, file type, and date range to download."
-                  : "Upgrade to Pro for full export controls."}
+                  ? "Choose the format, confirm the fields, and download the section you need."
+                  : "Upgrade to Pro for full export controls and richer report formats."}
               </p>
             </div>
             <button
@@ -198,6 +214,64 @@ export default function ExportModal({
                 />
               </div>
             </div>
+
+            {hasInvalidDateRange && (
+              <div className="rounded-xl border border-red-300/60 bg-red-50/80 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200">
+                End date cannot be earlier than the start date.
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.25fr,0.95fr]">
+              <section className="rounded-2xl border border-slate-200/70 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-slate-950/40">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <Layers3 className="h-4 w-4 text-accent-primary" />
+                  {selectedCategoryMeta.label}
+                </div>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {selectedCategoryMeta.description}
+                </p>
+                {selectedCategoryMeta.fields?.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedCategoryMeta.fields.map((field) => (
+                      <span
+                        key={field}
+                        className="inline-flex rounded-full border border-slate-200/80 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
+                      >
+                        {field}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-slate-200/70 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-slate-950/40">
+                <div className="space-y-3 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex items-start gap-2">
+                    {type === "pdf" ? (
+                      <FileText className="mt-0.5 h-4 w-4 text-accent-primary" />
+                    ) : (
+                      <FileSpreadsheet className="mt-0.5 h-4 w-4 text-accent-primary" />
+                    )}
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">
+                        {selectedTypeMeta.label}
+                      </p>
+                      <p>{selectedTypeMeta.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <CalendarRange className="mt-0.5 h-4 w-4 text-accent-primary" />
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">
+                        Date range
+                      </p>
+                      <p>{resolvedDateRange}</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -211,11 +285,11 @@ export default function ExportModal({
             {canUseAdvancedExport ? (
               <button
                 type="submit"
-                disabled={exporting}
+                disabled={exporting || hasInvalidDateRange}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent-primary px-4 py-2 text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[8.5rem]"
               >
                 <Download className="h-4 w-4" />
-                {exporting ? "Downloading..." : "Download"}
+                {exporting ? "Downloading..." : `Download ${selectedTypeMeta.label}`}
               </button>
             ) : (
               <Link

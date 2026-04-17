@@ -47,4 +47,16 @@ describe("reportService", () => {
 
     expect(result.filename).toBe("eggs.xlsx");
   });
+
+  it("returns normalized preview metadata for aliased categories and types", async () => {
+    const { getExportCategoryMeta, getExportTypeMeta } = await import("./reportService");
+
+    expect(getExportCategoryMeta("fish-ponds")).toMatchObject({
+      label: "Fish Ponds",
+    });
+    expect(getExportCategoryMeta("fish-ponds").fields).toContain("Current Stock");
+    expect(getExportTypeMeta("excel")).toMatchObject({
+      label: "XLSX",
+    });
+  });
 });

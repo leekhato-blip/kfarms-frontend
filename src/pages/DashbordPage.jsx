@@ -13,8 +13,8 @@ import PlanUpgradePrompt from "../components/PlanUpgradePrompt";
 import ConfirmModal from "../components/ConfirmModal";
 import { useFetch } from "../hooks/useFetch";
 import { detectFeedModule, resolveFeedColor } from "../utils/feedChart";
-import { GiChicken } from "react-icons/gi";
 import {
+  Bird,
   ChevronRight,
   Download,
   Droplets,
@@ -460,7 +460,7 @@ export default function DashboardPage() {
       cards.push(
         <SummaryCard
           key="summary-birds"
-          icon={<GiChicken className="w-8 h-8 sm:w-10 sm:h-10 text-amber-200" />}
+          icon={<Bird className="w-8 h-8 sm:w-10 sm:h-10 text-amber-200" />}
           title="Birds"
           value={formatCount(totals.totalLivestockCount)}
           subtitle="Birds on the farm"

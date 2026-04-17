@@ -755,20 +755,6 @@ export default function Topbar() {
   const themeLabel = formatThemePreferenceLabel(themePreference);
 
   React.useEffect(() => {
-    const syncTheme = () => {
-      setTheme(getStoredThemeMode());
-    };
-
-    window.addEventListener(SETTINGS_THEME_EVENT, syncTheme);
-    window.addEventListener("storage", syncTheme);
-
-    return () => {
-      window.removeEventListener(SETTINGS_THEME_EVENT, syncTheme);
-      window.removeEventListener("storage", syncTheme);
-    };
-  }, []);
-
-  React.useEffect(() => {
     function onDocClick(e) {
       if (!rootRef.current) return;
       if (!rootRef.current.contains(e.target)) {
