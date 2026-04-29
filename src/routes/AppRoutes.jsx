@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
 import ScrollToTop from "../components/ScrollToTop";
@@ -8,6 +8,21 @@ import PageLoader from "../components/PageLoader";
 import PlatformLoader from "../components/PlatformLoader";
 import ProtectedRoute from "../components/ProtectedRoute";
 import PlatformProtectedRoute from "../auth/ProtectedRoute";
+import RouteErrorBoundary from "../components/RouteErrorBoundary";
+import DashboardLayout from "../layouts/DashboardLayout";
+import DashboardPage from "../pages/DashbordPage";
+import SalesPage from "../pages/SalesPage";
+import SuppliesPage from "../pages/SuppliesPage";
+import InventoryPage from "../pages/InventoryPage";
+import BillingPage from "../pages/BillingPage";
+import SupportPage from "../pages/SupportPage";
+import FishPonds from "../pages/FishPonds";
+import LivestockPage from "../pages/LivestockPage";
+import FeedsPage from "../pages/FeedsPage";
+import ProductionsPage from "../pages/ProductionsPage";
+import SearchPage from "../pages/SearchPage";
+import UsersPage from "../pages/UsersPage";
+import SettingsPage from "../pages/SettingsPage";
 import { resolveWorkspaceRedirect } from "./workspaceRedirect";
 import {
   KFARMS_BASE_PATH,
@@ -27,19 +42,6 @@ const SignupPage = React.lazy(() => import("../pages/SignupPage"));
 const VerifyContactPage = React.lazy(() => import("../pages/VerifyContactPage"));
 const ForgotPasswordPage = React.lazy(() => import("../pages/ForgotPasswordPage"));
 const ResetPasswordPage = React.lazy(() => import("../pages/ResetPasswordPage"));
-const DashboardPage = React.lazy(() => import("../pages/DashbordPage"));
-const SalesPage = React.lazy(() => import("../pages/SalesPage"));
-const SuppliesPage = React.lazy(() => import("../pages/SuppliesPage"));
-const InventoryPage = React.lazy(() => import("../pages/InventoryPage"));
-const BillingPage = React.lazy(() => import("../pages/BillingPage"));
-const SupportPage = React.lazy(() => import("../pages/SupportPage"));
-const FishPonds = React.lazy(() => import("../pages/FishPonds"));
-const LivestockPage = React.lazy(() => import("../pages/LivestockPage"));
-const FeedsPage = React.lazy(() => import("../pages/FeedsPage"));
-const ProductionsPage = React.lazy(() => import("../pages/ProductionsPage"));
-const SearchPage = React.lazy(() => import("../pages/SearchPage"));
-const UsersPage = React.lazy(() => import("../pages/UsersPage"));
-const SettingsPage = React.lazy(() => import("../pages/SettingsPage"));
 const CompanyProfilePage = React.lazy(() => import("../pages/CompanyProfilePage"));
 const ProductProfilePage = React.lazy(() => import("../pages/ProductProfilePage"));
 const TermsPage = React.lazy(() => import("../pages/TermsPage"));
@@ -56,39 +58,22 @@ const PlatformTenantsPage = React.lazy(() => import("../pages/platform/Tenants")
 const PlatformUsersPage = React.lazy(() => import("../pages/platform/Users"));
 const PlatformHealthPage = React.lazy(() => import("../pages/platform/Health"));
 const PlatformSettingsPage = React.lazy(() => import("../pages/platform/Settings"));
-
 const KFARMS_APP_ROUTES = Object.freeze([
   {
     route: KFARMS_ROUTE_REGISTRY.dashboard,
-    element: (
-      <ProtectedRoute>
-        <DashboardPage />
-      </ProtectedRoute>
-    ),
+    element: <DashboardPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.sales,
-    element: (
-      <ProtectedRoute>
-        <SalesPage />
-      </ProtectedRoute>
-    ),
+    element: <SalesPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.supplies,
-    element: (
-      <ProtectedRoute>
-        <SuppliesPage />
-      </ProtectedRoute>
-    ),
+    element: <SuppliesPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.inventory,
-    element: (
-      <ProtectedRoute>
-        <InventoryPage />
-      </ProtectedRoute>
-    ),
+    element: <InventoryPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.billing,
@@ -103,19 +88,11 @@ const KFARMS_APP_ROUTES = Object.freeze([
   },
   {
     route: KFARMS_ROUTE_REGISTRY.search,
-    element: (
-      <ProtectedRoute>
-        <SearchPage />
-      </ProtectedRoute>
-    ),
+    element: <SearchPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.support,
-    element: (
-      <ProtectedRoute>
-        <SupportPage />
-      </ProtectedRoute>
-    ),
+    element: <SupportPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.fishPonds,
@@ -135,11 +112,7 @@ const KFARMS_APP_ROUTES = Object.freeze([
   },
   {
     route: KFARMS_ROUTE_REGISTRY.feeds,
-    element: (
-      <ProtectedRoute>
-        <FeedsPage />
-      </ProtectedRoute>
-    ),
+    element: <FeedsPage />,
   },
   {
     route: KFARMS_ROUTE_REGISTRY.productions,
@@ -172,6 +145,23 @@ const KFARMS_APP_ROUTES = Object.freeze([
     ),
   },
 ]);
+
+function WorkspaceAppShell() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return (
+    <ProtectedRoute>
+      <DashboardLayout>
+        <RouteErrorBoundary
+          locationKey={location.key}
+          onRecover={() => navigate(location.pathname, { replace: true })}
+        >
+          <Outlet />
+        </RouteErrorBoundary>
+      </DashboardLayout>
+    </ProtectedRoute>
+  );
+}
 
 export function WorkspaceRedirect() {
   const { isAuthenticated, loading, user } = useAuth();
@@ -266,14 +256,38 @@ export default function AppRoutes() {
   React.useEffect(() => {
     if (typeof document === "undefined") return;
     document.title = resolveDocumentTitle(location.pathname);
+
+    const useRootsBrand =
+      location.pathname.startsWith("/platform") || location.pathname === "/company-profile";
+    const nextFaviconHref = useRootsBrand ? "/roots-favicon.png" : "/kfarms-favicon.png";
+    let favicon = document.getElementById("app-favicon");
+
+    if (!favicon) {
+      favicon = document.querySelector("link[rel='icon']");
+    }
+
+    if (!favicon) {
+      favicon = document.createElement("link");
+      favicon.setAttribute("rel", "icon");
+      favicon.setAttribute("type", "image/png");
+      favicon.setAttribute("id", "app-favicon");
+      document.head.appendChild(favicon);
+    }
+
+    if (favicon.getAttribute("href") !== nextFaviconHref) {
+      favicon.setAttribute("href", nextFaviconHref);
+    }
   }, [location.pathname]);
 
   return (
     <>
       <ScrollToTop />
       <BackendRecoveryPrompt />
-      <React.Suspense fallback={suspenseFallback}>
-        <Routes>
+      <RouteErrorBoundary
+        locationKey={location.key}
+      >
+        <React.Suspense fallback={suspenseFallback}>
+          <Routes>
           <Route
             path="/platform/login"
             element={
@@ -355,11 +369,13 @@ export default function AppRoutes() {
           <Route path="/company-profile" element={<CompanyProfilePage />} />
           <Route path="/terms" element={<TermsPage />} />
 
-          <Route path={KFARMS_BASE_PATH} element={<WorkspaceRedirect />} />
-          {KFARMS_APP_ROUTES.map(({ route, element }) => (
-            <Route key={route.appPath} path={route.appPath} element={element} />
-          ))}
-          <Route path={`${KFARMS_BASE_PATH}/*`} element={<Navigate to={KFARMS_BASE_PATH} replace />} />
+          <Route path={KFARMS_BASE_PATH} element={<WorkspaceAppShell />}>
+            <Route index element={<WorkspaceRedirect />} />
+            {KFARMS_APP_ROUTES.map(({ route, element }) => (
+              <Route key={route.appPath} path={route.segment} element={element} />
+            ))}
+            <Route path="*" element={<Navigate to={KFARMS_BASE_PATH} replace />} />
+          </Route>
 
           {KFARMS_APP_ROUTES.map(({ route }) => (
             <Route
@@ -372,7 +388,8 @@ export default function AppRoutes() {
           <Route path="/enterprise" element={<Navigate to={KFARMS_DEFAULT_APP_PATH} replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </React.Suspense>
+        </React.Suspense>
+      </RouteErrorBoundary>
     </>
   );
 }

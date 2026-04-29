@@ -838,6 +838,7 @@ export default function Topbar({
   const currentLabel = getUserDisplayName(currentUser, "Platform");
   const currentEmail = currentUser?.email || "No account email";
   const dataModeLabel = dataMode === "demo" ? "Demo" : "Live";
+  const liveModeNote = limitedLiveAccess ? "Live data with limited access" : "Live data";
   const isCompactNotificationView = Boolean(
     notificationPopoverStyle && notificationPopoverStyle.width < 360,
   );
@@ -947,33 +948,34 @@ export default function Topbar({
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <span
-                        className={cn(
-                          "inline-flex shrink-0 items-center justify-center border border-violet-300/30 bg-violet-500/12 text-violet-700 shadow-[0_14px_34px_rgba(124,58,237,0.12)] dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-100",
-                          isCompactNotificationView ? "h-9 w-9 rounded-xl" : "h-10 w-10 rounded-2xl",
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-3">
+                        {isCompactNotificationView ? null : (
+                          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-300/30 bg-violet-500/12 text-violet-700 shadow-[0_14px_34px_rgba(124,58,237,0.12)] dark:border-violet-400/20 dark:bg-violet-500/12 dark:text-violet-100">
+                            <Bell size={17} />
+                          </span>
                         )}
-                      >
-                        <Bell size={17} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
-                          {isCompactNotificationView ? "Alerts" : "Platform alerts"}
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--atlas-muted)]">
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                            {dataModeLabel}
-                          </span>
-                          <span>
-                            {unreadNotifications.length > 0
-                              ? isCompactNotificationView
-                                ? `${unreadNotifications.length} unread`
-                                : `${unreadNotifications.length} unread platform alert${unreadNotifications.length === 1 ? "" : "s"}`
-                              : isCompactNotificationView
-                                ? "All caught up"
-                                : "Everything is read for now."}
-                          </span>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-[var(--atlas-text-strong)]">
+                            {isCompactNotificationView ? "Alerts" : "Platform alerts"}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--atlas-muted)]">
+                            {isCompactNotificationView ? null : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                {dataModeLabel}
+                              </span>
+                            )}
+                            <span>
+                              {unreadNotifications.length > 0
+                                ? isCompactNotificationView
+                                  ? `${unreadNotifications.length} unread`
+                                  : `${unreadNotifications.length} unread platform alert${unreadNotifications.length === 1 ? "" : "s"}`
+                                : isCompactNotificationView
+                                  ? "All caught up"
+                                  : "Everything is read for now."}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1053,6 +1055,71 @@ export default function Topbar({
                       const isUnread = unreadNotifications.some((item) => item.id === notification.id);
                       const visual = getPlatformNotificationVisual(notification);
                       const VisualIcon = visual.icon;
+
+                      if (isCompactNotificationView) {
+                        return (
+                          <div
+                            key={notification.id}
+                            className={`rounded-[1rem] border border-[color:var(--atlas-border)] px-3 py-2.5 transition ${
+                              isUnread
+                                ? "bg-[color:var(--atlas-surface-soft)]/90 shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+                                : "bg-[color:var(--atlas-surface-soft)]/62"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <span
+                                className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
+                                  isUnread ? "bg-violet-500" : "bg-[color:var(--atlas-border-strong)]"
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNotificationSelect(notification)}
+                                    className="min-w-0 flex-1 text-left"
+                                  >
+                                    <div className="truncate text-[13px] font-semibold leading-5 text-[var(--atlas-text-strong)]">
+                                      {notification.title}
+                                    </div>
+                                  </button>
+                                  <div className="shrink-0 text-[11px] text-[var(--atlas-muted)]">
+                                    {formatPlatformNotificationAge(notification.createdAt)}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleNotificationSelect(notification)}
+                                  className="mt-1 block text-left"
+                                >
+                                  <div className="text-[11px] leading-5 text-[var(--atlas-muted)]">
+                                    {notification.message}
+                                  </div>
+                                </button>
+                                <div className="mt-2 flex items-center justify-end gap-3">
+                                  {isUnread ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => markNotificationsRead([notification.id])}
+                                      className="text-[11px] font-semibold text-violet-700 transition hover:text-violet-800 dark:text-violet-200 dark:hover:text-violet-100"
+                                    >
+                                      Read
+                                    </button>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleNotificationSelect(notification)}
+                                    className="text-[11px] font-semibold text-[var(--atlas-text)] transition hover:text-[var(--atlas-text-strong)]"
+                                  >
+                                    Open
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
 
                       return (
                         <div
@@ -1449,28 +1516,39 @@ export default function Topbar({
               )}
             >
               {onChangeDataMode ? (
-                <div className="inline-flex items-center rounded-xl border border-[color:var(--atlas-border)]/70 bg-[color:var(--atlas-surface-soft)]/78 p-0.5 sm:rounded-2xl">
+                <div className="inline-flex items-center rounded-2xl border border-[color:var(--atlas-border)]/70 bg-[color:var(--atlas-surface-soft)]/78 p-1 shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
                   <button
                     type="button"
                     onClick={() => onChangeDataMode?.("demo")}
-                    className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition sm:rounded-xl sm:px-3 sm:text-[11px] sm:tracking-[0.14em] ${
+                    aria-pressed={dataMode === "demo"}
+                    title="Preview ROOTS with demo data"
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition sm:px-3 sm:text-[11px] sm:tracking-[0.14em] ${
                       dataMode === "demo"
-                        ? "bg-blue-500/12 text-blue-700 dark:bg-blue-400/18 dark:text-blue-100"
+                        ? "bg-blue-500/12 text-blue-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] dark:bg-blue-400/18 dark:text-blue-100"
                         : "text-[var(--atlas-muted)] hover:bg-[color:var(--atlas-surface-hover)]"
                     }`}
                   >
+                    <Monitor size={13} />
                     Demo
                   </button>
                   <button
                     type="button"
                     onClick={() => onChangeDataMode?.("live")}
-                    className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition sm:rounded-xl sm:px-3 sm:text-[11px] sm:tracking-[0.14em] ${
+                    aria-pressed={dataMode === "live"}
+                    title={liveModeNote}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition sm:px-3 sm:text-[11px] sm:tracking-[0.14em] ${
                       dataMode === "live"
-                        ? "bg-violet-500/12 text-violet-700 dark:bg-violet-400/18 dark:text-violet-100"
+                        ? "bg-violet-500/12 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] dark:bg-violet-400/18 dark:text-violet-100"
                         : "text-[var(--atlas-muted)] hover:bg-[color:var(--atlas-surface-hover)]"
                     }`}
                   >
+                    <Activity size={13} />
                     Live
+                    {limitedLiveAccess ? (
+                      <span className="hidden rounded-full border border-violet-300/30 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.08em] text-violet-700 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-100 sm:inline-flex">
+                        Limited
+                      </span>
+                    ) : null}
                   </button>
                 </div>
               ) : null}

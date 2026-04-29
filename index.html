@@ -1,19 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/kfarms-favicon.png" />
+    <link id="app-favicon" rel="icon" type="image/png" href="/kfarms-favicon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
     <meta name="theme-color" content="#071226" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <style>
       html, body { background: #0a0a0f; }
     </style>
+    <script>
+      (function () {
+        var path = window.location.pathname || "/";
+        var useRootsBrand = path.indexOf("/platform") === 0 || path === "/company-profile";
+        var favicon = document.getElementById("app-favicon");
+        if (favicon && useRootsBrand) {
+          favicon.setAttribute("href", "/roots-favicon.png");
+        }
+      })();
+    </script>
     <title>KFarms - Konnect Farms</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" translate="no"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+

@@ -17,6 +17,7 @@ import {
 import DashboardLayout from "../layouts/DashboardLayout";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import GlassToast from "../components/GlassToast";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import { useTenant } from "../tenant/TenantContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePlanCatalog } from "../hooks/usePlanCatalog";
@@ -174,6 +175,9 @@ export default function BillingPage() {
   const contactEmail = organizationProfile?.contactEmail || "";
   const contactPhone = organizationProfile?.contactPhone || "";
   const contactAddress = organizationProfile?.address || "";
+  const billingPagePath = toKfarmsAppPath("/billing");
+  const settingsPagePath = toKfarmsAppPath("/settings");
+  const supportPagePath = toKfarmsAppPath("/support");
   const focusPlanId = React.useMemo(
     () =>
       normalizePlanId(
@@ -316,12 +320,12 @@ export default function BillingPage() {
     const nextSearch = nextParams.toString();
     navigate(
       {
-        pathname: "/billing",
+        pathname: billingPagePath,
         search: nextSearch ? `?${nextSearch}` : "",
       },
       { replace: true },
     );
-  }, [location.search, navigate]);
+  }, [billingPagePath, location.search, navigate]);
 
   const clearPlanIntentQuery = React.useCallback(() => {
     const nextParams = new URLSearchParams(location.search);
@@ -329,12 +333,12 @@ export default function BillingPage() {
     const nextSearch = nextParams.toString();
     navigate(
       {
-        pathname: "/billing",
+        pathname: billingPagePath,
         search: nextSearch ? `?${nextSearch}` : "",
       },
       { replace: true },
     );
-  }, [location.search, navigate]);
+  }, [billingPagePath, location.search, navigate]);
 
   React.useEffect(() => {
     if (!activeTenantId) return;
@@ -436,12 +440,12 @@ export default function BillingPage() {
     try {
       const successUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/billing`
-          : "/billing";
+          ? `${window.location.origin}${billingPagePath}`
+          : billingPagePath;
       const cancelUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/billing?paymentStatus=cancelled`
-          : "/billing?paymentStatus=cancelled";
+          ? `${window.location.origin}${billingPagePath}?paymentStatus=cancelled`
+          : `${billingPagePath}?paymentStatus=cancelled`;
 
       const result = await createCheckoutSession({
         tenantId: activeTenantId,
@@ -479,6 +483,7 @@ export default function BillingPage() {
     effectivePlanId,
     isBrowserOffline,
     navigate,
+    billingPagePath,
     processingPlanId,
     user?.email,
   ]);
@@ -653,19 +658,31 @@ export default function BillingPage() {
       });
       return;
     }
+    if (!billing?.paymentSettingsAvailable) {
+      setToast({
+        message: "Payment settings unlock after the first recurring Paystack subscription is connected.",
+        type: "info",
+      });
+      return;
+    }
     setOpeningPortal(true);
     try {
       const returnUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/billing`
-          : "/billing";
-      const result = await createCustomerPortalSession({ returnUrl });
+          ? `${window.location.origin}${billingPagePath}`
+          : billingPagePath;
+      const result = await createCustomerPortalSession({
+        tenantId: activeTenantId,
+        returnUrl,
+      });
       if (result.portalUrl) {
         window.location.assign(result.portalUrl);
         return;
       }
       setToast({
-        message: "Payment settings are not available for this subscription yet.",
+        message: result.available
+          ? "Payment settings are not available for this subscription yet."
+          : "Payment settings unlock after the first recurring Paystack subscription is connected.",
         type: "info",
       });
     } catch (error) {
@@ -835,13 +852,13 @@ export default function BillingPage() {
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    to="/settings"
+                    to={settingsPagePath}
                     className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white/20 dark:text-slate-100"
                   >
                     Add billing email
                   </Link>
                   <Link
-                    to="/support?tab=tickets&compose=1&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace."
+                    to={`${supportPagePath}?tab=tickets&compose=1&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace.`}
                     className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary transition hover:bg-accent-primary/15 dark:text-blue-200"
                   >
                     Ask for setup help
@@ -1150,7 +1167,7 @@ export default function BillingPage() {
                     ) : null}
                   </div>
                   <Link
-                    to="/settings"
+                    to={settingsPagePath}
                     className="mt-3 inline-flex text-xs font-semibold text-accent-primary transition hover:text-blue-500 dark:text-blue-300"
                   >
                     Update billing profile in Settings
@@ -1176,7 +1193,9 @@ export default function BillingPage() {
                     </p>
                   </div>
                   <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                    Change your payment card in payment settings.
+                    {billing?.paymentSettingsAvailable
+                      ? "Change your payment card in payment settings."
+                      : "Payment settings unlock after the first recurring Paystack subscription is connected."}
                   </p>
                 </div>
 
@@ -1211,7 +1230,7 @@ export default function BillingPage() {
                         : "Cancel plan"}
                   </button>
                   <Link
-                    to="/support"
+                    to={supportPagePath}
                     className="mt-3 inline-flex text-xs font-semibold text-accent-primary transition hover:text-blue-500 dark:text-blue-300"
                   >
                     Need billing help? Ask for help.

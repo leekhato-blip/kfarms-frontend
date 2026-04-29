@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, RefreshCw, TrendingUp, Wallet } from "lucide-react";
+import useRenderableChartContainer from "../hooks/useRenderableChartContainer";
 
 /* ------------------ Helpers ------------------ */
 function formatMonth(value) {
@@ -75,6 +76,7 @@ export default function RevenueExpenseChart({
   onRefresh,
   refreshing = false,
 }) {
+  const { containerRef, canRenderChart } = useRenderableChartContainer();
   const safeData = Array.isArray(data)
     ? data.map((entry) => {
         const revenue = Number(entry?.revenue || 0);
@@ -236,58 +238,60 @@ export default function RevenueExpenseChart({
         {!hasData ? (
           renderEmpty()
         ) : (
-          <div className="w-full h-72 overflow-hidden relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={safeData}
-                margin={{ top: 8, right: 12, left: 20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                <XAxis
-                  dataKey="month"
-                  stroke="#64748b"
-                  tickFormatter={formatMonth}
-                />
-                <YAxis
-                  stroke="#64748b"
-                  width={72}
-                  tickMargin={10}
-                />
-                <ReTooltip
-                  content={<CustomTooltip currency={currency} />}
-                  wrapperStyle={{ zIndex: 30 }}
-                />
-                <Legend />
+          <div ref={containerRef} className="w-full h-72 overflow-hidden relative">
+            {canRenderChart ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={safeData}
+                  margin={{ top: 8, right: 12, left: 20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                  <XAxis
+                    dataKey="month"
+                    stroke="#64748b"
+                    tickFormatter={formatMonth}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    width={72}
+                    tickMargin={10}
+                  />
+                  <ReTooltip
+                    content={<CustomTooltip currency={currency} />}
+                    wrapperStyle={{ zIndex: 30 }}
+                  />
+                  <Legend />
 
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  name="Revenue"
-                  stroke="#818cf8"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="expense"
-                  name="Expense"
-                  stroke="#fda4af"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="profit"
-                  name="Profit"
-                  stroke="#34d399"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    name="Revenue"
+                    stroke="#818cf8"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="expense"
+                    name="Expense"
+                    stroke="#fda4af"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="profit"
+                    name="Profit"
+                    stroke="#34d399"
+                    strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : null}
           </div>
         )}
       </div>

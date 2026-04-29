@@ -24,20 +24,20 @@ function getPreferredTheme() {
 }
 
 export default function PlatformLoader({
-  label = "Loading ROOTS platform...",
+  label = "Opening dashboards, apps, and live signals...",
   portal = true,
   lockBody = true,
 }) {
   const [theme, setTheme] = React.useState(getPreferredTheme);
   const isDark = theme === "dark";
   const background = isDark
-    ? "radial-gradient(980px 520px at 18% 0%, rgba(37, 99, 235, 0.14), transparent 58%), radial-gradient(760px 420px at 84% 18%, rgba(16, 185, 129, 0.14), transparent 54%), rgba(4, 10, 24, 0.94)"
-    : "radial-gradient(920px 480px at 12% 0%, rgba(37, 99, 235, 0.12), transparent 58%), radial-gradient(760px 420px at 88% 18%, rgba(16, 185, 129, 0.1), transparent 54%), rgba(248, 250, 252, 0.94)";
-  const cardSurface = isDark ? "rgba(10, 18, 35, 0.82)" : "rgba(255, 255, 255, 0.92)";
-  const cardBorder = isDark ? "rgba(100, 116, 139, 0.2)" : "rgba(148, 163, 184, 0.2)";
+    ? "radial-gradient(1120px 560px at 15% 0%, rgba(37, 99, 235, 0.14), transparent 60%), radial-gradient(860px 520px at 85% 18%, rgba(16, 185, 129, 0.12), transparent 56%), rgba(4, 10, 24, 0.94)"
+    : "radial-gradient(980px 500px at 12% 0%, rgba(37, 99, 235, 0.12), transparent 58%), radial-gradient(760px 460px at 88% 18%, rgba(16, 185, 129, 0.12), transparent 54%), rgba(248, 250, 252, 0.94)";
+  const cardSurface = isDark ? "rgba(15, 23, 42, 0.8)" : "rgba(255, 255, 255, 0.9)";
+  const cardBorder = isDark ? "rgba(148, 163, 184, 0.22)" : "rgba(148, 163, 184, 0.22)";
   const cardShadow = isDark
-    ? "0 22px 56px rgba(2, 6, 23, 0.38)"
-    : "0 22px 56px rgba(15, 23, 42, 0.12)";
+    ? "0 22px 60px rgba(2, 6, 23, 0.4)"
+    : "0 22px 56px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.82)";
 
   React.useEffect(() => {
     if (typeof document === "undefined" || typeof window === "undefined") return undefined;
@@ -86,7 +86,7 @@ export default function PlatformLoader({
         style={{
           background,
           colorScheme: isDark ? "dark" : "light",
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(6px)",
         }}
       >
         <style>{`
@@ -94,94 +94,71 @@ export default function PlatformLoader({
             to { transform: rotate(360deg); }
           }
 
-          @keyframes roots-loader-slide {
-            0% { transform: translateX(-135%); }
-            100% { transform: translateX(235%); }
-          }
-
-          @keyframes roots-loader-float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-2px); }
+          @keyframes roots-loader-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.92; }
+            50% { transform: scale(1.05); opacity: 1; }
           }
         `}</style>
 
         <div
-          className="w-full max-w-[20rem] rounded-[1.55rem] border p-5 backdrop-blur-xl"
+          className="flex w-full max-w-[22rem] items-center gap-[18px] rounded-[18px] border px-[22px] py-[18px] backdrop-blur-xl"
           style={{
             background: cardSurface,
             borderColor: cardBorder,
             boxShadow: cardShadow,
           }}
         >
-          <div className="flex items-center gap-4">
-            <div
-              className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[1.1rem]"
-              style={{
-                background: isDark
-                  ? "linear-gradient(145deg, rgba(37,99,235,0.24), rgba(16,185,129,0.2))"
-                  : "linear-gradient(145deg, rgba(37,99,235,0.14), rgba(16,185,129,0.14))",
-              }}
-            >
-              <div
-                className="absolute inset-[7px] rounded-[0.9rem] border"
-                style={{
-                  borderColor: isDark ? "rgba(148,163,184,0.2)" : "rgba(148,163,184,0.18)",
-                  background: isDark ? "rgba(7, 12, 24, 0.84)" : "rgba(255,255,255,0.9)",
-                  animation: "roots-loader-float 2.4s ease-in-out infinite",
-                }}
-              />
-              <span
-                className="absolute h-8 w-8 rounded-full"
-                style={{
-                  border: isDark
-                    ? "2px solid rgba(255,255,255,0.24)"
-                    : "2px solid rgba(15,23,42,0.12)",
-                  borderTopColor: isDark ? "#93c5fd" : "#2563eb",
-                  animation: "roots-loader-spin 1.1s linear infinite",
-                }}
-              />
-              <img
-                src={rootsLogo}
-                alt="ROOTS"
-                className="relative z-[1] h-7 w-auto object-contain"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <div
-                className="text-[11px] font-semibold uppercase tracking-[0.18em]"
-                style={{ color: isDark ? "rgba(110, 231, 183, 0.92)" : "#047857" }}
-              >
-                ROOTS Platform
-              </div>
-              <div
-                className="mt-1 font-header text-[1.05rem] font-semibold"
-                style={{ color: isDark ? "#e2e8f0" : "#0f172a" }}
-              >
-                ROOTS
-              </div>
-              <div
-                className="mt-1 text-xs leading-5"
-                style={{ color: isDark ? "rgba(226, 232, 240, 0.72)" : "rgba(51, 65, 85, 0.78)" }}
-              >
-                {label}
-              </div>
-            </div>
-          </div>
-
           <div
-            className="mt-4 h-1.5 overflow-hidden rounded-full"
+            className="relative grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden rounded-[14px]"
             style={{
-              background: isDark ? "rgba(30, 41, 59, 0.9)" : "rgba(226, 232, 240, 0.96)",
+              background: isDark
+                ? "linear-gradient(140deg, rgba(37,99,235,0.22) 0%, rgba(16,185,129,0.2) 100%)"
+                : "linear-gradient(140deg, rgba(37,99,235,0.14) 0%, rgba(16,185,129,0.14) 100%)",
             }}
           >
-            <span
-              className="block h-full w-16 rounded-full"
+            <div
+              className="absolute inset-[6px] rounded-[12px]"
               style={{
-                background: "linear-gradient(90deg, #16a34a 0%, #2563eb 52%, #38bdf8 100%)",
-                animation: "roots-loader-slide 1.25s ease-in-out infinite",
+                background: isDark ? "rgba(7, 12, 24, 0.78)" : "rgba(255, 255, 255, 0.88)",
+                animation: "roots-loader-pulse 2.2s ease-in-out infinite",
               }}
             />
+            <span
+              className="absolute h-6 w-6 rounded-full"
+              style={{
+                border: isDark
+                  ? "3px solid rgba(255, 255, 255, 0.26)"
+                  : "3px solid rgba(15, 23, 42, 0.14)",
+                borderTopColor: isDark ? "#bfdbfe" : "#2563eb",
+                animation: "roots-loader-spin 0.95s linear infinite",
+              }}
+            />
+            <img
+              src={rootsLogo}
+              alt="ROOTS"
+              className="relative z-[1] h-7 w-auto object-contain"
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div
+              className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+              style={{ color: isDark ? "rgba(110, 231, 183, 0.92)" : "#047857" }}
+            >
+              Platform loader
+            </div>
+            <div
+              className="mt-1 font-header text-[17px] font-semibold"
+              style={{ color: isDark ? "#e2e8f0" : "#0f172a" }}
+            >
+              ROOTS
+            </div>
+            <div
+              className="mt-1 text-xs"
+              style={{ color: isDark ? "rgba(226, 232, 240, 0.72)" : "rgba(51, 65, 85, 0.78)" }}
+            >
+              {label}
+            </div>
           </div>
         </div>
       </div>

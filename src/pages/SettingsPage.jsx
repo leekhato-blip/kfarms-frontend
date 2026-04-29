@@ -20,6 +20,7 @@ import {
 import DashboardLayout from "../layouts/DashboardLayout";
 import ConfirmModal from "../components/ConfirmModal";
 import GlassToast from "../components/GlassToast";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import { useAuth } from "../hooks/useAuth";
 import { useTenant } from "../tenant/TenantContext";
 import { getPlanById, normalizePlanId } from "../constants/plans";
@@ -2166,7 +2167,11 @@ export default function SettingsPage() {
                   </div>
                   <div className="mt-4">
                     <Link
-                      to={currentPlanId === "FREE" ? buildBillingPlanFocusPath("PRO") : "/billing"}
+                      to={
+                        currentPlanId === "FREE"
+                          ? buildBillingPlanFocusPath("PRO")
+                          : toKfarmsAppPath("/billing")
+                      }
                       className="inline-flex items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       Manage billing

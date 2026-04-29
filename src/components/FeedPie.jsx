@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pie } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { useNavigate } from "react-router-dom";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
+import useRenderableChartContainer from "../hooks/useRenderableChartContainer";
 import { formatFeedLabel, resolveFeedColor } from "../utils/feedChart";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -16,6 +18,7 @@ export default function FeedPie({
   const [darkMode, setDarkMode] = useState(null);
   const [chartKey, setChartKey] = useState(0);
   const navigate = useNavigate();
+  const { containerRef, canRenderChart } = useRenderableChartContainer();
 
   /* Sync theme + resize */
   useEffect(() => {
@@ -114,7 +117,7 @@ export default function FeedPie({
       return;
     }
 
-    navigate("/feeds");
+    navigate(toKfarmsAppPath("/feeds"));
   };
 
   const renderEmpty = () => (
@@ -165,11 +168,14 @@ export default function FeedPie({
   );
 
   return (
-    <div className="w-full h-[260px] sm:h-[300px] md:h-[340px] min-h-[260px]">
+    <div
+      ref={containerRef}
+      className="w-full h-[260px] sm:h-[300px] md:h-[340px] min-h-[260px]"
+    >
       {!hasData ? (
         renderEmpty()
       ) : (
-        <Pie key={chartKey} data={data} options={options} />
+        canRenderChart ? <Pie key={chartKey} data={data} options={options} /> : null
       )}
     </div>
   );

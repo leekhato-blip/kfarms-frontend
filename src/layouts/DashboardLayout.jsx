@@ -11,7 +11,9 @@ import {
   isDemoAccountUser,
 } from "../auth/demoMode";
 
-export default function DashboardLayout({ children }) {
+const DashboardLayoutContext = React.createContext(false);
+
+function DashboardLayoutShell({ children }) {
   const currentYear = new Date().getFullYear();
   const { user } = useAuth();
   const [demoToast, setDemoToast] = React.useState("");
@@ -98,5 +100,19 @@ export default function DashboardLayout({ children }) {
       />
       <SupportAssistantWidget />
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }) {
+  const isNestedLayout = React.useContext(DashboardLayoutContext);
+
+  if (isNestedLayout) {
+    return children;
+  }
+
+  return (
+    <DashboardLayoutContext.Provider value={true}>
+      <DashboardLayoutShell>{children}</DashboardLayoutShell>
+    </DashboardLayoutContext.Provider>
   );
 }

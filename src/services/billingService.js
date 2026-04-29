@@ -76,6 +76,20 @@ function writeStorageMap(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+function buildTenantRequestConfig(tenantId, config = {}) {
+  if (!tenantId) {
+    return config;
+  }
+
+  return {
+    ...config,
+    headers: {
+      ...(config.headers || {}),
+      "X-Tenant-Id": String(tenantId),
+    },
+  };
+}
+
 function syncTenantPlanOverride(tenantId, planId) {
   if (!tenantId || !canUseStorage()) return;
 
@@ -133,6 +147,16 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toBoolean(value, fallback = false) {
+  if (typeof value === "boolean") return value;
+  if (value == null) return fallback;
+
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes") return true;
+  if (normalized === "false" || normalized === "0" || normalized === "no") return false;
+  return fallback;
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -186,6 +210,10 @@ function normalizeBillingState(raw = {}, fallbackPlan = "FREE") {
     subscriptionReference: raw.subscriptionReference || raw.reference || "",
     paymentMethodBrand: raw.paymentMethodBrand || raw.cardBrand || "",
     paymentMethodLast4: raw.paymentMethodLast4 || raw.last4 || "",
+    paymentSettingsAvailable: toBoolean(
+      raw.paymentSettingsAvailable ?? raw.portalAvailable ?? raw.available,
+      Boolean(raw.providerSubscriptionCode),
+    ),
     updatedAt: raw.updatedAt || raw.createdAt || null,
   };
 }
@@ -239,6 +267,7 @@ function getStoredBillingState(tenantId, tenantPlan = "FREE") {
       provider: normalizedPlan === "FREE" ? "NONE" : "TEST MODE",
       nextBillingDate: planMeta.paymentRequired ? addMonthsIso(new Date(), 1) : null,
       cancelAtPeriodEnd: false,
+      paymentSettingsAvailable: false,
       updatedAt: nowIso(),
     },
     normalizedPlan,
@@ -393,7 +422,10 @@ export function getPlanBillingInfo(planId) {
 
 export async function getBillingOverview({ tenantId, tenantPlan = "FREE" } = {}) {
   try {
-    const response = await apiClient.get(BILLING_ENDPOINTS.overview);
+    const response = await apiClient.get(
+      BILLING_ENDPOINTS.overview,
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data;
     const billing = cacheBillingStateForTenant({
       tenantId,
@@ -428,9 +460,12 @@ export async function getBillingOverview({ tenantId, tenantPlan = "FREE" } = {})
 
 export async function getBillingInvoices({ tenantId, page = 0, size = 10 } = {}) {
   try {
-    const response = await apiClient.get(BILLING_ENDPOINTS.invoices, {
-      params: { page, size },
-    });
+    const response = await apiClient.get(
+      BILLING_ENDPOINTS.invoices,
+      buildTenantRequestConfig(tenantId, {
+        params: { page, size },
+      }),
+    );
     const payload = response.data?.data ?? response.data;
     const items = Array.isArray(payload?.items)
       ? payload.items
@@ -498,12 +533,16 @@ export async function createCheckoutSession({
   const planMeta = getPlanBillingInfo(normalizedPlan);
 
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.checkoutSession, {
-      planId: normalizedPlan,
-      successUrl,
-      cancelUrl,
-      customerEmail,
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.checkoutSession,
+      {
+        planId: normalizedPlan,
+        successUrl,
+        cancelUrl,
+        customerEmail,
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       checkoutUrl: payload.checkoutUrl || payload.url || "",
@@ -556,10 +595,14 @@ export async function verifyCheckoutSession({
   const normalizedPlan = normalizePlanId(planId, "PRO");
 
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.verifyCheckout, {
-      reference,
-      planId: normalizedPlan,
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.verifyCheckout,
+      {
+        reference,
+        planId: normalizedPlan,
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     const billing = cacheBillingStateForTenant({
       tenantId,
@@ -605,6 +648,7 @@ export async function verifyCheckoutSession({
           cancelAtPeriodEnd: false,
           paymentMethodBrand: planMeta.paymentRequired ? "visa" : "",
           paymentMethodLast4: planMeta.paymentRequired ? "4242" : "",
+          paymentSettingsAvailable: false,
           subscriptionReference: checkout.reference,
           updatedAt,
         },
@@ -637,7 +681,11 @@ export async function verifyCheckoutSession({
 
 export async function cancelSubscription({ tenantId } = {}) {
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.cancelSubscription);
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.cancelSubscription,
+      null,
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       billing: cacheBillingStateForTenant({
@@ -676,9 +724,13 @@ export async function cancelSubscription({ tenantId } = {}) {
 
 export async function downgradeToFreePlan({ tenantId } = {}) {
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.downgradeToFree, {
-      planId: "FREE",
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.downgradeToFree,
+      {
+        planId: "FREE",
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       billing: cacheBillingStateForTenant({
@@ -710,6 +762,7 @@ export async function downgradeToFreePlan({ tenantId } = {}) {
           subscriptionReference: "",
           paymentMethodBrand: "",
           paymentMethodLast4: "",
+          paymentSettingsAvailable: false,
           updatedAt: nowIso(),
         },
       });
@@ -724,14 +777,22 @@ export async function downgradeToFreePlan({ tenantId } = {}) {
   }
 }
 
-export async function createCustomerPortalSession({ returnUrl } = {}) {
+export async function createCustomerPortalSession({ tenantId, returnUrl } = {}) {
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.customerPortal, {
-      returnUrl,
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.customerPortal,
+      {
+        returnUrl,
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       portalUrl: payload.portalUrl || payload.url || "",
+      available: toBoolean(
+        payload.available ?? payload.paymentSettingsAvailable,
+        Boolean(payload.portalUrl || payload.url),
+      ),
       mode: "api",
     };
   } catch (error) {
@@ -743,6 +804,7 @@ export async function createCustomerPortalSession({ returnUrl } = {}) {
       await wait(100);
       return {
         portalUrl: "",
+        available: false,
         mode: "placeholder",
       };
     }

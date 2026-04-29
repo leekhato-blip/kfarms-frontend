@@ -92,8 +92,10 @@ if (typeof window !== "undefined" && "serviceWorker" in navigator && import.meta
   });
 }
 
+const RootMode = import.meta.env.DEV ? React.Fragment : React.StrictMode;
+
 createRoot(root).render(
-  <React.StrictMode>
+  <RootMode>
     <PlatformAuthProvider>
       <AuthProvider>
         <BrowserRouter>
@@ -103,5 +105,5 @@ createRoot(root).render(
         </BrowserRouter>
       </AuthProvider>
     </PlatformAuthProvider>
-  </React.StrictMode>,
+  </RootMode>,
 );

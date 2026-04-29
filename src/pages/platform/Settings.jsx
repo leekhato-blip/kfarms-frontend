@@ -429,17 +429,17 @@ export default function PlatformSettingsPage() {
       }),
     [platformSettings, selectedPromotionApp],
   );
-  const bonanzaTypeLabel = findLabel(
+  const promoTypeLabel = findLabel(
     BONANZA_TYPE_OPTIONS,
     selectedPromotion.type,
     selectedPromotion.type,
   );
-  const bonanzaDurationLabel = findLabel(
+  const promoDurationLabel = findLabel(
     BONANZA_DURATION_OPTIONS,
     selectedPromotion.durationDays,
     selectedPromotion.durationDays,
   );
-  const bonanzaPreview = React.useMemo(() => {
+  const promoPreview = React.useMemo(() => {
     return getPromotionPreview(selectedPromotion, {
       appName: selectedPromotionApp?.name || "this app",
       planLabel: selectedPromotion.planId,
@@ -548,7 +548,7 @@ export default function PlatformSettingsPage() {
     }
   }
 
-  function updateBonanzaSettings(updater) {
+  function updatePromoSettings(updater) {
     setPlatformSettings((current) => {
       const currentPromotion = getAppPromotion(current, {
         appId: selectedPromotionApp?.id || DEFAULT_PROMOTION_APP_ID,
@@ -785,7 +785,7 @@ export default function PlatformSettingsPage() {
                   <div className="max-w-2xl">
                     <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
                       <Sparkles size={12} />
-                      Bonanza ideas
+                      Promo ideas
                     </div>
                     <h3 className="mt-3 text-lg font-semibold text-[var(--atlas-text-strong)]">
                       Plan temporary promos from the platform side
@@ -800,22 +800,22 @@ export default function PlatformSettingsPage() {
                       Draft status
                     </div>
                     <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
-                      {selectedPromotion.enabled ? "Bonanza ready" : "No active draft"}
+                      {selectedPromotion.enabled ? "Promo ready" : "No active draft"}
                     </div>
                     <div className="mt-1 text-xs text-[var(--atlas-muted)]">
-                      {(selectedPromotionApp?.name || "Selected app")} · {bonanzaTypeLabel} ·{" "}
-                      {bonanzaDurationLabel}
+                      {(selectedPromotionApp?.name || "Selected app")} · {promoTypeLabel} ·{" "}
+                      {promoDurationLabel}
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-3">
                   <ToggleRow
-                    label="Bonanza draft"
+                    label="Promo draft"
                     hint="Turn this on only for the app you are editing right now."
                     checked={selectedPromotion.enabled}
                     onChange={(checked) =>
-                      updateBonanzaSettings({ enabled: checked })
+                      updatePromoSettings({ enabled: checked })
                     }
                   />
                 </div>
@@ -846,7 +846,7 @@ export default function PlatformSettingsPage() {
                       type="text"
                       value={selectedPromotion.planId}
                       onChange={(event) =>
-                        updateBonanzaSettings({
+                        updatePromoSettings({
                           enabled: true,
                           planId: event.target.value,
                         })
@@ -863,7 +863,7 @@ export default function PlatformSettingsPage() {
                     <select
                       value={selectedPromotion.type}
                       onChange={(event) =>
-                        updateBonanzaSettings({
+                        updatePromoSettings({
                           enabled: true,
                           type: event.target.value,
                         })
@@ -880,12 +880,12 @@ export default function PlatformSettingsPage() {
 
                   <SettingsField
                     label="Offer window"
-                    hint="How long the bonanza should stay available."
+                    hint="How long the promo should stay available."
                   >
                     <select
                       value={selectedPromotion.durationDays}
                       onChange={(event) =>
-                        updateBonanzaSettings({
+                        updatePromoSettings({
                           enabled: true,
                           durationDays: event.target.value,
                         })
@@ -909,7 +909,7 @@ export default function PlatformSettingsPage() {
                         type="text"
                         value={selectedPromotion.discountPrice}
                         onChange={(event) =>
-                          updateBonanzaSettings({
+                          updatePromoSettings({
                             enabled: true,
                             discountPrice: event.target.value,
                           })
@@ -928,7 +928,7 @@ export default function PlatformSettingsPage() {
                       <select
                         value={selectedPromotion.trialMonths}
                         onChange={(event) =>
-                          updateBonanzaSettings({
+                          updatePromoSettings({
                             enabled: true,
                             trialMonths: event.target.value,
                           })
@@ -947,13 +947,13 @@ export default function PlatformSettingsPage() {
 
                 <div className="mt-4 rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)] px-4 py-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--atlas-muted)]">
-                    Current bonanza plan
+                    Current promo plan
                   </div>
                   <div className="mt-2 text-sm font-semibold text-[var(--atlas-text-strong)]">
                     {(selectedPromotionApp?.name || "Selected app")} · {selectedPromotion.planId}
                   </div>
                   <p className="mt-1 text-sm leading-6 text-[var(--atlas-muted)]">
-                    {bonanzaPreview}
+                    {promoPreview}
                   </p>
                   <p className="mt-2 text-xs text-[var(--atlas-muted)]">
                     KFarms reads this promo into its live pricing cards now. Other apps can keep

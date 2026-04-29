@@ -15,6 +15,7 @@ import { useTenant } from "../tenant/TenantContext";
 import { formatFeedLabel, resolveFeedColor } from "../utils/feedChart";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
 import {
   getFeedSummary,
   getAllFeeds,
@@ -147,6 +148,7 @@ function FeedSectionEmptyState({
 }
 
 export default function FeedsPage() {
+  const isMobileViewport = useIsMobileViewport();
   const { activeTenant } = useTenant();
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
   const [loading, setLoading] = useState(true);
@@ -736,7 +738,8 @@ export default function FeedsPage() {
         </div>
 
         {/* Charts Row */}
-        <div className="sm:hidden">
+        {isMobileViewport ? (
+          <div>
           <MobileAccordionCard
             title="Feed breakdown"
             description="Open this chart when you want to review the current feed mix."
@@ -842,10 +845,12 @@ export default function FeedsPage() {
               )}
             </div>
           </MobileAccordionCard>
-        </div>
+          </div>
+        ) : null}
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark sm:block lg:col-span-2">
+        {!isMobileViewport ? (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark lg:col-span-2">
             <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="text-lg font-semibold font-header">
@@ -947,7 +952,7 @@ export default function FeedsPage() {
             )}
           </div>
 
-          <div className="hidden sm:block rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
             <h3 className="text-lg font-semibold font-header mb-2">
               Stock by Category
             </h3>
@@ -1005,7 +1010,8 @@ export default function FeedsPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        ) : null}
 
         {/* Lower Row */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

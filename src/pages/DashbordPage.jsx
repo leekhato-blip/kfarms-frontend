@@ -53,6 +53,8 @@ import {
   getInventoryUnit,
   getRecommendedRestockQuantity,
 } from "../utils/inventoryStock";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 
 const EMPTY_ARRAY = [];
 const MONTH_SHORT_NAMES = [
@@ -202,6 +204,7 @@ function isRecentActivityVisibleForWorkspace(activity, { poultryEnabled, fishEna
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { activeTenant } = useTenant();
+  const isMobileViewport = useIsMobileViewport();
   const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
@@ -379,13 +382,72 @@ export default function DashboardPage() {
       ? `Latest record is in ${latestRecordedProductionYear}`
       : `Showing ${activeProductionYear}`;
 
+  const latestFinanceEntry = React.useMemo(() => {
+    const monthlyFinance = Array.isArray(data?.monthlyFinance) ? data.monthlyFinance : EMPTY_ARRAY;
+    return monthlyFinance.at(-1) || null;
+  }, [data?.monthlyFinance]);
+
+  const financeSnapshotCards = React.useMemo(
+    () => [
+      {
+        label: "Revenue",
+        value: formatCurrency(latestFinanceEntry?.revenue),
+        tone: "text-emerald-600 dark:text-emerald-300",
+      },
+      {
+        label: "Expense",
+        value: formatCurrency(latestFinanceEntry?.expense),
+        tone: "text-amber-600 dark:text-amber-300",
+      },
+      {
+        label: "Profit",
+        value: formatCurrency(latestFinanceEntry?.profit),
+        tone: "text-sky-600 dark:text-sky-300",
+      },
+      {
+        label: "Month",
+        value: latestFinanceEntry?.month ? formatMonthLabel(latestFinanceEntry.month) : "No data",
+        tone: "text-slate-600 dark:text-slate-300",
+      },
+    ],
+    [latestFinanceEntry],
+  );
+
+  const openRecentActivity = React.useCallback(
+    (activity) => {
+      const category = String(activity?.category || "").trim();
+
+      switch (category) {
+        case "Sales":
+          navigate(toKfarmsAppPath("/sales"));
+          return;
+        case "Supplies":
+          navigate(toKfarmsAppPath("/supplies"));
+          return;
+        case "Fish":
+          navigate(toKfarmsAppPath("/fish-ponds"));
+          return;
+        case "Poultry":
+        case "Livestock":
+          navigate(toKfarmsAppPath("/poultry"));
+          return;
+        case "Feed":
+          navigate(toKfarmsAppPath("/feeds"));
+          return;
+        default:
+          navigate(toKfarmsAppPath("/dashboard"));
+      }
+    },
+    [navigate],
+  );
+
   const quickActionCards = React.useMemo(
     () => {
       const cards = [];
 
       if (poultryEnabled) {
         cards.push({
-          to: "/productions?create=1",
+          to: toKfarmsAppPath("/productions?create=1"),
           icon: Egg,
           title: "Record eggs",
           description: "Add today's egg collection for a layer batch in one simple step.",
@@ -400,7 +462,7 @@ export default function DashboardPage() {
 
       cards.push(
         {
-          to: "/feeds?create=1",
+          to: toKfarmsAppPath("/feeds?create=1"),
           icon: Wheat,
           title: "Record feed",
           description: "Log feed usage or purchases so stock and cost stay clear.",
@@ -412,7 +474,7 @@ export default function DashboardPage() {
             "bg-gradient-to-br from-emerald-400 to-teal-500 dark:from-emerald-400 dark:to-teal-600",
         },
         {
-          to: "/sales?create=1",
+          to: toKfarmsAppPath("/sales?create=1"),
           icon: Wallet,
           title: "Record sale",
           description: "Capture what was sold so income and payment records stay clean.",
@@ -424,7 +486,7 @@ export default function DashboardPage() {
             "bg-gradient-to-br from-sky-400 to-indigo-500 dark:from-sky-400 dark:to-indigo-600",
         },
         {
-          to: "/inventory?create=1",
+          to: toKfarmsAppPath("/inventory?create=1"),
           icon: Package2,
           title: "Add stock item",
           description: "Keep your farm items easy to find before anything runs out.",
@@ -849,7 +911,8 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="space-y-4 md:hidden">
+          {isMobileViewport ? (
+            <div className="space-y-4">
             {poultryEnabled ? (
               <MobileAccordionCard
                 title="Egg production"
@@ -894,15 +957,8 @@ export default function DashboardPage() {
                       />
                     </div>
                   </div>
-                  <div className="h-[220px] w-full">
-                    {isInitialLoading ? (
-                      <div className="skeleton-glass h-full w-full rounded-lg" />
-                    ) : (
-                      <ProductionChart productionData={chartProductionSeries} />
-                    )}
-                  </div>
                   {!isInitialLoading && productionInsights ? (
-                    <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-200/80 pt-4 dark:border-white/10">
+                    <div className="grid grid-cols-2 gap-2 border-t border-slate-200/80 pt-4 dark:border-white/10">
                       <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-3 dark:border-white/10 dark:bg-white/5">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                           Peak Month
@@ -956,6 +1012,34 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
+                  ) : !isInitialLoading ? (
+                    <div
+                      className="flex min-h-[180px] items-center justify-center border-t border-slate-200/80 pt-4 dark:border-white/10"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
+                        <div
+                          className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 shadow-sm dark:bg-amber-900/30"
+                          aria-hidden="true"
+                        >
+                          <Egg className="h-7 w-7 text-amber-600 dark:text-amber-200" />
+                        </div>
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                          No egg production recorded yet
+                        </h4>
+                        <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                          Record a production entry first, then the monthly highlights will show up here.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => navigate(toKfarmsAppPath("/productions"))}
+                          className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
+                        >
+                          Record Production
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               </MobileAccordionCard>
@@ -979,18 +1063,13 @@ export default function DashboardPage() {
                   {feedSummaryText}
                 </p>
                 {isInitialLoading ? (
-                  <div className="flex w-full flex-col items-stretch gap-4 font-body">
-                    <div className="min-w-0 flex-1">
-                      <div className="skeleton-glass h-40 w-full rounded-lg" />
-                    </div>
-                    <div className="w-full flex-1 space-y-3">
-                      {Array.from({ length: 4 }).map((_, idx) => (
-                        <div key={`mobile-feed-skeleton-${idx}`} className="space-y-2">
-                          <div className="skeleton-glass h-4 w-24 rounded" />
-                          <div className="skeleton-glass h-3 w-12 rounded" />
-                        </div>
-                      ))}
-                    </div>
+                  <div className="w-full space-y-3 font-body">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={`mobile-feed-skeleton-${idx}`} className="space-y-2">
+                        <div className="skeleton-glass h-4 w-24 rounded" />
+                        <div className="skeleton-glass h-3 w-full rounded" />
+                      </div>
+                    ))}
                   </div>
                 ) : !hasFeedConsumptionData ? (
                   <div
@@ -1017,54 +1096,51 @@ export default function DashboardPage() {
                       </p>
                       <button
                         className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
-                        onClick={() => navigate("/feeds")}
+                        onClick={() => navigate(toKfarmsAppPath("/feeds"))}
                       >
                         Log Feed Consumption
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="grid w-full grid-cols-1 gap-4 font-body">
-                    <div className="min-w-0">
-                      <FeedPie breakdown={feedLegendItems} />
-                    </div>
-                    <div className="w-full space-y-2">
-                      {feedLegendItems.map((item) => (
-                        <div
-                          key={`mobile-feed-legend-${item.label}`}
-                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 dark:bg-darkCard/50"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0 flex items-center gap-2">
-                              <span
-                                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: item.color }}
-                              />
-                              <div className="truncate text-sm font-body">{item.label}</div>
-                            </div>
-                            <div className="text-xs font-semibold text-slate-600 dark:text-slate-200">
-                              {item.percent.toFixed(1)}%
-                            </div>
-                          </div>
-                          <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200/70 dark:bg-slate-700/60">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                backgroundColor: item.color,
-                                width: `${Math.max(item.percent, 3)}%`,
-                              }}
+                  <div className="w-full space-y-2">
+                    {feedLegendItems.slice(0, 6).map((item) => (
+                      <div
+                        key={`mobile-feed-legend-${item.label}`}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 dark:bg-darkCard/50"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0 flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: item.color }}
                             />
+                            <div className="truncate text-sm font-body">{item.label}</div>
+                          </div>
+                          <div className="text-xs font-semibold text-slate-600 dark:text-slate-200">
+                            {item.percent.toFixed(1)}%
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200/70 dark:bg-slate-700/60">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              backgroundColor: item.color,
+                              width: `${Math.max(item.percent, 3)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </MobileAccordionCard>
-          </div>
+            </div>
+          ) : null}
 
-          <div className="hidden gap-4 md:flex md:flex-row">
+          {!isMobileViewport ? (
+            <div className="hidden gap-4 md:flex md:flex-row">
             {poultryEnabled && (
               <div className="flex flex-1 flex-col rounded-xl bg-white p-4 shadow-neo dark:bg-darkCard dark:shadow-dark">
               <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1225,7 +1301,7 @@ export default function DashboardPage() {
                     </p>
                     <button
                       className="mt-2 w-full sm:w-auto px-5 py-2 bg-accent-primary text-white rounded-lg transition hover:opacity-90 active:scale-[0.98]"
-                      onClick={() => navigate("/feeds")}
+                      onClick={() => navigate(toKfarmsAppPath("/feeds"))}
                     >
                       Log Feed Consumption
                     </button>
@@ -1271,12 +1347,14 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : null}
 
           {/* Revenue + Upcoming Tasks */}
           {canUseAdvancedDashboard ? (
             <>
-              <div className="space-y-4 md:hidden">
+              {isMobileViewport ? (
+                <div className="space-y-4">
                 <MobileAccordionCard
                   title="Revenue and expenses"
                   description="Open this chart when you want to review money coming in and going out."
@@ -1289,12 +1367,36 @@ export default function DashboardPage() {
                       <div className="skeleton-glass h-48 rounded" />
                     </div>
                   ) : (
-                    <RevenueExpenseChart
-                      data={data?.monthlyFinance}
-                      currency={workspaceCurrency}
-                      onRefresh={refreshDashboard}
-                      refreshing={isRefreshing}
-                    />
+                    <div className="rounded-xl bg-white p-4 shadow-neo dark:bg-darkCard dark:shadow-dark">
+                      <div className="mb-4 flex items-center justify-between gap-2">
+                        <div>
+                          <h3 className="text-lg font-header">Money snapshot</h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Latest recorded month across revenue and expenses.
+                          </p>
+                        </div>
+                        <PanelRefreshButton
+                          onClick={refreshDashboard}
+                          busy={isRefreshing}
+                          label="Refresh finance summary"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {financeSnapshotCards.map((card) => (
+                          <div
+                            key={card.label}
+                            className="rounded-2xl border border-slate-200/80 bg-slate-50/90 px-3 py-3 dark:border-white/10 dark:bg-white/5"
+                          >
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              {card.label}
+                            </p>
+                            <p className={`mt-2 text-sm font-semibold ${card.tone}`}>
+                              {card.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </MobileAccordionCard>
 
@@ -1320,50 +1422,53 @@ export default function DashboardPage() {
                     refreshing={isRefreshing}
                   />
                 )}
-              </div>
+                </div>
+              ) : null}
 
-              <div className="hidden grid-cols-1 gap-4 md:grid md:grid-cols-3">
-              <div className="md:col-span-2">
-                {isInitialLoading ? (
-                  <div className="bg-white/10 dark:bg-darkCard/70 rounded-xl shadow-neo dark:shadow-dark p-5 h-[320px] sm:h-[360px]">
-                    <div className="skeleton-glass h-4 w-28 sm:w-32 rounded mb-3" />
-                    <div className="skeleton-glass h-8 w-36 sm:w-40 rounded mb-6" />
-                    <div className="skeleton-glass h-48 sm:h-64 rounded" />
+              {!isMobileViewport ? (
+                <div className="hidden grid-cols-1 gap-4 md:grid md:grid-cols-3">
+                  <div className="md:col-span-2">
+                    {isInitialLoading ? (
+                      <div className="bg-white/10 dark:bg-darkCard/70 rounded-xl shadow-neo dark:shadow-dark p-5 h-[320px] sm:h-[360px]">
+                        <div className="skeleton-glass h-4 w-28 sm:w-32 rounded mb-3" />
+                        <div className="skeleton-glass h-8 w-36 sm:w-40 rounded mb-6" />
+                        <div className="skeleton-glass h-48 sm:h-64 rounded" />
+                      </div>
+                    ) : (
+                      <RevenueExpenseChart
+                        data={data?.monthlyFinance}
+                        currency={workspaceCurrency}
+                        onRefresh={refreshDashboard}
+                        refreshing={isRefreshing}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <RevenueExpenseChart
-                    data={data?.monthlyFinance}
-                    currency={workspaceCurrency}
-                    onRefresh={refreshDashboard}
-                    refreshing={isRefreshing}
-                  />
-                )}
-              </div>
-              <div className="md:flex md:col-span-1">
-                {isInitialLoading ? (
-                  <div className="bg-white/10 w-full dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-4 rounded-xl">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                      <div className="skeleton-glass h-4 w-28 sm:w-32 rounded" />
-                      <div className="skeleton-glass h-8 w-24 sm:w-20 rounded" />
-                    </div>
-                    <div className="space-y-3">
-                      {Array.from({ length: 3 }).map((_, idx) => (
-                        <div
-                          key={`task-skeleton-${idx}`}
-                          className="skeleton-glass h-12 rounded"
-                        />
-                      ))}
-                    </div>
+                  <div className="md:flex md:col-span-1">
+                    {isInitialLoading ? (
+                      <div className="bg-white/10 w-full dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-4 rounded-xl">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                          <div className="skeleton-glass h-4 w-28 sm:w-32 rounded" />
+                          <div className="skeleton-glass h-8 w-24 sm:w-20 rounded" />
+                        </div>
+                        <div className="space-y-3">
+                          {Array.from({ length: 3 }).map((_, idx) => (
+                            <div
+                              key={`task-skeleton-${idx}`}
+                              className="skeleton-glass h-12 rounded"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <UpcomingTaskPanel
+                        className="h-full"
+                        onRefresh={refreshDashboard}
+                        refreshing={isRefreshing}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <UpcomingTaskPanel
-                    className="h-full"
-                    onRefresh={refreshDashboard}
-                    refreshing={isRefreshing}
-                  />
-                )}
-              </div>
-              </div>
+                </div>
+              ) : null}
             </>
           ) : (
             <PlanUpgradePrompt
@@ -1454,6 +1559,73 @@ export default function DashboardPage() {
                   />
                 ))}
               </div>
+            </div>
+          ) : isMobileViewport ? (
+            <div
+              id="dashboard-recent"
+              className="mt-4 rounded-2xl bg-white/10 p-5 shadow-neo dark:bg-darkCard/70 dark:shadow-dark"
+              title="Latest records from across the farm"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold font-header text-slate-900 dark:text-slate-100">
+                    Recent Activities
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Open one of the latest records without loading the full table view.
+                  </p>
+                </div>
+                <PanelRefreshButton
+                  onClick={refreshDashboard}
+                  busy={isRefreshing}
+                  label="Refresh recent activities"
+                />
+              </div>
+
+              {recent.length > 0 ? (
+                <div className="space-y-3">
+                  {recent.slice(0, 5).map((activity, index) => (
+                    <button
+                      key={activity.id || `${activity.date}-${activity.item}-${index}`}
+                      type="button"
+                      onClick={() => openRecentActivity(activity)}
+                      className="flex w-full items-start justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3.5 py-3 text-left transition hover:bg-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
+                            {activity.category === "Livestock" ? "Poultry" : activity.category}
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {new Date(activity.date).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                            })}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {activity.item}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Quantity: {activity.quantity} • {activity.status}
+                        </div>
+                      </div>
+                      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-[180px] items-center justify-center text-center">
+                  <div className="max-w-sm space-y-2">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      No recent activities yet
+                    </p>
+                    <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                      Feed logs, sales, and supply records will appear here as soon as they are added.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div

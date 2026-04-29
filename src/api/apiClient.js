@@ -451,7 +451,8 @@ function redirectToLogin() {
   if (typeof window === "undefined") return;
   if (isPlatformPathname(window.location.pathname)) return;
   if (window.location.pathname === "/auth/login") return;
-  window.location.assign("/auth/login");
+  window.history.replaceState(window.history.state, "", "/auth/login");
+  window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
 async function hasActiveSession() {

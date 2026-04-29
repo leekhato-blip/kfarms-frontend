@@ -22,6 +22,7 @@ import {
 import { exportReport } from "../services/reportService";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
 import { SUPPLY_CATEGORY_OPTIONS } from "../constants/formOptions";
 
 import { Line } from "react-chartjs-2";
@@ -71,6 +72,7 @@ const neonShadowPlugin = {
 ChartJS.register(neonShadowPlugin);
 
 export default function SuppliesPage() {
+  const isMobileViewport = useIsMobileViewport();
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
   );
@@ -428,6 +430,30 @@ export default function SuppliesPage() {
     [axisTextColor, gridColor, isDark],
   );
 
+  const latestSupply = items[0] || null;
+  const mobileSupplySnapshot = [
+    {
+      label: "Records",
+      value: hasSummaryData ? String(summary.records) : "—",
+      tone: "text-slate-700 dark:text-slate-100",
+    },
+    {
+      label: "Today",
+      value: hasSummaryData ? formatNaira(summary.todaySpent) : "—",
+      tone: "text-amber-600 dark:text-amber-300",
+    },
+    {
+      label: "This Month",
+      value: hasSummaryData ? formatNaira(summary.monthSpent) : "—",
+      tone: "text-sky-600 dark:text-sky-300",
+    },
+    {
+      label: "Latest Purchase",
+      value: latestSupply ? formatNaira(latestSupply.totalPrice) : "No record",
+      tone: "text-emerald-600 dark:text-emerald-300",
+    },
+  ];
+
   const [trashOpen, setTrashOpen] = useState(false);
 
   async function handleRefresh() {
@@ -579,64 +605,85 @@ export default function SuppliesPage() {
         )}
 
         {/* CHART */}
-        <div className="mt-4 md:hidden">
-          <MobileAccordionCard
-            title="Purchase trend"
-            description="Open this chart when you want to review supply spending over time."
-            icon={<Wallet className="h-4 w-4" />}
-          >
-            <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
-              {loading ? (
-                <div className="skeleton-glass h-[220px] w-full rounded-xl" />
-              ) : (
-                <>
-                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
-                    This chart uses the purchases that have been recorded on this page.
-                  </p>
-                  <div className="h-[220px]">
-                    {!hasSuppliesData ? (
+        {isMobileViewport ? (
+          <div className="mt-4">
+            <MobileAccordionCard
+              title="Purchase snapshot"
+              description="Open this summary when you want a quick mobile view without loading the full chart."
+              icon={<Wallet className="h-4 w-4" />}
+            >
+              <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
+                {loading ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {Array.from({ length: 4 }).map((_, idx) => (
                       <div
-                        className="flex h-full w-full items-center justify-center p-4 font-body"
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
-                          <div
-                            className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 shadow-sm dark:bg-amber-900/30"
-                            aria-hidden="true"
-                          >
-                            <Wallet className="h-9 w-9 text-amber-600 dark:text-amber-200" />
-                          </div>
-                          <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
-                            {hasActiveFilters
-                              ? "No supplies match what you selected"
-                              : "No supply purchases recorded yet"}
-                          </h4>
-                          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                            {hasActiveFilters
-                              ? "Show everything to see more results."
-                              : "Record your first supply purchase to see the trend here."}
-                          </p>
-                          <button
-                            className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
-                            onClick={hasActiveFilters ? clearFilters : openCreate}
-                          >
-                            {hasActiveFilters ? "Show everything" : "Record Supply"}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Line data={chartData} options={chartOptions} />
-                    )}
+                        key={`mobile-supply-snapshot-skeleton-${idx}`}
+                        className="skeleton-glass h-20 rounded-xl"
+                      />
+                    ))}
                   </div>
-                </>
-              )}
-            </div>
-          </MobileAccordionCard>
-        </div>
+                ) : hasSuppliesData ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      {mobileSupplySnapshot.map((card) => (
+                        <div
+                          key={card.label}
+                          className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 dark:bg-white/[0.03]"
+                        >
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                            {card.label}
+                          </p>
+                          <p className={`mt-2 text-sm font-semibold ${card.tone}`}>
+                            {card.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    {latestSupply ? (
+                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        Latest purchase: {latestSupply.itemName} on {latestSupply.supplyDate || "—"}.
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <div
+                    className="flex min-h-[180px] w-full items-center justify-center p-4 font-body"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
+                      <div
+                        className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 shadow-sm dark:bg-amber-900/30"
+                        aria-hidden="true"
+                      >
+                        <Wallet className="h-9 w-9 text-amber-600 dark:text-amber-200" />
+                      </div>
+                      <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
+                        {hasActiveFilters
+                          ? "No supplies match what you selected"
+                          : "No supply purchases recorded yet"}
+                      </h4>
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        {hasActiveFilters
+                          ? "Show everything to see more results."
+                          : "Record your first supply purchase to see the mobile summary here."}
+                      </p>
+                      <button
+                        className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
+                        onClick={hasActiveFilters ? clearFilters : openCreate}
+                      >
+                        {hasActiveFilters ? "Show everything" : "Record Supply"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </MobileAccordionCard>
+          </div>
+        ) : (
 
-        <div
-          className="mt-4 hidden rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark md:block"
+          <div
+          className="mt-4 rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark"
           style={{ minHeight: 260 }}
         >
           <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
@@ -680,7 +727,8 @@ export default function SuppliesPage() {
               <Line data={chartData} options={chartOptions} />
             )}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* FILTERS */}
         <div className="rounded-xl bg-white/10 dark:bg-darkCard/70 dark:shadow-dark shadow-neo p-4">
@@ -762,80 +810,153 @@ export default function SuppliesPage() {
               </div>
             </div>
           ) : hasSuppliesData ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[950px] border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
-                <thead className="text-lightText dark:text-darkText font-body">
-                  <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-slate-200">
-                    <th className="py-3 text-left whitespace-nowrap">Item</th>
-                    <th className="text-left whitespace-nowrap">Category</th>
-                    <th className="text-right whitespace-nowrap">Qty</th>
-                    <th className="text-right whitespace-nowrap">Unit</th>
-                    <th className="text-right whitespace-nowrap">Total</th>
-                    <th className="text-center whitespace-nowrap">Supplier</th>
-                    <th className="text-left whitespace-nowrap">Date</th>
-                    <th className="text-center whitespace-nowrap">Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {items.map((s) => (
-                    <tr
-                      key={s.id}
-                      onClick={() => openDetails(s)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openDetails(s);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View details for ${s.itemName}`}
-                      className="border-b font-body dark:border-white/10 hover:bg-accent-primary/25 dark:hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
+            isMobileViewport ? (
+              <div className="space-y-3">
+                {items.map((supply) => (
+                  <article
+                    key={supply.id}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 dark:bg-white/[0.03]"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => openDetails(supply)}
+                      className="w-full text-left"
+                      aria-label={`View details for ${supply.itemName}`}
                     >
-                      <td className="py-3 text-left">{s.itemName}</td>
-                      <td className="text-left">{s.category}</td>
-                      <td className="text-right">{s.quantity}</td>
-                      <td className="text-right">
-                        ₦{Number(s.unitPrice || 0).toLocaleString()}
-                      </td>
-                      <td className="text-right whitespace-nowrap">
-                        ₦{Number(s.totalPrice || 0).toLocaleString()}
-                      </td>
-                      <td className="text-center">{s.supplierName || "-"}</td>
-                      <td className="text-left whitespace-nowrap">
-                        {s.supplyDate}
-                      </td>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {supply.itemName}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {supply.category} • {supply.supplyDate || "No date"}
+                          </div>
+                        </div>
+                        <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+                          {formatNaira(supply.totalPrice)}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <div>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">
+                            Qty:
+                          </span>{" "}
+                          {supply.quantity}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">
+                            Unit:
+                          </span>{" "}
+                          {formatNaira(supply.unitPrice)}
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">
+                            Supplier:
+                          </span>{" "}
+                          {supply.supplierName || "—"}
+                        </div>
+                      </div>
+                    </button>
 
-                      <td className="flex gap-2 justify-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEdit(s);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
-                          title="Edit supply"
-                        >
-                          <Edit className="w-6 h-6" />
-                          <span className="text-xs font-semibold">Edit</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            askDelete(s);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
-                          title="Move supply to trash"
-                        >
-                          <Trash2 className="w-6 h-6" />
-                          <span className="text-xs font-semibold">Delete</span>
-                        </button>
-                      </td>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(supply)}
+                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-accent-primary/25 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary"
+                        title="Edit supply"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => askDelete(supply)}
+                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400"
+                        title="Move supply to trash"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[950px] border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
+                  <thead className="text-lightText dark:text-darkText font-body">
+                    <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-slate-200">
+                      <th className="py-3 text-left whitespace-nowrap">Item</th>
+                      <th className="text-left whitespace-nowrap">Category</th>
+                      <th className="text-right whitespace-nowrap">Qty</th>
+                      <th className="text-right whitespace-nowrap">Unit</th>
+                      <th className="text-right whitespace-nowrap">Total</th>
+                      <th className="text-center whitespace-nowrap">Supplier</th>
+                      <th className="text-left whitespace-nowrap">Date</th>
+                      <th className="text-center whitespace-nowrap">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+
+                  <tbody>
+                    {items.map((s) => (
+                      <tr
+                        key={s.id}
+                        onClick={() => openDetails(s)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openDetails(s);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View details for ${s.itemName}`}
+                        className="border-b font-body dark:border-white/10 hover:bg-accent-primary/25 dark:hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
+                      >
+                        <td className="py-3 text-left">{s.itemName}</td>
+                        <td className="text-left">{s.category}</td>
+                        <td className="text-right">{s.quantity}</td>
+                        <td className="text-right">
+                          ₦{Number(s.unitPrice || 0).toLocaleString()}
+                        </td>
+                        <td className="text-right whitespace-nowrap">
+                          ₦{Number(s.totalPrice || 0).toLocaleString()}
+                        </td>
+                        <td className="text-center">{s.supplierName || "-"}</td>
+                        <td className="text-left whitespace-nowrap">
+                          {s.supplyDate}
+                        </td>
+
+                        <td className="flex gap-2 justify-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEdit(s);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
+                            title="Edit supply"
+                          >
+                            <Edit className="w-6 h-6" />
+                            <span className="text-xs font-semibold">Edit</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              askDelete(s);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
+                            title="Move supply to trash"
+                          >
+                            <Trash2 className="w-6 h-6" />
+                            <span className="text-xs font-semibold">Delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : (
             <div
               className="w-full flex items-center justify-center py-12 sm:py-16 font-body"

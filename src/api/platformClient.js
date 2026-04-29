@@ -62,7 +62,8 @@ function setFlashMessage(message) {
 function redirectToPlatformLogin() {
   if (typeof window === "undefined") return;
   if (window.location.pathname === "/platform/login") return;
-  window.location.assign("/platform/login");
+  window.history.replaceState(window.history.state, "", "/platform/login");
+  window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
 function resolveRequestPath(requestUrl) {

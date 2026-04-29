@@ -33,6 +33,7 @@ import { useTenant } from "../tenant/TenantContext";
 import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
 
 // icons
 import {
@@ -224,6 +225,7 @@ function MobileAccordion({ title, icon, children, defaultOpen = false }) {
 }
 
 export default function FishPondsPage() {
+  const isMobileViewport = useIsMobileViewport();
   const { activeTenant } = useTenant();
   const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const canManageHatches = isPlanAtLeast(currentPlan, "PRO");
@@ -1868,7 +1870,8 @@ export default function FishPondsPage() {
           </div>
 
           {/* DESKTOP ONLY: show these charts beside stock adjustment */}
-          <div className="hidden md:block lg:col-span-4 rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
+          {!isMobileViewport ? (
+            <div className="hidden md:block lg:col-span-4 rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
             <h2 className="font-header font-semibold mb-3">Ponds by Type</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
               Distribution of ponds by type.
@@ -1901,9 +1904,11 @@ export default function FishPondsPage() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : null}
 
-          <div className="hidden md:block lg:col-span-4 rounded-xl bg-lightCard dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
+          {!isMobileViewport ? (
+            <div className="hidden md:block lg:col-span-4 rounded-xl bg-lightCard dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
             <h2 className="font-header font-semibold mb-3">
               Monthly Hatch Trend
             </h2>
@@ -1938,11 +1943,13 @@ export default function FishPondsPage() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {/* MOBILE ONLY: collapsible charts */}
-        <div className="md:hidden space-y-4">
+        {isMobileViewport ? (
+          <div className="space-y-4">
           <MobileAccordion
             title="Ponds by Type"
             icon={<Egg className="w-5 h-5 text-sky-400" />}
@@ -2044,13 +2051,15 @@ export default function FishPondsPage() {
               )}
             </div>
           </MobileAccordion>
-        </div>
+          </div>
+        ) : null}
 
         {/* DESKTOP ONLY: full-width line chart (same vibe as Supplies chart card) */}
-        <div
-          className="hidden md:block mt-2 rounded-xl bg-white/6 dark:bg-darkCard/60 p-4 dark:shadow-dark shadow-neo"
-          style={{ minHeight: 260 }}
-        >
+        {!isMobileViewport ? (
+          <div
+            className="hidden md:block mt-2 rounded-xl bg-white/6 dark:bg-darkCard/60 p-4 dark:shadow-dark shadow-neo"
+            style={{ minHeight: 260 }}
+          >
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
             Overall stock trend across recent months.
           </p>
@@ -2082,7 +2091,8 @@ export default function FishPondsPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        ) : null}
 
         </div>
 

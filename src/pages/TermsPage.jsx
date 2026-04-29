@@ -30,7 +30,7 @@ const TERMS_SECTIONS = [
   {
     title: "Billing and promotional offers",
     body:
-      "Paid plans, discounts, trials, and bonanza offers may change over time. Unless we clearly state otherwise, promotional pricing is temporary and regular billing resumes when the offer ends.",
+      "Paid plans, discounts, trials, and promo offers may change over time. Unless we clearly state otherwise, promotional pricing is temporary and regular billing resumes when the offer ends.",
   },
   {
     title: "Acceptable use",

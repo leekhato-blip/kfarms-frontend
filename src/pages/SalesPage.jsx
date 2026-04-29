@@ -38,6 +38,7 @@ import {
 import SummaryCard from "../components/SummaryCard";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
 import {
   FileText,
   CalendarCheck,
@@ -84,6 +85,7 @@ const neonShadowPlugin = {
 ChartJS.register(neonShadowPlugin);
 
 export default function SalesPage() {
+  const isMobileViewport = useIsMobileViewport();
   // Detect if dark mode is active
   const [isDark, setIsDark] = useState(
     document.documentElement.classList.contains("dark"),
@@ -410,6 +412,30 @@ export default function SalesPage() {
     [axisTextColor, gridColor, isDark],
   );
 
+  const latestSale = items[0] || null;
+  const mobileSalesSnapshot = [
+    {
+      label: "Records",
+      value: hasSummaryData ? String(summary.records) : "—",
+      tone: "text-slate-700 dark:text-slate-100",
+    },
+    {
+      label: "Today",
+      value: hasSummaryData ? formatNaira(summary.todaySales) : "—",
+      tone: "text-emerald-600 dark:text-emerald-300",
+    },
+    {
+      label: "This Month",
+      value: hasSummaryData ? formatNaira(summary.monthSales) : "—",
+      tone: "text-sky-600 dark:text-sky-300",
+    },
+    {
+      label: "Latest Sale",
+      value: latestSale ? formatNaira(latestSale.totalPrice) : "No sale",
+      tone: "text-amber-600 dark:text-amber-300",
+    },
+  ];
+
   /* -------------------- CRUD -------------------- */
   function clearFilters() {
     setFilters({ itemName: "", category: "", date: "" });
@@ -633,66 +659,87 @@ export default function SalesPage() {
         )}
 
         {/* CHART */}
-        <div className="mt-4 md:hidden">
-          <MobileAccordionCard
-            title="Sales trend"
-            description="Open this chart when you want to review how revenue is moving."
-            icon={<Wallet className="h-4 w-4" />}
-          >
-            <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
-              {loading ? (
-                <>
-                  <div className="skeleton-glass mb-3 h-3 w-56 rounded" />
-                  <div className="skeleton-glass h-[220px] w-full rounded-xl" />
-                </>
-              ) : (
-                <>
-                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 font-body">
-                    This chart uses the sales that have been recorded on this page.
-                  </p>
-                  <div className="h-[220px]">
-                    {hasSalesData ? (
-                      isDark !== null && <Line data={chartData} options={chartOptions} />
-                    ) : (
-                      <div
-                        className="flex h-full w-full items-center justify-center p-4 font-body"
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
-                          <div
-                            className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-sm dark:bg-emerald-900/30"
-                            aria-hidden="true"
-                          >
-                            <Wallet className="h-9 w-9 text-emerald-600 dark:text-emerald-200" />
-                          </div>
-                          <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
-                            {hasActiveFilters
-                              ? "No sales match what you selected"
-                              : "No sales recorded yet"}
-                          </h4>
-                          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                            {hasActiveFilters
-                              ? "Show everything to see more results."
-                              : "Record your first sale to see the revenue trend here."}
+        {isMobileViewport ? (
+          <div className="mt-4">
+            <MobileAccordionCard
+              title="Sales snapshot"
+              description="Open this summary when you want a quick mobile view without loading the full chart."
+              icon={<Wallet className="h-4 w-4" />}
+            >
+              <div className="rounded-xl bg-white/6 p-4 dark:bg-darkCard/60">
+                {loading ? (
+                  <>
+                    <div className="skeleton-glass mb-3 h-3 w-40 rounded" />
+                    <div className="grid grid-cols-2 gap-3">
+                      {Array.from({ length: 4 }).map((_, idx) => (
+                        <div
+                          key={`mobile-sales-snapshot-skeleton-${idx}`}
+                          className="skeleton-glass h-20 rounded-xl"
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : hasSalesData ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      {mobileSalesSnapshot.map((card) => (
+                        <div
+                          key={card.label}
+                          className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 dark:bg-white/[0.03]"
+                        >
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                            {card.label}
                           </p>
-                          <button
-                            className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
-                            onClick={hasActiveFilters ? clearFilters : openCreate}
-                          >
-                            {hasActiveFilters ? "Show everything" : "Record Sale"}
-                          </button>
+                          <p className={`mt-2 text-sm font-semibold ${card.tone}`}>
+                            {card.value}
+                          </p>
                         </div>
+                      ))}
+                    </div>
+                    {latestSale ? (
+                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        Latest entry: {latestSale.itemName} on {latestSale.salesDate || "—"}.
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <div
+                    className="flex min-h-[180px] w-full items-center justify-center p-4 font-body"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
+                      <div
+                        className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-sm dark:bg-emerald-900/30"
+                        aria-hidden="true"
+                      >
+                        <Wallet className="h-9 w-9 text-emerald-600 dark:text-emerald-200" />
                       </div>
-                    )}
+                      <h4 className="text-sm font-semibold font-header text-slate-700 dark:text-slate-100">
+                        {hasActiveFilters
+                          ? "No sales match what you selected"
+                          : "No sales recorded yet"}
+                      </h4>
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        {hasActiveFilters
+                          ? "Show everything to see more results."
+                          : "Record your first sale to see the mobile summary here."}
+                      </p>
+                      <button
+                        className="mt-2 w-full rounded-lg bg-accent-primary px-5 py-2 text-white transition hover:opacity-90 active:scale-[0.98]"
+                        onClick={hasActiveFilters ? clearFilters : openCreate}
+                      >
+                        {hasActiveFilters ? "Show everything" : "Record Sale"}
+                      </button>
+                    </div>
                   </div>
-                </>
-              )}
-            </div>
-          </MobileAccordionCard>
-        </div>
+                )}
+              </div>
+            </MobileAccordionCard>
+          </div>
+        ) : (
 
-        <div className="mt-4 hidden md:block">
+          <div className="mt-4">
           {loading ? (
             <div className="rounded-xl bg-white/6 p-4 shadow-neo dark:bg-darkCard/60 dark:shadow-dark">
               <div className="skeleton-glass mb-3 h-3 w-56 rounded" />
@@ -744,7 +791,8 @@ export default function SalesPage() {
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* FILTERS */}
         {loading ? (
@@ -850,80 +898,152 @@ export default function SalesPage() {
             </div>
             {hasSalesData ? (
               <>
-                {/* TABLE (scrollable only) */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[900px] border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
-                    <thead className="text-lightText dark:text-darkText font-body">
-                      <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-slate-200">
-                        <th className="py-3 text-left whitespace-nowrap">Item</th>
-                        <th className="text-left whitespace-nowrap">Category</th>
-                        <th className="text-right whitespace-nowrap">Qty</th>
-                        <th className="text-right whitespace-nowrap">Unit</th>
-                        <th className="text-right whitespace-nowrap">Total</th>
-                        <th className="text-center whitespace-nowrap">Buyer</th>
-                        <th className="text-left whitespace-nowrap">Date</th>
-                        <th className="text-center whitespace-nowrap">Actions</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {items.map((s) => (
-                        <tr
-                          key={s.id}
-                          onClick={() => openDetails(s)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              openDetails(s);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`View details for ${s.itemName}`}
-                          className="border-b font-body dark:border-white/10 hover:bg-accent-primary/25 dark:hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
+                {isMobileViewport ? (
+                  <div className="space-y-3">
+                    {items.map((sale) => (
+                      <article
+                        key={sale.id}
+                        className="rounded-2xl border border-white/10 bg-white/5 p-4 dark:bg-white/[0.03]"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => openDetails(sale)}
+                          className="w-full text-left"
+                          aria-label={`View details for ${sale.itemName}`}
                         >
-                          <td className="py-3 text-left">{s.itemName}</td>
-                          <td className="text-left">{s.category}</td>
-                          <td className="text-right">{s.quantity}</td>
-                          <td className="text-right">
-                            ₦{Number(s.unitPrice || 0).toLocaleString()}
-                          </td>
-                          <td className="text-right whitespace-nowrap">
-                            ₦{Number(s.totalPrice || 0).toLocaleString()}
-                          </td>
-                          <td className="text-center">{s.buyer}</td>
-                          <td className="text-left whitespace-nowrap">
-                            {s.salesDate}
-                          </td>
-                          <td className="flex gap-2 justify-center">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEdit(s);
-                              }}
-                              title="Edit sale"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
-                            >
-                              <Edit className="w-6 h-6" />
-                              <span className="text-xs font-semibold">Edit</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                askDelete(s);
-                              }}
-                              title="Move sale to trash"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
-                            >
-                              <Trash2 className="w-6 h-6" />
-                              <span className="text-xs font-semibold">Delete</span>
-                            </button>
-                          </td>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                {sale.itemName}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {sale.category} • {sale.salesDate || "No date"}
+                              </div>
+                            </div>
+                            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                              {formatNaira(sale.totalPrice)}
+                            </span>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <div>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                Qty:
+                              </span>{" "}
+                              {sale.quantity}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                Unit:
+                              </span>{" "}
+                              {formatNaira(sale.unitPrice)}
+                            </div>
+                            <div className="col-span-2">
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                Buyer:
+                              </span>{" "}
+                              {sale.buyer || "—"}
+                            </div>
+                          </div>
+                        </button>
+
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(sale)}
+                            title="Edit sale"
+                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-accent-primary/25 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => askDelete(sale)}
+                            title="Move sale to trash"
+                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[900px] border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
+                      <thead className="text-lightText dark:text-darkText font-body">
+                        <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-slate-200">
+                          <th className="py-3 text-left whitespace-nowrap">Item</th>
+                          <th className="text-left whitespace-nowrap">Category</th>
+                          <th className="text-right whitespace-nowrap">Qty</th>
+                          <th className="text-right whitespace-nowrap">Unit</th>
+                          <th className="text-right whitespace-nowrap">Total</th>
+                          <th className="text-center whitespace-nowrap">Buyer</th>
+                          <th className="text-left whitespace-nowrap">Date</th>
+                          <th className="text-center whitespace-nowrap">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+
+                      <tbody>
+                        {items.map((s) => (
+                          <tr
+                            key={s.id}
+                            onClick={() => openDetails(s)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                openDetails(s);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`View details for ${s.itemName}`}
+                            className="border-b font-body dark:border-white/10 hover:bg-accent-primary/25 dark:hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
+                          >
+                            <td className="py-3 text-left">{s.itemName}</td>
+                            <td className="text-left">{s.category}</td>
+                            <td className="text-right">{s.quantity}</td>
+                            <td className="text-right">
+                              ₦{Number(s.unitPrice || 0).toLocaleString()}
+                            </td>
+                            <td className="text-right whitespace-nowrap">
+                              ₦{Number(s.totalPrice || 0).toLocaleString()}
+                            </td>
+                            <td className="text-center">{s.buyer}</td>
+                            <td className="text-left whitespace-nowrap">
+                              {s.salesDate}
+                            </td>
+                            <td className="flex gap-2 justify-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEdit(s);
+                                }}
+                                title="Edit sale"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
+                              >
+                                <Edit className="w-6 h-6" />
+                                <span className="text-xs font-semibold">Edit</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  askDelete(s);
+                                }}
+                                title="Move sale to trash"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
+                              >
+                                <Trash2 className="w-6 h-6" />
+                                <span className="text-xs font-semibold">Delete</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 {/* PAGINATION (STATIC & CENTERED ON MOBILE) */}
                 <div className="sticky bottom-0 mt-4 w-full">

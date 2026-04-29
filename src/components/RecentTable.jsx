@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Info, CheckCircle, Clock, RefreshCw } from "lucide-react";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import SkeletonLoader from "./SkeletonLoader";
 
 export default function RecentTable({
@@ -11,12 +12,12 @@ export default function RecentTable({
 }) {
   const navigate = useNavigate();
   const categoryRouteMap = {
-    Sales: "/sales",
-    Supplies: "/supplies",
-    Fish: "/fish-ponds",
-    Poultry: "/poultry",
-    Livestock: "/poultry",
-    Feed: "/feeds",
+    Sales: toKfarmsAppPath("/sales"),
+    Supplies: toKfarmsAppPath("/supplies"),
+    Fish: toKfarmsAppPath("/fish-ponds"),
+    Poultry: toKfarmsAppPath("/poultry"),
+    Livestock: toKfarmsAppPath("/poultry"),
+    Feed: toKfarmsAppPath("/feeds"),
   };
 
   const formatCategoryLabel = (category) =>
@@ -119,7 +120,7 @@ export default function RecentTable({
                       <button
                         type="button"
                         onClick={() =>
-                          navigate(categoryRouteMap[r.category] || "/")
+                          navigate(categoryRouteMap[r.category] || toKfarmsAppPath("/dashboard"))
                         }
                         className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold border border-white/10 bg-white/10 dark:bg-darkCard/70 hover:bg-white/20 transition"
                       >

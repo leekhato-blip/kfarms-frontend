@@ -36,6 +36,7 @@ import {
 import { exportReport } from "../services/reportService";
 import { getLivestock } from "../services/livestockService";
 import useQuickCreateModal from "../hooks/useQuickCreateModal";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
 
@@ -154,6 +155,7 @@ function getRowLabel(record) {
 }
 
 export default function ProductionsPage() {
+  const isMobileViewport = useIsMobileViewport();
   const { activeTenant } = useTenant();
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [records, setRecords] = useState([]);
@@ -612,7 +614,8 @@ export default function ProductionsPage() {
           </div>
         )}
 
-        <div className="md:hidden">
+        {isMobileViewport ? (
+          <div>
           <MobileAccordionCard
             title="Egg output over time"
             description="Open this chart when you want to review monthly production movement."
@@ -765,9 +768,11 @@ export default function ProductionsPage() {
               </div>
             </div>
           </MobileAccordionCard>
-        </div>
+          </div>
+        ) : null}
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.95fr)]">
+        {!isMobileViewport ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.95fr)]">
           <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark md:block">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -1004,7 +1009,8 @@ export default function ProductionsPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        ) : null}
 
         <div className="rounded-xl bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
           <p className="mb-3 text-xs font-body text-slate-500 dark:text-slate-400">

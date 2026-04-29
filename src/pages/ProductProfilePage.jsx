@@ -8,14 +8,19 @@ import {
   Check,
   Users,
   Layers3,
+  Menu,
   Mail,
   Monitor,
   Phone,
   MapPin,
+  RefreshCw,
+  ShieldCheck,
   Sun,
   Moon,
   WifiOff,
+  X,
 } from "lucide-react";
+import kfarmsLogo from "../assets/Kfarms_logo.png";
 import { useAuth } from "../hooks/useAuth";
 import { formatThemePreferenceLabel } from "../constants/settings";
 import { useTheme } from "../hooks/useTheme";
@@ -101,11 +106,22 @@ const HERO_NAV_LINKS = [
   { label: "Contact", href: "#contact" },
 ];
 
-const HERO_TRUST_POINTS = [
-  "Keep working even without internet",
-  "Track poultry, fish, sales, and inventory in one place",
-  "Give your team access without losing control",
-  "Grow from one farm to multiple locations easily",
+const HERO_SUPPORT_ITEMS = [
+  {
+    title: "Works offline",
+    body: "No internet? No problem.",
+    icon: WifiOff,
+  },
+  {
+    title: "Auto sync",
+    body: "Updates when you're back.",
+    icon: RefreshCw,
+  },
+  {
+    title: "Your data, safe",
+    body: "Secure and private.",
+    icon: ShieldCheck,
+  },
 ];
 
 const PRODUCT_FEATURES = [
@@ -202,6 +218,7 @@ export default function ProductProfilePage() {
   const navigate = useNavigate();
   const { theme, isDark, toggleTheme } = useTheme();
   const [showScrollTop, setShowScrollTop] = React.useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const { isAuthenticated, user, logout } = useAuth();
   const { activeTenantId, activeTenant, tenants, loadingTenants } = useTenant();
   const planTierConfig = usePlanCatalog();
@@ -269,6 +286,9 @@ export default function ProductProfilePage() {
     navigate("/", { replace: true });
   };
 
+  const heroPrimaryCtaTo = isAuthenticated ? workspacePath : "/auth/signup";
+  const heroPrimaryCtaLabel = isAuthenticated ? workspaceLabel : "Start for free";
+
   const handleScrollToTop = React.useCallback(() => {
     if (typeof window === "undefined") return;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -277,7 +297,7 @@ export default function ProductProfilePage() {
   return (
     <div
       id="top"
-      className={`min-h-screen bg-lightbg dark:bg-darkBg text-lightText dark:text-darkText ${
+      className={`min-h-screen overflow-x-hidden bg-lightbg dark:bg-darkBg text-lightText dark:text-darkText ${
         isDark ? "dark" : ""
       }`}
       style={{ backgroundColor: isDark ? "#07080b" : "#f9fafb" }}
@@ -328,187 +348,290 @@ export default function ProductProfilePage() {
       <div className="page-load">
         {/* Hero */}
         <section className="relative overflow-hidden">
-        {isDark ? (
-          <>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(99,102,241,0.28),transparent_45%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.22),transparent_40%),radial-gradient(circle_at_80%_85%,rgba(59,130,246,0.22),transparent_45%)]" />
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 via-emerald-900/25 to-slate-950/60" />
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(99,102,241,0.20),transparent_45%),radial-gradient(circle_at_85%_10%,rgba(34,197,94,0.20),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.20),transparent_40%)]" />
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-emerald-500/10 to-sky-500/10" />
-          </>
-        )}
-        <div className="relative max-w-6xl mx-auto px-6 py-12 sm:py-16">
-          <div className="sticky top-4 z-30 mb-6">
-            <nav className="rounded-[1.5rem] border border-white/15 bg-white/50 px-4 py-3 shadow-soft backdrop-blur-xl dark:bg-darkCard/60 dark:shadow-dark">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex min-w-0 items-center justify-between gap-3 lg:min-w-[12rem]">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.45)]" />
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        KFarms
-                      </div>
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        Farm records
-                      </div>
-                    </div>
-                  </div>
+          {isDark ? (
+            <>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(59,130,246,0.22),transparent_34%),radial-gradient(circle_at_86%_8%,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_68%_58%,rgba(6,182,212,0.12),transparent_28%)]" />
+              <div className="absolute inset-0 bg-[#061124]" />
+              <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(4,16,38,0.94)_0%,rgba(6,18,37,0.9)_40%,rgba(7,50,69,0.7)_100%)]" />
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_86%_8%,rgba(16,185,129,0.14),transparent_30%),radial-gradient(circle_at_68%_58%,rgba(6,182,212,0.12),transparent_28%)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(236,246,255,0.95)_0%,rgba(226,244,247,0.92)_40%,rgba(209,241,238,0.78)_100%)]" />
+            </>
+          )}
+          <div className="pointer-events-none absolute left-[52%] top-[61%] hidden h-[22rem] w-[22rem] rounded-full border border-emerald-400/10 lg:block" />
+          <div className="pointer-events-none absolute left-[56%] top-[65%] hidden h-[15rem] w-[15rem] rounded-full border border-cyan-400/10 lg:block" />
 
-                  <Link
-                    to={workspacePath}
-                    className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500/90 via-sky-500/90 to-emerald-500/90 px-3.5 py-1.5 text-[11px] font-semibold text-white shadow-soft transition hover:opacity-90 lg:hidden"
-                  >
-                    {workspaceLabel}
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
+          <div className="relative mx-auto max-w-7xl px-6 pb-12 pt-7 sm:pb-14 sm:pt-9 lg:px-8 lg:pb-20">
+            <nav className="z-30 mb-10">
+              <div className="flex items-center justify-between gap-4 md:hidden">
+                <Link
+                  to="/product-profile"
+                  className="inline-flex items-center gap-3"
+                  onClick={() => setMobileNavOpen(false)}
+                >
+                  <img src={kfarmsLogo} alt="KFarms" className="h-14 w-auto object-contain" />
+                  <span className="text-xl font-semibold tracking-tight text-slate-800 dark:text-slate-50">
+                    KFarms
+                  </span>
+                </Link>
 
-                <div className="hide-scrollbar overflow-x-auto">
-                  <div className="flex min-w-max items-center gap-5 px-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen((open) => !open)}
+                  className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/10 text-slate-700 transition-all duration-300 ease-out hover:bg-white/20 dark:text-slate-100 ${
+                    mobileNavOpen ? "rotate-90 bg-white/15 dark:bg-white/15" : "rotate-0"
+                  }`}
+                  aria-label={mobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+                  aria-expanded={mobileNavOpen}
+                >
+                  <span className="relative inline-flex h-4.5 w-4.5 items-center justify-center">
+                    <Menu
+                      className={`absolute h-4.5 w-4.5 transition-all duration-300 ease-out ${
+                        mobileNavOpen ? "scale-75 opacity-0" : "scale-100 opacity-100"
+                      }`}
+                    />
+                    <X
+                      className={`absolute h-4.5 w-4.5 transition-all duration-300 ease-out ${
+                        mobileNavOpen ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                      }`}
+                    />
+                  </span>
+                </button>
+              </div>
+
+              <div
+                className={`grid transition-all duration-300 ease-out md:hidden ${
+                  mobileNavOpen
+                    ? "mt-4 grid-rows-[1fr] opacity-100"
+                    : "mt-0 grid-rows-[0fr] opacity-0 pointer-events-none"
+                }`}
+                aria-hidden={!mobileNavOpen}
+              >
+                <div className="overflow-hidden">
+                  <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 shadow-soft backdrop-blur-xl dark:bg-darkCard/[0.55]">
+                  <div className="grid gap-2.5">
                     {HERO_NAV_LINKS.map((link) => (
                       <a
-                        key={link.label}
+                        key={`mobile-${link.label}`}
                         href={link.href}
-                        className="text-xs font-semibold text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                        onClick={() => setMobileNavOpen(false)}
+                        className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white/10 dark:text-slate-100"
                       >
                         {link.label}
                       </a>
                     ))}
                   </div>
+
+                  <div className="mt-4 grid gap-2.5">
+                    {isAuthenticated ? (
+                      <>
+                        <Link
+                          to={workspacePath}
+                          onClick={() => setMobileNavOpen(false)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:opacity-90"
+                        >
+                          {workspaceLabel}
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={handleSignOut}
+                          className="rounded-xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white/[0.15] dark:text-slate-100"
+                        >
+                          Sign out
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/auth/login"
+                          onClick={() => setMobileNavOpen(false)}
+                          className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-white/10 dark:text-slate-100"
+                        >
+                          Login
+                        </Link>
+                        <Link
+                          to="/auth/signup"
+                          onClick={() => setMobileNavOpen(false)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:opacity-90"
+                        >
+                          Start for free
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+                </div>
+              </div>
+
+              <div className="hidden items-center justify-between gap-8 md:flex">
+                <Link to="/product-profile" className="inline-flex items-center gap-3">
+                  <img src={kfarmsLogo} alt="KFarms" className="h-14 w-auto object-contain" />
+                  <span className="text-[1.45rem] font-semibold tracking-tight text-slate-800 dark:text-slate-50">
+                    KFarms
+                  </span>
+                </Link>
+
+                <div className="flex items-center gap-10">
+                  {HERO_NAV_LINKS.map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      className="text-sm font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
                 </div>
 
-                <Link
-                  to={workspacePath}
-                  className="hidden items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500/90 via-sky-500/90 to-emerald-500/90 px-4 py-2 text-xs font-semibold text-white shadow-soft transition hover:opacity-90 lg:inline-flex"
-                >
-                  {workspaceLabel}
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Link>
+                <div className="flex items-center gap-4">
+                  {isAuthenticated ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        className="text-sm font-semibold text-slate-700 transition hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
+                      >
+                        Sign out
+                      </button>
+                      <Link
+                        to={workspacePath}
+                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(45,212,191,0.18)] transition hover:opacity-90"
+                      >
+                        {workspaceLabel}
+                        <ArrowUpRight className="h-4 w-4" />
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/auth/login"
+                        className="text-sm font-semibold text-slate-700 transition hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        to="/auth/signup"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(45,212,191,0.18)] transition hover:opacity-90"
+                      >
+                        Start for free
+                        <ArrowUpRight className="h-4 w-4" />
+                      </Link>
+                    </>
+                  )}
+                </div>
               </div>
             </nav>
-          </div>
 
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-            <div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-header font-semibold leading-tight text-slate-800 dark:text-slate-100">
-                Stop guessing. Know what's happening on your farm.
-              </h1>
-              <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl">
-                Track eggs, sales, feed, and stock in one place, even without internet. KFarms
-                keeps your records clear, syncs when you're back online, and helps you stay in
-                control every day.
-              </p>
+            <div className="grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+              <div className="max-w-2xl min-w-0">
+                <h1 className="text-4xl font-header font-semibold leading-[1.02] text-slate-800 dark:text-slate-50 sm:text-5xl lg:text-[4.35rem]">
+                  <span className="block">Stop guessing.</span>
+                  <span className="mt-2 block">Know what&apos;s happening</span>
+                  <span className="mt-2 block">
+                    on{" "}
+                    <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-sky-500 bg-clip-text text-transparent">
+                      your farm.
+                    </span>
+                  </span>
+                </h1>
 
-              {!isAuthenticated ? (
-                <div className="mt-6 flex flex-row gap-3">
+                <p className="mt-7 max-w-xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-[1.08rem]">
+                  Track eggs, sales, feed, and stock in one place, even without internet. KFarms
+                  keeps your records clear, syncs when you&apos;re back online, and helps you stay
+                  in control every day.
+                </p>
+
+                <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                   <Link
-                    to="/auth/login"
-                    className="flex-1 inline-flex items-center justify-center px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/90 via-sky-500/90 to-emerald-500/90 text-white shadow-soft hover:opacity-90 transition font-semibold"
+                    to={heroPrimaryCtaTo}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 px-7 py-4 text-base font-semibold text-white shadow-[0_22px_46px_rgba(45,212,191,0.2)] transition hover:opacity-90"
                   >
-                    Login
+                    {heroPrimaryCtaLabel}
+                    <ArrowUpRight className="h-4.5 w-4.5" />
                   </Link>
-                  <Link
-                    to="/auth/signup"
-                    className="flex-1 inline-flex items-center justify-center px-5 py-2 rounded-lg border border-white/10 bg-white/10 hover:bg-white/20 transition font-semibold text-slate-700 dark:text-slate-100"
+                  <a
+                    href="#plans"
+                    className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] px-7 py-4 text-base font-semibold text-slate-700 transition hover:bg-white/[0.14] dark:text-slate-100"
                   >
-                    Sign Up
-                  </Link>
+                    See plans
+                  </a>
                 </div>
-              ) : (
-                <div className="mt-6 space-y-3">
-                  <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-xs text-slate-700 dark:text-slate-200">
+
+                {!isAuthenticated ? (
+                  <div className="mt-5 text-base text-slate-500 dark:text-slate-400">
+                    Already have an account?{" "}
+                    <Link
+                      to="/auth/login"
+                      className="font-semibold text-emerald-500 transition hover:text-emerald-400"
+                    >
+                      Login
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="mt-5 text-sm text-slate-500 dark:text-slate-400">
                     Signed in as{" "}
-                    <span className="font-semibold">
+                    <span className="font-semibold text-slate-700 dark:text-slate-100">
                       {user?.email || user?.username || "User"}
                     </span>
-                    {" · "}
-                    {(tenants?.length || 0)} farm{(tenants?.length || 0) === 1 ? "" : "s"}
+                    {activeTenant ? (
+                      <>
+                        {" · "}
+                        <span className="font-semibold text-slate-700 dark:text-slate-100">
+                          {activeTenant.name}
+                        </span>
+                        {" · "}
+                        {currentTenantPlanName} plan
+                      </>
+                    ) : null}
                   </div>
-                  {activeTenant && (
-                    <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-900 dark:text-emerald-200">
-                      Current farm:{" "}
-                      <span className="font-semibold">{activeTenant.name}</span>
-                      {" · "}
-                      {activeTenant.myRole || "Member"}
-                      {" · "}
-                      {currentTenantPlanName} plan
-                    </div>
-                  )}
-                  {!activeTenant && (tenants?.length || 0) > 0 && (
-                    <div className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-900 dark:text-amber-200">
-                      You are signed in, but you haven&apos;t picked a farm yet.
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <Link
-                      to={workspacePath}
-                      className="col-span-2 sm:col-span-1 inline-flex items-center justify-center whitespace-nowrap px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/90 via-sky-500/90 to-emerald-500/90 text-white shadow-soft hover:opacity-90 transition font-semibold"
-                    >
-                      {workspaceLabel}
-                    </Link>
-                    <Link
-                      to="/onboarding/accept-invite"
-                      className="inline-flex items-center justify-center whitespace-nowrap px-5 py-2 rounded-lg border border-white/10 bg-white/10 hover:bg-white/20 transition font-semibold text-slate-700 dark:text-slate-100"
-                    >
-                      Accept Invite
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="inline-flex items-center justify-center whitespace-nowrap px-5 py-2 rounded-lg border border-red-300/40 bg-red-500/10 text-red-700 dark:text-red-300 hover:bg-red-500/20 transition font-semibold"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
+                )}
+              </div>
+
+              <div className="relative min-w-0 lg:justify-self-end">
+                <div className="pointer-events-none absolute -inset-6 rounded-[2.8rem] bg-[radial-gradient(circle_at_38%_28%,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_76%_26%,rgba(16,185,129,0.14),transparent_35%)] blur-2xl" />
+                <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.14] bg-[#091426]/80 p-2 shadow-[0_30px_90px_rgba(2,8,23,0.38)] backdrop-blur-xl">
+                  <img
+                    src="/hero-dashboard-live-demo.png"
+                    alt="Demo KFarms dashboard showing farm metrics, charts, and recent activity."
+                    className="block w-full rounded-[1.55rem] border border-white/10 bg-[#091426]"
+                    loading="eager"
+                  />
                 </div>
-              )}
+              </div>
             </div>
 
-            <div>
-              <div className="relative overflow-hidden rounded-2xl bg-white/10 dark:bg-darkCard/70 border border-white/10 shadow-neo dark:shadow-dark p-6">
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-500/12 via-transparent to-emerald-500/12 opacity-80" />
-                <div className="relative">
-                  <h3 className="font-header font-semibold text-lg text-slate-800 dark:text-slate-100">
-                    Why farm teams choose KFarms
-                  </h3>
-                  <div className="mt-4 grid gap-3">
-                    {HERO_TRUST_POINTS.map((item) => (
-                      <div key={item} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-                        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-                          <Check className="w-4 h-4" strokeWidth={3} />
-                        </span>
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <div className="mt-12 grid gap-4 border-white/10 md:mt-14 md:grid-cols-3 md:gap-0 md:px-3">
+              {HERO_SUPPORT_ITEMS.map((item, index) => {
+                const Icon = item.icon;
 
-              <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs">
-                {[
-                  { label: "Capture", value: "Daily work" },
-                  { label: "Recover", value: "Offline queues" },
-                  { label: "Scale", value: "Multi-site ready" },
-                ].map((stat) => (
+                return (
                   <div
-                    key={stat.label}
-                    className="rounded-xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-darkCard/70 dark:via-darkCard/40 dark:to-darkCard/80 p-3 shadow-soft dark:shadow-dark card-hover"
+                    key={item.title}
+                    className={`flex items-start gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.06] px-5 py-4 shadow-soft backdrop-blur-sm md:rounded-none md:border-y-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none ${
+                      index === 1 ? "md:border-x md:px-7" : ""
+                    } ${index === 0 ? "md:pl-3 md:pr-7" : ""} ${index === 2 ? "md:pl-7 md:pr-3" : ""}`}
                   >
-                    <div className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                      {stat.value}
-                    </div>
-                    <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                      {stat.label}
+                    <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/[0.12] text-emerald-400 ring-1 ring-emerald-400/[0.18]">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <div className="text-lg font-semibold text-slate-800 dark:text-slate-50">
+                        {item.title}
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {item.body}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* Top Features */}
       <section

@@ -1,3 +1,4 @@
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import { normalizePlanId } from "../constants/plans";
 
 export const BILLING_PLAN_FOCUS_PARAM = "focusPlan";
@@ -13,5 +14,5 @@ export function buildBillingPlanFocusPath(planId = "PRO") {
     return "/product-profile#contact";
   }
 
-  return `/billing?${BILLING_PLAN_FOCUS_PARAM}=${normalizedPlan}#${getBillingPlanCardAnchor(normalizedPlan)}`;
+  return `${toKfarmsAppPath("/billing")}?${BILLING_PLAN_FOCUS_PARAM}=${normalizedPlan}#${getBillingPlanCardAnchor(normalizedPlan)}`;
 }
