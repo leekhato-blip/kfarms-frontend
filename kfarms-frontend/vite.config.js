@@ -22,60 +22,10 @@
 // });
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { execSync } from "node:child_process";
-
-function readGitValue(command) {
-  try {
-    return execSync(command, {
-      stdio: ["ignore", "pipe", "ignore"],
-    }).toString().trim();
-  } catch {
-    return "";
-  }
-}
-
-function resolveBuildMetadata() {
-  const fullCommitFromEnv =
-    process.env.RENDER_GIT_COMMIT ||
-    process.env.GIT_COMMIT ||
-    process.env.COMMIT_SHA ||
-    "";
-  const branchFromEnv =
-    process.env.RENDER_GIT_BRANCH ||
-    process.env.GIT_BRANCH ||
-    process.env.BRANCH ||
-    "";
-
-  const fullCommit = fullCommitFromEnv || readGitValue("git rev-parse HEAD");
-  const shortCommit = fullCommit
-    ? fullCommit.slice(0, 7)
-    : readGitValue("git rev-parse --short HEAD");
-  const branch = branchFromEnv || readGitValue("git rev-parse --abbrev-ref HEAD");
-
-  return {
-    commitSha: shortCommit || "unknown",
-    commitFullSha: fullCommit || "unknown",
-    branch: branch || "unknown",
-    builtAt: new Date().toISOString(),
-    source: fullCommitFromEnv ? "environment" : fullCommit ? "git" : "unknown",
-  };
-}
-
-const buildMetadata = resolveBuildMetadata();
-const buildInfoDefine = Object.fromEntries(
-  Object.entries({
-    VITE_APP_COMMIT_SHA: buildMetadata.commitSha,
-    VITE_APP_COMMIT_FULL_SHA: buildMetadata.commitFullSha,
-    VITE_APP_BRANCH: buildMetadata.branch,
-    VITE_APP_BUILD_TIME: buildMetadata.builtAt,
-    VITE_APP_BUILD_SOURCE: buildMetadata.source,
-  }).map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)]),
-);
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  define: buildInfoDefine,
   optimizeDeps: {
     force: true,
     include: [

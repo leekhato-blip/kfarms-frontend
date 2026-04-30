@@ -458,7 +458,7 @@ export default function SignupPage() {
           >
             <AuthCard
               title="Create your farm account"
-              subtitle="Three simple steps. Phone and verification come after setup."
+              subtitle="Three simple steps."
               trustText={getAuthTrustText("signup")}
               accentColor={brandPrimaryColor}
               className="w-full max-w-2xl lg:max-w-[44rem] lg:p-6"
@@ -590,6 +590,34 @@ export default function SignupPage() {
                           autoComplete="new-password"
                           required
                         />
+                        <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 lg:col-span-2">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            Password checklist
+                          </div>
+                          <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                            {passwordRequirements.map((requirement) => (
+                              <div
+                                key={requirement.id}
+                                className={`inline-flex items-center gap-2 text-xs sm:text-sm ${
+                                  requirement.met
+                                    ? "text-emerald-700 dark:text-emerald-200"
+                                    : "text-slate-500 dark:text-slate-400"
+                                }`}
+                              >
+                                <span
+                                  className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] ${
+                                    requirement.met
+                                      ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                      : "border-slate-300 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500"
+                                  }`}
+                                >
+                                  {requirement.met ? "✓" : ""}
+                                </span>
+                                <span>{requirement.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                         <FloatingInput
                           label="Confirm password"
                           value={form.confirmPassword}
@@ -600,34 +628,6 @@ export default function SignupPage() {
                           autoComplete="new-password"
                           required
                         />
-                      </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                          Password checklist
-                        </div>
-                        <div className="mt-2 grid gap-2 lg:grid-cols-2">
-                          {passwordRequirements.map((requirement) => (
-                            <div
-                              key={requirement.id}
-                              className={`inline-flex items-center gap-2 text-xs sm:text-sm ${
-                                requirement.met
-                                  ? "text-emerald-700 dark:text-emerald-200"
-                                  : "text-slate-500 dark:text-slate-400"
-                              }`}
-                            >
-                              <span
-                                className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] ${
-                                  requirement.met
-                                    ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
-                                    : "border-slate-300 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500"
-                                }`}
-                              >
-                                {requirement.met ? "✓" : ""}
-                              </span>
-                              <span>{requirement.label}</span>
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   ) : null}
