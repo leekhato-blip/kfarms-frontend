@@ -16,6 +16,7 @@ import ItemDetailsModal from "../components/ItemDetailsModal";
 import ExportModal from "../components/ExportModal";
 import {
   getLivestock,
+  getLivestockById,
   deleteLivestock,
   getLivestockSummary,
   getLivestockOverview,
@@ -307,9 +308,31 @@ export default function LivestockPage() {
     setModalOpen(true);
   }
 
-  function openEdit(item) {
-    setEditing(item);
-    setModalOpen(true);
+  async function openEdit(item) {
+    const hasFullEditData =
+      item &&
+      item.currentStock != null &&
+      item.arrivalDate &&
+      item.sourceType &&
+      (item.type !== "LAYER" || item.keepingMethod);
+
+    if (hasFullEditData) {
+      setEditing(item);
+      setModalOpen(true);
+      return;
+    }
+
+    try {
+      const fullRecord = await getLivestockById(item.id);
+      setEditing(fullRecord || item);
+      setModalOpen(true);
+    } catch (error) {
+      console.error("Failed to load flock details for editing", error);
+      setToast({
+        message: "Could not load the current stock for editing just now.",
+        type: "error",
+      });
+    }
   }
 
   async function handleExport({ type, category, start, end }) {

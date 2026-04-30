@@ -2,6 +2,7 @@ import React from "react";
 import GlassToast from "../components/GlassToast";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
+import WorkspaceAnnouncementBanner from "../components/WorkspaceAnnouncementBanner";
 import WorkspaceBottomNav from "../components/WorkspaceBottomNav";
 import SupportAssistantWidget from "../components/SupportAssistantWidget";
 import { useAuth } from "../hooks/useAuth";
@@ -38,6 +39,7 @@ function DashboardLayoutShell({ children }) {
         <Sidebar />
         <div className="flex min-h-screen flex-1 flex-col overflow-x-hidden px-4 pt-4 pb-0 md:px-6 md:pt-6 md:pb-0">
           <Topbar />
+          <WorkspaceAnnouncementBanner />
           {demoAccountActive && (
             <section className="mt-4 rounded-3xl border border-amber-200/70 bg-[linear-gradient(135deg,rgba(254,243,199,0.95),rgba(219,234,254,0.9))] px-5 py-4 shadow-neo dark:border-amber-300/20 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.35),rgba(30,41,59,0.72))] dark:shadow-dark">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-200">

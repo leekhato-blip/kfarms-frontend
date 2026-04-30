@@ -27,6 +27,7 @@ export const AUTH_LOGIN_IDENTIFIER_KEY =
 export const PLATFORM_ENDPOINTS = {
   overview: "/api/platform/dashboard/overview",
   apps: "/api/platform/apps",
+  announcements: "/api/platform/announcements",
   supportTickets: "/api/platform/support/tickets",
   supportTicketMessages: (ticketId) => `/api/platform/support/tickets/${ticketId}/messages`,
   supportTicketStatus: (ticketId) => `/api/platform/support/tickets/${ticketId}`,

@@ -21,32 +21,21 @@ import {
   readPendingContactVerification,
   writePendingContactVerification,
 } from "../auth/contactVerificationStorage";
+import { normalizeContactVerificationState } from "../utils/contactVerification";
 
 function extractPayload(response) {
   return response?.data ?? response ?? {};
 }
 
-function hasVerificationPreview(preview) {
-  return Boolean(
-    preview &&
-      typeof preview === "object" &&
-      (preview.emailCode || preview.phoneCode),
-  );
-}
+function buildVerificationState(primary = {}, fallback = {}) {
+  const primarySource = primary && typeof primary === "object" ? primary : {};
+  const fallbackSource = fallback && typeof fallback === "object" ? fallback : {};
 
-function readLocationPayload(state) {
-  if (!state || typeof state !== "object") return {};
-  const preview = state.preview && typeof state.preview === "object" ? state.preview : null;
-  return {
-    email: String(state.email || "").trim(),
-    maskedEmail: String(state.maskedEmail || "").trim(),
-    maskedPhoneNumber: String(state.maskedPhoneNumber || "").trim(),
-    emailVerified: Boolean(state.emailVerified),
-    phoneVerified: Boolean(state.phoneVerified),
-    verificationRequired: Boolean(state.verificationRequired),
-    preview,
-    previewMode: Boolean(state.previewMode ?? hasVerificationPreview(preview)),
-  };
+  return normalizeContactVerificationState({
+    ...fallbackSource,
+    ...primarySource,
+    preview: primarySource.preview || fallbackSource.preview || null,
+  });
 }
 
 export default function VerifyContactPage() {
@@ -56,7 +45,7 @@ export default function VerifyContactPage() {
   const { ensureActiveTenant, refreshTenants, setActiveTenant } = useTenant();
   const storedDraft = React.useMemo(() => readPendingContactVerification(), []);
   const locationPayload = React.useMemo(
-    () => readLocationPayload(location.state),
+    () => (location.state && typeof location.state === "object" ? location.state : {}),
     [location.state],
   );
 
@@ -68,20 +57,9 @@ export default function VerifyContactPage() {
   const [resendingChannel, setResendingChannel] = React.useState("");
   const [inlineError, setInlineError] = React.useState("");
   const [toast, setToast] = React.useState({ message: "", type: "info" });
-  const [verificationState, setVerificationState] = React.useState(() => ({
-    email: locationPayload.email || storedDraft?.email || "",
-    maskedEmail: locationPayload.maskedEmail || storedDraft?.maskedEmail || "",
-    maskedPhoneNumber:
-      locationPayload.maskedPhoneNumber || storedDraft?.maskedPhoneNumber || "",
-    emailVerified:
-      locationPayload.emailVerified ?? Boolean(storedDraft?.emailVerified),
-    phoneVerified:
-      locationPayload.phoneVerified ?? Boolean(storedDraft?.phoneVerified),
-    preview: locationPayload.preview || storedDraft?.preview || null,
-    previewMode: Boolean(
-      locationPayload.previewMode ?? hasVerificationPreview(locationPayload.preview || storedDraft?.preview),
-    ),
-  }));
+  const [verificationState, setVerificationState] = React.useState(() =>
+    buildVerificationState(locationPayload, storedDraft),
+  );
 
   React.useEffect(() => {
     if (!inlineError) return;
@@ -101,12 +79,17 @@ export default function VerifyContactPage() {
 
   React.useEffect(() => {
     if (!verificationState.email && storedDraft?.email) {
-      setVerificationState((current) => ({
-        ...current,
-        email: storedDraft.email,
-      }));
+      setVerificationState((current) =>
+        normalizeContactVerificationState({
+          ...current,
+          email: storedDraft.email,
+        }),
+      );
     }
   }, [storedDraft?.email, verificationState.email]);
+
+  const requiresPhoneVerification = verificationState.requiresPhoneVerification;
+  const showPhoneVerification = verificationState.hasPhoneNumber;
 
   async function finishSignupProvisioning() {
     if (!hasPendingProvisioning) {
@@ -184,7 +167,7 @@ export default function VerifyContactPage() {
       return;
     }
 
-    if (!verificationState.phoneVerified && !form.phoneCode.trim()) {
+    if (requiresPhoneVerification && !form.phoneCode.trim()) {
       setInlineError("Enter the SMS code to continue.");
       return;
     }
@@ -196,33 +179,23 @@ export default function VerifyContactPage() {
       const response = await verifyContact({
         email: pendingEmail,
         emailCode: form.emailCode.trim(),
-        phoneCode: form.phoneCode.trim(),
+        phoneCode: requiresPhoneVerification ? form.phoneCode.trim() : undefined,
       });
       const payload = extractPayload(response);
+      const nextState = buildVerificationState(
+        {
+          ...verificationState,
+          ...payload,
+          email: pendingEmail,
+        },
+        storedDraft,
+      );
 
-      setVerificationState((current) => ({
-        ...current,
-        emailVerified: Boolean(payload.emailVerified),
-        phoneVerified: Boolean(payload.phoneVerified),
-        maskedEmail: payload.maskedEmail || current.maskedEmail,
-        maskedPhoneNumber: payload.maskedPhoneNumber || current.maskedPhoneNumber,
-        preview: payload.preview || current.preview || null,
-        previewMode: Boolean(
-          payload.previewMode ?? hasVerificationPreview(payload.preview || current.preview),
-        ),
-      }));
+      setVerificationState(nextState);
 
       writePendingContactVerification({
-        ...(storedDraft || {}),
-        email: pendingEmail,
-        maskedEmail: payload.maskedEmail || verificationState.maskedEmail,
-        maskedPhoneNumber: payload.maskedPhoneNumber || verificationState.maskedPhoneNumber,
-        emailVerified: Boolean(payload.emailVerified),
-        phoneVerified: Boolean(payload.phoneVerified),
-        preview: payload.preview || verificationState.preview || null,
-        previewMode: Boolean(
-          payload.previewMode ?? hasVerificationPreview(payload.preview || verificationState.preview),
-        ),
+        ...(readPendingContactVerification() || {}),
+        ...nextState,
       });
 
       await finishSignupProvisioning();
@@ -239,6 +212,7 @@ export default function VerifyContactPage() {
 
   async function handleResend(channel) {
     if (!pendingEmail || resendingChannel) return;
+    if (channel === "SMS" && !showPhoneVerification) return;
 
     setResendingChannel(channel);
     setInlineError("");
@@ -249,34 +223,24 @@ export default function VerifyContactPage() {
         channel,
       });
       const payload = extractPayload(response);
+      const nextState = buildVerificationState(
+        {
+          ...verificationState,
+          ...payload,
+          email: pendingEmail,
+        },
+        storedDraft,
+      );
 
-      setVerificationState((current) => ({
-        ...current,
-        maskedEmail: payload.maskedEmail || current.maskedEmail,
-        maskedPhoneNumber: payload.maskedPhoneNumber || current.maskedPhoneNumber,
-        preview: payload.preview || current.preview || null,
-        previewMode: Boolean(
-          payload.previewMode ?? hasVerificationPreview(payload.preview || current.preview),
-        ),
-      }));
+      setVerificationState(nextState);
 
       writePendingContactVerification({
-        ...(storedDraft || {}),
-        email: pendingEmail,
-        maskedEmail: payload.maskedEmail || verificationState.maskedEmail,
-        maskedPhoneNumber: payload.maskedPhoneNumber || verificationState.maskedPhoneNumber,
-        emailVerified: verificationState.emailVerified,
-        phoneVerified: verificationState.phoneVerified,
-        preview: payload.preview || verificationState.preview || null,
-        previewMode: Boolean(
-          payload.previewMode ?? hasVerificationPreview(payload.preview || verificationState.preview),
-        ),
+        ...(readPendingContactVerification() || {}),
+        ...nextState,
       });
 
       setToast({
-        message: Boolean(
-          payload.previewMode ?? hasVerificationPreview(payload.preview || verificationState.preview),
-        )
+        message: nextState.previewMode
           ? "Preview mode is active. The latest verification code is shown on this page because live email and SMS delivery are not configured yet."
           : channel === "EMAIL"
             ? "A fresh email verification code has been sent."
@@ -302,6 +266,12 @@ export default function VerifyContactPage() {
   const previewMode = verificationState.previewMode;
   const emailDeliveryLabel = previewMode ? "Email code ready" : "Email code sent";
   const phoneDeliveryLabel = previewMode ? "SMS code ready" : "SMS code sent";
+  const verificationHeadline = showPhoneVerification
+    ? "Verify your email and phone before we open the farm."
+    : "Verify your email before we open the farm.";
+  const verificationSubtitle = showPhoneVerification
+    ? "Enter the latest codes from your inbox and SMS."
+    : "Enter the latest code from your inbox.";
 
   return (
     <PageWrapper>
@@ -344,11 +314,12 @@ export default function VerifyContactPage() {
 
             <div className="space-y-3">
               <h1 className="max-w-xl text-4xl font-semibold leading-tight">
-                Verify your email and phone before we open the farm.
+                {verificationHeadline}
               </h1>
               <p className="max-w-xl text-base text-slate-600 dark:text-slate-300">
-                This helps us deliver alerts, password recovery, billing updates, and urgent
-                support replies to the right person every time.
+                {showPhoneVerification
+                  ? "This helps us deliver alerts, password recovery, billing updates, and urgent support replies to the right person every time."
+                  : "Confirm your email now, then add a phone number later from Settings whenever you want SMS alerts and recovery options."}
               </p>
             </div>
 
@@ -362,22 +333,24 @@ export default function VerifyContactPage() {
                   </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-200/80 bg-white/75 p-4 shadow-soft dark:border-white/10 dark:bg-white/5">
-                <div className="flex items-start gap-3">
-                  <MessageSquareMore className="mt-0.5 h-5 w-5 text-emerald-500" />
-                  <div>
-                    <div className="font-semibold">{phoneDeliveryLabel}</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-300">{phoneLabel}</div>
+              {showPhoneVerification ? (
+                <div className="rounded-2xl border border-slate-200/80 bg-white/75 p-4 shadow-soft dark:border-white/10 dark:bg-white/5">
+                  <div className="flex items-start gap-3">
+                    <MessageSquareMore className="mt-0.5 h-5 w-5 text-emerald-500" />
+                    <div>
+                      <div className="font-semibold">{phoneDeliveryLabel}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-300">{phoneLabel}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           </div>
 
           <div className="flex items-center justify-center">
             <AuthCard
-              title="Verify your contact details"
-              subtitle="Enter the latest codes from your inbox and SMS."
+              title={showPhoneVerification ? "Verify your contact details" : "Verify your email"}
+              subtitle={verificationSubtitle}
               trustText={getAuthTrustText("signup")}
               accentColor={brandPrimaryColor}
               className="w-full max-w-2xl"
@@ -432,40 +405,46 @@ export default function VerifyContactPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-white/5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                          SMS verification
+                  {showPhoneVerification ? (
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-white/5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                            SMS verification
+                          </div>
+                          <div className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                            {phoneLabel}
+                          </div>
                         </div>
-                        <div className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                          {phoneLabel}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleResend("SMS")}
+                          disabled={!pendingEmail || Boolean(resendingChannel)}
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15"
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 ${resendingChannel === "SMS" ? "animate-spin" : ""}`} />
+                          Resend SMS code
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleResend("SMS")}
-                        disabled={!pendingEmail || Boolean(resendingChannel)}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15"
-                      >
-                        <RefreshCw className={`h-3.5 w-3.5 ${resendingChannel === "SMS" ? "animate-spin" : ""}`} />
-                        Resend SMS code
-                      </button>
-                    </div>
 
-                    <div className="mt-4">
-                      <FloatingInput
-                        label={verificationState.phoneVerified ? "Phone verified" : "SMS code"}
-                        value={verificationState.phoneVerified ? "Verified" : form.phoneCode}
-                        onChange={(event) =>
-                          setForm((current) => ({ ...current, phoneCode: event.target.value }))
-                        }
-                        autoComplete="one-time-code"
-                        disabled={verificationState.phoneVerified || !pendingEmail}
-                        required={!verificationState.phoneVerified}
-                      />
+                      <div className="mt-4">
+                        <FloatingInput
+                          label={verificationState.phoneVerified ? "Phone verified" : "SMS code"}
+                          value={verificationState.phoneVerified ? "Verified" : form.phoneCode}
+                          onChange={(event) =>
+                            setForm((current) => ({ ...current, phoneCode: event.target.value }))
+                          }
+                          autoComplete="one-time-code"
+                          disabled={verificationState.phoneVerified || !pendingEmail}
+                          required={requiresPhoneVerification}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50 px-3.5 py-3 text-sm text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                      Phone is optional during signup. You can add it later from Settings if you want SMS alerts.
+                    </div>
+                  )}
                 </div>
 
                 {previewMode ? (

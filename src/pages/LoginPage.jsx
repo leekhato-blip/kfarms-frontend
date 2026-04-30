@@ -21,6 +21,7 @@ import kfarmsLogo from "../assets/Kfarms_logo.png";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
 import { writePendingContactVerification } from "../auth/contactVerificationStorage";
 import { waitForBackendConnection } from "../api/apiClient";
+import { normalizeContactVerificationState } from "../utils/contactVerification";
 
 /**
  * Login page:
@@ -158,17 +159,14 @@ export default function LoginPage() {
     } catch (err) {
       const verificationPayload = err?.response?.data?.data;
       if (verificationPayload?.verificationRequired) {
-        writePendingContactVerification({
+        const pendingVerification = normalizeContactVerificationState({
+          ...verificationPayload,
           email: verificationPayload.email || nextIdentifier,
-          maskedEmail: verificationPayload.maskedEmail || "",
-          maskedPhoneNumber: verificationPayload.maskedPhoneNumber || "",
-          emailVerified: Boolean(verificationPayload.emailVerified),
-          phoneVerified: Boolean(verificationPayload.phoneVerified),
-          preview: verificationPayload.preview || null,
         });
+        writePendingContactVerification(pendingVerification);
         navigate("/auth/verify-contact", {
           replace: true,
-          state: verificationPayload,
+          state: pendingVerification,
         });
         return;
       }
@@ -344,7 +342,11 @@ export default function LoginPage() {
 
                 <div className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs">
                   By using KFarms, you agree to the{" "}
-                  <Link className="font-semibold text-accent-primary" to="/terms">
+                  <Link
+                    className="font-semibold text-accent-primary"
+                    to="/terms"
+                    state={{ returnTo: "/auth/login" }}
+                  >
                     Terms & Conditions
                   </Link>
                   .

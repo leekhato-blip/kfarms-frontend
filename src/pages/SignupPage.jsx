@@ -778,7 +778,11 @@ export default function SignupPage() {
 
                 <div className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 sm:text-xs">
                   By creating an account, you agree to the{" "}
-                  <Link className="font-semibold text-accent-primary" to="/terms">
+                  <Link
+                    className="font-semibold text-accent-primary"
+                    to="/terms"
+                    state={{ returnTo: "/auth/signup" }}
+                  >
                     Terms & Conditions
                   </Link>
                   .

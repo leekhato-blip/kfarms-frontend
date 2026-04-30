@@ -1,7 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, FileText, ShieldCheck, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import AuthThemeSwitcher from "../components/AuthThemeSwitcher";
 import AuthWatermark from "../components/AuthWatermark";
 import PageWrapper from "../components/PageWrapper";
@@ -57,6 +56,36 @@ const TERMS_SECTIONS = [
 export default function TermsPage() {
   const effectiveDate = "April 3, 2026";
   const navigate = useNavigate();
+  const location = useLocation();
+
+  function handleClose() {
+    const fallbackPath =
+      typeof location.state?.returnTo === "string" && location.state.returnTo
+        ? location.state.returnTo
+        : "/auth/login";
+
+    if (typeof window === "undefined") {
+      navigate(fallbackPath, { replace: true });
+      return;
+    }
+
+    const historyIndex = Number(window.history.state?.idx);
+    const sameOriginReferrer = (() => {
+      try {
+        if (!document.referrer) return false;
+        return new URL(document.referrer).origin === window.location.origin;
+      } catch {
+        return false;
+      }
+    })();
+
+    if ((Number.isFinite(historyIndex) && historyIndex > 0) || sameOriginReferrer) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(fallbackPath, { replace: true });
+  }
 
   return (
     <PageWrapper>
@@ -76,7 +105,7 @@ export default function TermsPage() {
           <div className="relative w-full rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/12 dark:bg-[#0B1322]/95 dark:shadow-[0_28px_70px_rgba(2,6,23,0.55)] sm:p-8 lg:p-10">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={handleClose}
               className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
               aria-label="Close terms and conditions"
             >

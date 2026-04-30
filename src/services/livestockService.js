@@ -35,6 +35,14 @@ export async function getLivestock(params = {}) {
   return res.data.data;
 }
 
+export async function getLivestockById(id, { tenantId } = {}) {
+  const res = await api.get(
+    `/livestock/${id}`,
+    buildTenantRequestConfig(tenantId),
+  );
+  return res.data.data;
+}
+
 // Get livestock summary
 export async function getLivestockSummary({ tenantId } = {}) {
   const res = await api.get("/livestock/summary", buildTenantRequestConfig(tenantId));
