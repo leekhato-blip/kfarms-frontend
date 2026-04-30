@@ -345,7 +345,7 @@ export default function LivestockPage() {
         start: start || undefined,
         end: end || undefined,
       });
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = filename || `${category || "livestock"}.${type || "csv"}`;

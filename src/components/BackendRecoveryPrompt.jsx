@@ -3,6 +3,7 @@ import { CheckCircle2, LoaderCircle, WifiOff } from "lucide-react";
 import { getBackendConnectionSnapshot } from "../api/apiClient";
 
 const ONLINE_CONFIRM_VISIBLE_MS = 2400;
+const STATUS_HIDE_TRANSITION_MS = 280;
 
 function resolveVisibleStatus(pathname = "") {
   return (
@@ -20,7 +21,11 @@ export default function BackendRecoveryPrompt() {
     () => getBackendConnectionSnapshot().backendDown,
   );
   const [showOnline, setShowOnline] = React.useState(false);
+  const [renderedStatus, setRenderedStatus] = React.useState(null);
+  const [isVisible, setIsVisible] = React.useState(false);
   const hadConnectionIssueRef = React.useRef(browserOffline || backendDown);
+  const hideTimerRef = React.useRef(null);
+  const enterFrameRef = React.useRef(null);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -82,6 +87,88 @@ export default function BackendRecoveryPrompt() {
     };
   }, [backendDown, browserOffline]);
 
+  const status = React.useMemo(() => {
+    if (browserOffline) {
+      return {
+        label: "Offline",
+        detail: "Your device is offline.",
+        icon: WifiOff,
+        className:
+          "border-amber-300/75 bg-amber-50/95 text-amber-950 shadow-[0_18px_38px_rgba(245,158,11,0.18)] dark:border-amber-400/45 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.97),rgba(69,26,3,0.96))] dark:text-amber-50",
+        iconClassName:
+          "bg-amber-500/12 text-amber-800 dark:bg-amber-300/14 dark:text-amber-100",
+      };
+    }
+
+    if (backendDown) {
+      return {
+        label: "Reconnecting",
+        detail: "Server connection is recovering.",
+        icon: LoaderCircle,
+        className:
+          "border-sky-300/75 bg-sky-50/95 text-sky-950 shadow-[0_18px_38px_rgba(59,130,246,0.16)] dark:border-sky-400/40 dark:bg-[linear-gradient(135deg,rgba(10,18,35,0.98),rgba(8,47,73,0.95))] dark:text-sky-50",
+        iconClassName:
+          "bg-sky-500/12 text-sky-700 dark:bg-sky-300/14 dark:text-sky-100",
+      };
+    }
+
+    if (showOnline) {
+      return {
+        label: "Online",
+        detail: "Connection is back.",
+        icon: CheckCircle2,
+        className:
+          "border-emerald-300/75 bg-emerald-50/95 text-emerald-950 shadow-[0_18px_38px_rgba(16,185,129,0.16)] dark:border-emerald-400/40 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.97),rgba(2,44,34,0.96))] dark:text-emerald-50",
+        iconClassName:
+          "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-300/14 dark:text-emerald-100",
+      };
+    }
+
+    return null;
+  }, [backendDown, browserOffline, showOnline]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+
+    if (enterFrameRef.current) {
+      window.cancelAnimationFrame(enterFrameRef.current);
+      enterFrameRef.current = null;
+    }
+
+    if (!status) {
+      setIsVisible(false);
+      hideTimerRef.current = window.setTimeout(() => {
+        setRenderedStatus(null);
+      }, STATUS_HIDE_TRANSITION_MS);
+
+      return () => {
+        if (hideTimerRef.current) {
+          window.clearTimeout(hideTimerRef.current);
+          hideTimerRef.current = null;
+        }
+      };
+    }
+
+    setRenderedStatus(status);
+    enterFrameRef.current = window.requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+
+    return () => {
+      if (enterFrameRef.current) {
+        window.cancelAnimationFrame(enterFrameRef.current);
+        enterFrameRef.current = null;
+      }
+    };
+  }, [status]);
+
   if (typeof window === "undefined") {
     return null;
   }
@@ -90,49 +177,35 @@ export default function BackendRecoveryPrompt() {
     return null;
   }
 
-  const status = browserOffline
-    ? {
-        label: "Offline",
-        detail: "Your device is offline.",
-        icon: WifiOff,
-        className:
-          "border-amber-300/70 bg-amber-100/90 text-amber-900 shadow-[0_18px_38px_rgba(245,158,11,0.22)] dark:border-amber-300/20 dark:bg-amber-500/18 dark:text-amber-100",
-      }
-    : backendDown
-      ? {
-          label: "Reconnecting",
-          detail: "Server connection is recovering.",
-          icon: LoaderCircle,
-          className:
-            "border-blue-300/70 bg-blue-100/90 text-blue-900 shadow-[0_18px_38px_rgba(59,130,246,0.18)] dark:border-blue-300/20 dark:bg-blue-500/18 dark:text-blue-100",
-        }
-      : showOnline
-        ? {
-            label: "Online",
-            detail: "Connection is back.",
-            icon: CheckCircle2,
-            className:
-              "border-emerald-300/70 bg-emerald-100/90 text-emerald-900 shadow-[0_18px_38px_rgba(16,185,129,0.18)] dark:border-emerald-300/20 dark:bg-emerald-500/18 dark:text-emerald-100",
-          }
-        : null;
-
-  if (!status) {
+  if (!renderedStatus) {
     return null;
   }
 
-  const StatusIcon = status.icon;
+  const StatusIcon = renderedStatus.icon;
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[90]">
+    <div
+      className={`pointer-events-none fixed bottom-4 right-4 z-[90] transition-all duration-300 ease-out motion-reduce:transition-none ${
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+      }`}
+    >
       <div
-        className={`pointer-events-auto inline-flex items-center gap-3 rounded-full border px-4 py-2.5 backdrop-blur-xl ${status.className}`}
+        className={`pointer-events-auto inline-flex max-w-[min(92vw,360px)] items-center gap-3 rounded-2xl border px-3.5 py-3 backdrop-blur-xl transition-[background-color,border-color,color,box-shadow] duration-300 ease-out motion-reduce:transition-none ${renderedStatus.className}`}
         role="status"
         aria-live="polite"
       >
-        <StatusIcon className={`h-4 w-4 ${status.label === "Reconnecting" ? "animate-spin" : ""}`} />
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold">{status.label}</span>
-          <span className="hidden text-xs opacity-80 sm:inline">{status.detail}</span>
+        <span
+          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${renderedStatus.iconClassName}`}
+        >
+          <StatusIcon
+            className={`h-4 w-4 ${
+              renderedStatus.label === "Reconnecting" ? "animate-spin" : ""
+            }`}
+          />
+        </span>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">{renderedStatus.label}</div>
+          <div className="text-xs opacity-85">{renderedStatus.detail}</div>
         </div>
       </div>
     </div>

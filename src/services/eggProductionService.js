@@ -25,6 +25,29 @@ function getMonthlyProductionYearCount(monthlyProduction = {}) {
   ).size;
 }
 
+function hasPositiveMonthlyProduction(monthlyProduction = {}) {
+  return Object.values(monthlyProduction).some((value) => Number(value) > 0);
+}
+
+function mergeMonthlyProductionSeries(historicalMonthlyProduction = {}, monthlyProduction = {}) {
+  const merged = { ...historicalMonthlyProduction };
+
+  Object.entries(monthlyProduction).forEach(([monthKey, quantity]) => {
+    const normalizedQuantity = Number(quantity);
+
+    if (Number.isFinite(normalizedQuantity) && normalizedQuantity > 0) {
+      merged[monthKey] = normalizedQuantity;
+      return;
+    }
+
+    if (!(monthKey in merged)) {
+      merged[monthKey] = Number.isFinite(normalizedQuantity) ? normalizedQuantity : 0;
+    }
+  });
+
+  return merged;
+}
+
 export function buildMonthlyProductionFromRecords(records = []) {
   return (Array.isArray(records) ? records : []).reduce((acc, item) => {
     const monthKey = getMonthKey(item?.collectionDate);
@@ -77,7 +100,8 @@ export async function enrichEggProductionSummary(summary, options = {}) {
 
   const shouldLoadHistoricalProduction =
     options.forceHistoricalMonthlyProduction ||
-    getMonthlyProductionYearCount(monthlyProduction) <= 1;
+    getMonthlyProductionYearCount(monthlyProduction) <= 1 ||
+    !hasPositiveMonthlyProduction(monthlyProduction);
 
   if (!shouldLoadHistoricalProduction) {
     return normalizedSummary;
@@ -91,10 +115,10 @@ export async function enrichEggProductionSummary(summary, options = {}) {
 
     return {
       ...normalizedSummary,
-      monthlyProduction: {
-        ...historicalMonthlyProduction,
-        ...monthlyProduction,
-      },
+      monthlyProduction: mergeMonthlyProductionSeries(
+        historicalMonthlyProduction,
+        monthlyProduction,
+      ),
     };
   } catch (error) {
     console.error("Failed to rebuild egg production history", error);

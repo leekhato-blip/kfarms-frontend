@@ -11,7 +11,6 @@ import { Bar } from "react-chartjs-2";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toKfarmsAppPath } from "../apps/kfarms/paths";
-import useRenderableChartContainer from "../hooks/useRenderableChartContainer";
 import SkeletonLoader from "./SkeletonLoader";
 
 ChartJS.register(
@@ -31,7 +30,6 @@ export default function ProductionChart({
   actionLabel = "Record Production",
 }) {
   const navigate = useNavigate();
-  const { containerRef, canRenderChart } = useRenderableChartContainer();
 
   // Helper to format "YYYY-MM" → "Jan '25"
   const formatMonth = (value) => {
@@ -69,6 +67,10 @@ export default function ProductionChart({
     () => ({
       responsive: true,
       maintainAspectRatio: false,
+      animation: {
+        duration: 520,
+        easing: "easeOutQuart",
+      },
       plugins: {
         legend: {
           display: false,
@@ -131,8 +133,8 @@ export default function ProductionChart({
 
   /* 3️⃣ Chart render */
   return (
-    <div ref={containerRef} className="relative w-full h-full min-h-[260px] font-body">
-      {canRenderChart ? <Bar data={data} options={options} /> : null}
+    <div className="relative w-full h-full min-h-[260px] font-body">
+      <Bar data={data} options={options} />
     </div>
   );
 }

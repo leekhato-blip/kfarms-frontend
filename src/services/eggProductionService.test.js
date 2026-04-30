@@ -106,4 +106,46 @@ describe("eggProductionService", () => {
       "2025-12": 90,
     });
   });
+
+  it("rebuilds chart history when summary months are present but all quantities are zero", async () => {
+    apiGet
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            monthlyProduction: {
+              "2026-03": 0,
+              "2025-12": 0,
+            },
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            items: [
+              { collectionDate: "2026-03-07", goodEggs: 240 },
+              { collectionDate: "2025-12-18", goodEggs: 180 },
+            ],
+            hasNext: false,
+          },
+        },
+      });
+
+    const result = await getEggSummary();
+
+    expect(apiGet).toHaveBeenNthCalledWith(1, "/eggs/summary");
+    expect(apiGet).toHaveBeenNthCalledWith(2, "/eggs", {
+      params: {
+        page: 0,
+        size: 200,
+        livestockId: undefined,
+        collectionDate: undefined,
+        deleted: undefined,
+      },
+    });
+    expect(result.monthlyProduction).toEqual({
+      "2025-12": 180,
+      "2026-03": 240,
+    });
+  });
 });

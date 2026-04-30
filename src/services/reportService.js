@@ -83,7 +83,7 @@ export const EXPORT_CATEGORY_META = {
   inventory: {
     label: "Inventory",
     description: "Store room balances with units, update date, and notes.",
-    fields: ["Item", "Category", "Quantity", "Unit", "Updated", "Note"],
+    fields: ["Item", "Category", "Quantity", "Unit Cost", "Unit", "Updated", "Note"],
   },
   fish: {
     label: "Fish Ponds",
@@ -115,6 +115,77 @@ function getFilenameFromHeaders(headers, fallback = "report.csv") {
   if (!disposition) return fallback;
   const match = /filename="?([^"]+)"?/.exec(disposition);
   return match?.[1] || fallback;
+}
+
+function getContentTypeFromHeaders(headers) {
+  const raw = headers?.["content-type"] || headers?.get?.("content-type") || "";
+  return String(raw).split(";")[0].trim().toLowerCase();
+}
+
+function isBlobPayload(value) {
+  return typeof Blob !== "undefined" && value instanceof Blob;
+}
+
+function isExpectedExportContentType(type, contentType) {
+  const normalizedType = normalizeExportType(type);
+  const normalizedContentType = String(contentType || "").trim().toLowerCase();
+
+  if (!normalizedContentType) return true;
+  if (normalizedContentType.includes("application/json")) return false;
+
+  if (normalizedType === "pdf") {
+    return normalizedContentType === "application/pdf";
+  }
+
+  if (normalizedType === "xlsx") {
+    return (
+      normalizedContentType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      normalizedContentType === "application/vnd.ms-excel" ||
+      normalizedContentType === "application/octet-stream"
+    );
+  }
+
+  if (normalizedType === "csv") {
+    return (
+      normalizedContentType === "text/csv" ||
+      normalizedContentType === "application/csv" ||
+      normalizedContentType === "application/octet-stream"
+    );
+  }
+
+  return true;
+}
+
+async function buildUnexpectedExportError(blob, type, filename, headers) {
+  const contentType = getContentTypeFromHeaders(headers) || blob?.type || "";
+  let message = `Unexpected ${normalizeExportType(type).toUpperCase()} export response.`;
+
+  if (blob && typeof blob.text === "function") {
+    try {
+      const text = (await blob.text()).trim();
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          message =
+            parsed?.message ||
+            parsed?.error ||
+            parsed?.details ||
+            text ||
+            message;
+        } catch {
+          message = text;
+        }
+      }
+    } catch {
+      // Keep the fallback message when the response body cannot be read as text.
+    }
+  }
+
+  const error = new Error(message);
+  error.code = "ERR_EXPORT_RESPONSE";
+  error.filename = filename;
+  error.contentType = contentType;
+  throw error;
 }
 
 export function normalizeExportType(type = "csv") {
@@ -154,11 +225,29 @@ export async function exportReport({ type = "csv", category, start, end } = {}) 
       end: end || undefined,
     },
     responseType: "blob",
+    offline: {
+      skipCache: true,
+      skipQueue: true,
+    },
   });
 
   const filename = getFilenameFromHeaders(
     response.headers,
     `${normalizedCategory || "report"}.${normalizedType}`,
   );
-  return { blob: response.data, filename };
+  const blob = response.data;
+
+  if (!isBlobPayload(blob)) {
+    throw new Error("Unexpected export response. Please try again.");
+  }
+
+  const contentType = getContentTypeFromHeaders(response.headers) || blob.type;
+  if (!isExpectedExportContentType(normalizedType, contentType)) {
+    await buildUnexpectedExportError(blob, normalizedType, filename, response.headers);
+  }
+
+  const normalizedBlob =
+    contentType && blob.type !== contentType ? blob.slice(0, blob.size, contentType) : blob;
+
+  return { blob: normalizedBlob, filename };
 }

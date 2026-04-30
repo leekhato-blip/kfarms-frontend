@@ -616,7 +616,11 @@ apiClient.interceptors.response.use(
       markBackendDown(error.config);
     }
 
-    if (isBackendUnavailableError(error) && isGetRequest(error.config)) {
+    if (
+      isBackendUnavailableError(error) &&
+      isGetRequest(error.config) &&
+      !error.config?.offline?.skipCache
+    ) {
       const cachedData = getCachedApiResponse({
         tenantId: error.config?.headers?.["X-Tenant-Id"],
         path: requestPath,
