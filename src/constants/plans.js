@@ -34,7 +34,7 @@ export const PLAN_TIER_CONFIG = [
     assistantSummary: "Sharper operational coaching, prioritization, and team support for active farms.",
     tagline: "For serious farmers running daily operations with workers, analytics, and alerts.",
     priceLabel: "NGN 10,000",
-    cycleLabel: "per month or NGN 100,000 yearly",
+    cycleLabel: "per month or NGN 90,000 yearly",
     ctaLabel: "Upgrade to Pro",
     ctaPath: "/onboarding/create-tenant",
     recommended: true,

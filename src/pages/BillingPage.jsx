@@ -34,6 +34,8 @@ import {
   getBillingInvoices,
   getBillingOverview,
   getPlanBillingInfo,
+  getPlanBillingOptions,
+  normalizeBillingInterval,
   verifyCheckoutSession,
 } from "../services/billingService";
 import {
@@ -122,10 +124,10 @@ function normalizeLimitLabel(label) {
 
 const LIVE_BILLING_CHECKLIST = Object.freeze([
   "Create and verify a Paystack business account for live billing.",
-  "Set backend env vars: KFARMS_PAYSTACK_ENABLED=true, KFARMS_PAYSTACK_SECRET_KEY, and KFARMS_PAYSTACK_PRO_MONTHLY_PLAN_CODE.",
+  "Set backend env vars: KFARMS_PAYSTACK_ENABLED=true, KFARMS_PAYSTACK_SECRET_KEY, KFARMS_PAYSTACK_PRO_MONTHLY_PLAN_CODE, and KFARMS_PAYSTACK_PRO_ANNUAL_PLAN_CODE.",
   "Point the Paystack webhook to /api/billing/paystack/webhook on your deployed backend.",
   "Set KFARMS_FRONTEND_BASE_URL and your production CORS/cookie values so checkout returns to the app correctly.",
-  "Add a billing email in Workspace Settings before starting checkout.",
+  "Make sure the owner account email is valid. Add a workspace billing email only if finance notices should go to a different address.",
 ]);
 
 export default function BillingPage() {
@@ -154,6 +156,7 @@ export default function BillingPage() {
     () => typeof window !== "undefined" && !window.navigator.onLine,
   );
   const [processingPlanId, setProcessingPlanId] = React.useState("");
+  const [selectedProInterval, setSelectedProInterval] = React.useState("MONTHLY");
   const [verifyingPayment, setVerifyingPayment] = React.useState(false);
   const [openingPortal, setOpeningPortal] = React.useState(false);
   const [updatingSubscription, setUpdatingSubscription] = React.useState(false);
@@ -167,8 +170,13 @@ export default function BillingPage() {
     activeTenant,
     WORKSPACE_PERMISSIONS.BILLING_MANAGE,
   );
+  const proBillingOptions = React.useMemo(() => getPlanBillingOptions("PRO"), []);
   const tenantPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const effectivePlanId = normalizePlanId(billing?.planId || tenantPlan, "FREE");
+  const activeBillingInterval = normalizeBillingInterval(
+    billing?.interval,
+    effectivePlanId === "PRO" ? "MONTHLY" : "CONTRACT",
+  );
   const currentPlan = getPlanById(effectivePlanId, "FREE");
   const organizationName = organizationProfile?.organizationName || activeTenant?.name || "Current farm";
   const organizationSlug = organizationProfile?.organizationSlug || activeTenant?.slug || "";
@@ -284,6 +292,15 @@ export default function BillingPage() {
   }, [activeTenantId]);
 
   React.useEffect(() => {
+    setSelectedProInterval("MONTHLY");
+  }, [activeTenantId]);
+
+  React.useEffect(() => {
+    if (effectivePlanId !== "PRO") return;
+    setSelectedProInterval(activeBillingInterval);
+  }, [activeBillingInterval, effectivePlanId]);
+
+  React.useEffect(() => {
     loadBillingData({ page: invoicePage });
   }, [invoicePage, loadBillingData]);
 
@@ -314,6 +331,7 @@ export default function BillingPage() {
       "transaction_id",
       "session_id",
       "plan",
+      "interval",
       "provider",
     ].forEach((key) => nextParams.delete(key));
 
@@ -353,6 +371,7 @@ export default function BillingPage() {
       params.get("transaction_id") ||
       params.get("session_id");
     const plan = normalizePlanId(params.get("plan"), "PRO");
+    const interval = normalizeBillingInterval(params.get("interval"), "MONTHLY");
 
     if (status === "cancelled" || status === "canceled") {
       setToast({
@@ -382,6 +401,7 @@ export default function BillingPage() {
           tenantId: activeTenantId,
           reference,
           planId: plan,
+          billingInterval: interval,
         });
         await refreshTenants({ force: true }).catch(() => null);
         await loadBillingData({ silent: true });
@@ -401,7 +421,7 @@ export default function BillingPage() {
     })();
   }, [activeTenantId, clearPaymentQuery, loadBillingData, location.search, refreshTenants]);
 
-  const handleCheckout = React.useCallback(async (planId) => {
+  const handleCheckout = React.useCallback(async (planId, billingInterval = selectedProInterval) => {
     if (!activeTenantId || processingPlanId) return false;
     if (!canManageBilling) {
       setToast({
@@ -418,7 +438,14 @@ export default function BillingPage() {
       return false;
     }
     const normalizedPlan = normalizePlanId(planId, "PRO");
-    if (normalizedPlan === effectivePlanId) {
+    const normalizedInterval =
+      normalizedPlan === "PRO"
+        ? normalizeBillingInterval(billingInterval, "MONTHLY")
+        : getPlanBillingInfo(normalizedPlan).interval;
+    const sameSelection =
+      normalizedPlan === effectivePlanId &&
+      (normalizedPlan !== "PRO" || activeBillingInterval === normalizedInterval);
+    if (sameSelection) {
       setToast({
         message: `${currentPlan.name} is already your active plan.`,
         type: "info",
@@ -430,7 +457,9 @@ export default function BillingPage() {
       return false;
     }
 
-    setProcessingPlanId(normalizedPlan);
+    setProcessingPlanId(
+      normalizedPlan === "PRO" ? `${normalizedPlan}:${normalizedInterval}` : normalizedPlan,
+    );
     const checkoutWindow =
       typeof window !== "undefined" ? window.open("", "_blank") : null;
     if (checkoutWindow) {
@@ -450,6 +479,7 @@ export default function BillingPage() {
       const result = await createCheckoutSession({
         tenantId: activeTenantId,
         planId: normalizedPlan,
+        billingInterval: normalizedInterval,
         successUrl,
         cancelUrl,
         customerEmail: user?.email || "",
@@ -484,7 +514,9 @@ export default function BillingPage() {
     isBrowserOffline,
     navigate,
     billingPagePath,
+    activeBillingInterval,
     processingPlanId,
+    selectedProInterval,
     user?.email,
   ]);
 
@@ -583,11 +615,14 @@ export default function BillingPage() {
     if (requestedPlan === "ENTERPRISE") {
       navigate("/product-profile#contact");
       clearPlanIntentQuery();
-      return;
+                    return;
     }
 
     (async () => {
-      const redirectStarted = await handleCheckout(requestedPlan);
+      const redirectStarted = await handleCheckout(
+        requestedPlan,
+        requestedPlan === "PRO" ? selectedProInterval : undefined,
+      );
       if (!redirectStarted) {
         clearPlanIntentQuery();
       }
@@ -604,6 +639,7 @@ export default function BillingPage() {
     location.search,
     navigate,
     processingPlanId,
+    selectedProInterval,
     updatingSubscription,
     verifyingPayment,
   ]);
@@ -966,12 +1002,27 @@ export default function BillingPage() {
 
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                   {displayPlans.map((plan) => {
-                    const isCurrent = plan.id === effectivePlanId;
+                    const selectedInterval =
+                      plan.id === "PRO"
+                        ? normalizeBillingInterval(selectedProInterval, "MONTHLY")
+                        : getPlanBillingInfo(plan.id).interval;
+                    const billingInfo = getPlanBillingInfo(plan.id, selectedInterval);
+                    const isCurrentPlan = plan.id === effectivePlanId;
+                    const isCurrentSelection =
+                      isCurrentPlan && (plan.id !== "PRO" || activeBillingInterval === selectedInterval);
                     const isFocused = focusPlanId === plan.id;
-                    const billingInfo = getPlanBillingInfo(plan.id);
                     const isEnterprise = plan.id === "ENTERPRISE";
                     const isFreeDowngrade = plan.id === "FREE" && effectivePlanId !== "FREE";
-                    const busy = processingPlanId === plan.id;
+                    const busyKey = plan.id === "PRO" ? `${plan.id}:${selectedInterval}` : plan.id;
+                    const busy = processingPlanId === busyKey;
+                    const compareAtPriceLabel =
+                      plan.id === "PRO" ? billingInfo.compareAtLabel || "" : plan.compareAtPriceLabel;
+                    const priceLabel =
+                      plan.id === "PRO" ? billingInfo.priceLabel || plan.priceLabel : plan.priceLabel;
+                    const cycleLabel =
+                      plan.id === "PRO" ? billingInfo.cycleLabel || plan.cycleLabel : plan.cycleLabel;
+                    const promoNote =
+                      plan.id === "PRO" ? billingInfo.promoNote || billingInfo.label : plan.promoNote || billingInfo.label;
 
                     return (
                       <article
@@ -986,7 +1037,7 @@ export default function BillingPage() {
                         }}
                         tabIndex={-1}
                         className={`relative overflow-hidden rounded-2xl border p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition focus:outline-none dark:shadow-[0_14px_34px_rgba(2,6,23,0.42)] ${
-                          isCurrent
+                          isCurrentPlan
                             ? "border-accent-primary/45 bg-gradient-to-br from-accent-primary/15 via-cyan-500/10 to-emerald-500/10 dark:from-accent-primary/24 dark:via-cyan-500/12 dark:to-emerald-500/12"
                             : "border-slate-200/80 bg-white/72 dark:border-slate-800/80 dark:bg-slate-900/64"
                         } ${
@@ -995,7 +1046,7 @@ export default function BillingPage() {
                             : ""
                         }`}
                       >
-                        {plan.recommended && !isCurrent && (
+                        {plan.recommended && !isCurrentPlan && (
                           <span className="absolute right-3 top-3 inline-flex rounded-full border border-violet-300/60 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-violet-700 dark:border-violet-400/45 dark:bg-violet-500/20 dark:text-violet-200">
                             Most Popular
                           </span>
@@ -1005,7 +1056,7 @@ export default function BillingPage() {
                           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                             {plan.name}
                           </span>
-                          {isCurrent && (
+                          {isCurrentPlan && (
                             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
                               <BadgeCheck className="h-3 w-3" />
                               Active
@@ -1013,27 +1064,54 @@ export default function BillingPage() {
                           )}
                         </div>
 
-                        {(plan.compareAtPriceLabel || plan.priceLabel) && (
+                        {plan.id === "PRO" && (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {proBillingOptions.map((option) => {
+                              const optionSelected = selectedProInterval === option.interval;
+                              return (
+                                <button
+                                  key={option.interval}
+                                  type="button"
+                                  onClick={() => setSelectedProInterval(option.interval)}
+                                  className={`rounded-xl border px-3 py-2 text-left transition ${
+                                    optionSelected
+                                      ? "border-accent-primary/50 bg-accent-primary/12 text-slate-900 dark:border-accent-primary/40 dark:bg-accent-primary/16 dark:text-slate-100"
+                                      : "border-slate-200/80 bg-white/70 text-slate-600 hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-900"
+                                  }`}
+                                >
+                                  <div className="text-xs font-semibold">
+                                    {option.interval === "ANNUAL" ? "Annual" : "Monthly"}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                    {option.savingsLabel || "Flexible billing"}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {(compareAtPriceLabel || priceLabel) && (
                           <div className="mt-2 flex items-end gap-2">
-                            {plan.compareAtPriceLabel && (
+                            {compareAtPriceLabel && (
                               <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
-                                {plan.compareAtPriceLabel}
+                                {compareAtPriceLabel}
                               </span>
                             )}
-                            {plan.priceLabel && (
+                            {priceLabel && (
                               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {plan.priceLabel}
+                                {priceLabel}
                               </p>
                             )}
                           </div>
                         )}
-                        {plan.cycleLabel && (
+                        {cycleLabel && (
                           <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {plan.cycleLabel}
+                            {cycleLabel}
                           </p>
                         )}
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                          {plan.promoNote || billingInfo.label}
+                          {promoNote}
                         </p>
                         <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{plan.tagline}</p>
 
@@ -1075,7 +1153,7 @@ export default function BillingPage() {
                             >
                               Talk to Sales
                             </Link>
-                          ) : isCurrent ? (
+                          ) : isCurrentSelection ? (
                             <button
                               type="button"
                               disabled
@@ -1101,7 +1179,7 @@ export default function BillingPage() {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => handleCheckout(plan.id)}
+                              onClick={() => handleCheckout(plan.id, selectedInterval)}
                               disabled={
                                 busy ||
                                 verifyingPayment ||
@@ -1116,7 +1194,11 @@ export default function BillingPage() {
                                   ? "Connection required"
                                 : busy
                                   ? "Redirecting..."
-                                  : `Upgrade to ${plan.name}`}
+                                  : plan.id === "PRO"
+                                    ? isCurrentPlan
+                                      ? `Switch to ${selectedInterval === "ANNUAL" ? "annual" : "monthly"}`
+                                      : `Choose ${selectedInterval === "ANNUAL" ? "annual" : "monthly"} ${plan.name}`
+                                    : `Upgrade to ${plan.name}`}
                             </button>
                           )}
                         </div>

@@ -17,6 +17,7 @@ import {
 import DashboardLayout from "../layouts/DashboardLayout";
 import FarmerGuideCard from "../components/FarmerGuideCard";
 import GlassToast from "../components/GlassToast";
+import { toKfarmsAppPath } from "../apps/kfarms/paths";
 import { useTenant } from "../tenant/TenantContext";
 import { useAuth } from "../hooks/useAuth";
 import { usePlanCatalog } from "../hooks/usePlanCatalog";
@@ -33,6 +34,8 @@ import {
   getBillingInvoices,
   getBillingOverview,
   getPlanBillingInfo,
+  getPlanBillingOptions,
+  normalizeBillingInterval,
   verifyCheckoutSession,
 } from "../services/billingService";
 import {
@@ -121,10 +124,10 @@ function normalizeLimitLabel(label) {
 
 const LIVE_BILLING_CHECKLIST = Object.freeze([
   "Create and verify a Paystack business account for live billing.",
-  "Set backend env vars: KFARMS_PAYSTACK_ENABLED=true, KFARMS_PAYSTACK_SECRET_KEY, and KFARMS_PAYSTACK_PRO_MONTHLY_PLAN_CODE.",
+  "Set backend env vars: KFARMS_PAYSTACK_ENABLED=true, KFARMS_PAYSTACK_SECRET_KEY, KFARMS_PAYSTACK_PRO_MONTHLY_PLAN_CODE, and KFARMS_PAYSTACK_PRO_ANNUAL_PLAN_CODE.",
   "Point the Paystack webhook to /api/billing/paystack/webhook on your deployed backend.",
   "Set KFARMS_FRONTEND_BASE_URL and your production CORS/cookie values so checkout returns to the app correctly.",
-  "Add a billing email in Workspace Settings before starting checkout.",
+  "Make sure the owner account email is valid. Add a workspace billing email only if finance notices should go to a different address.",
 ]);
 
 export default function BillingPage() {
@@ -153,6 +156,7 @@ export default function BillingPage() {
     () => typeof window !== "undefined" && !window.navigator.onLine,
   );
   const [processingPlanId, setProcessingPlanId] = React.useState("");
+  const [selectedProInterval, setSelectedProInterval] = React.useState("MONTHLY");
   const [verifyingPayment, setVerifyingPayment] = React.useState(false);
   const [openingPortal, setOpeningPortal] = React.useState(false);
   const [updatingSubscription, setUpdatingSubscription] = React.useState(false);
@@ -166,14 +170,22 @@ export default function BillingPage() {
     activeTenant,
     WORKSPACE_PERMISSIONS.BILLING_MANAGE,
   );
+  const proBillingOptions = React.useMemo(() => getPlanBillingOptions("PRO"), []);
   const tenantPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const effectivePlanId = normalizePlanId(billing?.planId || tenantPlan, "FREE");
+  const activeBillingInterval = normalizeBillingInterval(
+    billing?.interval,
+    effectivePlanId === "PRO" ? "MONTHLY" : "CONTRACT",
+  );
   const currentPlan = getPlanById(effectivePlanId, "FREE");
   const organizationName = organizationProfile?.organizationName || activeTenant?.name || "Current farm";
   const organizationSlug = organizationProfile?.organizationSlug || activeTenant?.slug || "";
   const contactEmail = organizationProfile?.contactEmail || "";
   const contactPhone = organizationProfile?.contactPhone || "";
   const contactAddress = organizationProfile?.address || "";
+  const billingPagePath = toKfarmsAppPath("/billing");
+  const settingsPagePath = toKfarmsAppPath("/settings");
+  const supportPagePath = toKfarmsAppPath("/support");
   const focusPlanId = React.useMemo(
     () =>
       normalizePlanId(
@@ -280,6 +292,15 @@ export default function BillingPage() {
   }, [activeTenantId]);
 
   React.useEffect(() => {
+    setSelectedProInterval("MONTHLY");
+  }, [activeTenantId]);
+
+  React.useEffect(() => {
+    if (effectivePlanId !== "PRO") return;
+    setSelectedProInterval(activeBillingInterval);
+  }, [activeBillingInterval, effectivePlanId]);
+
+  React.useEffect(() => {
     loadBillingData({ page: invoicePage });
   }, [invoicePage, loadBillingData]);
 
@@ -310,18 +331,19 @@ export default function BillingPage() {
       "transaction_id",
       "session_id",
       "plan",
+      "interval",
       "provider",
     ].forEach((key) => nextParams.delete(key));
 
     const nextSearch = nextParams.toString();
     navigate(
       {
-        pathname: "/billing",
+        pathname: billingPagePath,
         search: nextSearch ? `?${nextSearch}` : "",
       },
       { replace: true },
     );
-  }, [location.search, navigate]);
+  }, [billingPagePath, location.search, navigate]);
 
   const clearPlanIntentQuery = React.useCallback(() => {
     const nextParams = new URLSearchParams(location.search);
@@ -329,12 +351,12 @@ export default function BillingPage() {
     const nextSearch = nextParams.toString();
     navigate(
       {
-        pathname: "/billing",
+        pathname: billingPagePath,
         search: nextSearch ? `?${nextSearch}` : "",
       },
       { replace: true },
     );
-  }, [location.search, navigate]);
+  }, [billingPagePath, location.search, navigate]);
 
   React.useEffect(() => {
     if (!activeTenantId) return;
@@ -349,6 +371,7 @@ export default function BillingPage() {
       params.get("transaction_id") ||
       params.get("session_id");
     const plan = normalizePlanId(params.get("plan"), "PRO");
+    const interval = normalizeBillingInterval(params.get("interval"), "MONTHLY");
 
     if (status === "cancelled" || status === "canceled") {
       setToast({
@@ -378,6 +401,7 @@ export default function BillingPage() {
           tenantId: activeTenantId,
           reference,
           planId: plan,
+          billingInterval: interval,
         });
         await refreshTenants({ force: true }).catch(() => null);
         await loadBillingData({ silent: true });
@@ -397,7 +421,7 @@ export default function BillingPage() {
     })();
   }, [activeTenantId, clearPaymentQuery, loadBillingData, location.search, refreshTenants]);
 
-  const handleCheckout = React.useCallback(async (planId) => {
+  const handleCheckout = React.useCallback(async (planId, billingInterval = selectedProInterval) => {
     if (!activeTenantId || processingPlanId) return false;
     if (!canManageBilling) {
       setToast({
@@ -414,7 +438,14 @@ export default function BillingPage() {
       return false;
     }
     const normalizedPlan = normalizePlanId(planId, "PRO");
-    if (normalizedPlan === effectivePlanId) {
+    const normalizedInterval =
+      normalizedPlan === "PRO"
+        ? normalizeBillingInterval(billingInterval, "MONTHLY")
+        : getPlanBillingInfo(normalizedPlan).interval;
+    const sameSelection =
+      normalizedPlan === effectivePlanId &&
+      (normalizedPlan !== "PRO" || activeBillingInterval === normalizedInterval);
+    if (sameSelection) {
       setToast({
         message: `${currentPlan.name} is already your active plan.`,
         type: "info",
@@ -426,20 +457,29 @@ export default function BillingPage() {
       return false;
     }
 
-    setProcessingPlanId(normalizedPlan);
+    setProcessingPlanId(
+      normalizedPlan === "PRO" ? `${normalizedPlan}:${normalizedInterval}` : normalizedPlan,
+    );
+    const checkoutWindow =
+      typeof window !== "undefined" ? window.open("", "_blank") : null;
+    if (checkoutWindow) {
+      checkoutWindow.opener = null;
+      checkoutWindow.document.title = "KFarms Checkout";
+    }
     try {
       const successUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/billing`
-          : "/billing";
+          ? `${window.location.origin}${billingPagePath}`
+          : billingPagePath;
       const cancelUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/billing?paymentStatus=cancelled`
-          : "/billing?paymentStatus=cancelled";
+          ? `${window.location.origin}${billingPagePath}?paymentStatus=cancelled`
+          : `${billingPagePath}?paymentStatus=cancelled`;
 
       const result = await createCheckoutSession({
         tenantId: activeTenantId,
         planId: normalizedPlan,
+        billingInterval: normalizedInterval,
         successUrl,
         cancelUrl,
         customerEmail: user?.email || "",
@@ -449,9 +489,16 @@ export default function BillingPage() {
         throw new Error("Checkout URL was not provided.");
       }
 
-      window.location.assign(result.checkoutUrl);
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.location.replace(result.checkoutUrl);
+      } else {
+        window.location.assign(result.checkoutUrl);
+      }
       return true;
     } catch (error) {
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.close();
+      }
       setToast({
         message: error?.message || "Could not open the payment page.",
         type: "error",
@@ -466,7 +513,10 @@ export default function BillingPage() {
     effectivePlanId,
     isBrowserOffline,
     navigate,
+    billingPagePath,
+    activeBillingInterval,
     processingPlanId,
+    selectedProInterval,
     user?.email,
   ]);
 
@@ -565,11 +615,14 @@ export default function BillingPage() {
     if (requestedPlan === "ENTERPRISE") {
       navigate("/product-profile#contact");
       clearPlanIntentQuery();
-      return;
+                    return;
     }
 
     (async () => {
-      const redirectStarted = await handleCheckout(requestedPlan);
+      const redirectStarted = await handleCheckout(
+        requestedPlan,
+        requestedPlan === "PRO" ? selectedProInterval : undefined,
+      );
       if (!redirectStarted) {
         clearPlanIntentQuery();
       }
@@ -586,6 +639,7 @@ export default function BillingPage() {
     location.search,
     navigate,
     processingPlanId,
+    selectedProInterval,
     updatingSubscription,
     verifyingPayment,
   ]);
@@ -640,19 +694,31 @@ export default function BillingPage() {
       });
       return;
     }
+    if (!billing?.paymentSettingsAvailable) {
+      setToast({
+        message: "Payment settings unlock after the first recurring Paystack subscription is connected.",
+        type: "info",
+      });
+      return;
+    }
     setOpeningPortal(true);
     try {
       const returnUrl =
         typeof window !== "undefined"
-          ? `${window.location.origin}/billing`
-          : "/billing";
-      const result = await createCustomerPortalSession({ returnUrl });
+          ? `${window.location.origin}${billingPagePath}`
+          : billingPagePath;
+      const result = await createCustomerPortalSession({
+        tenantId: activeTenantId,
+        returnUrl,
+      });
       if (result.portalUrl) {
         window.location.assign(result.portalUrl);
         return;
       }
       setToast({
-        message: "Payment settings are not available for this subscription yet.",
+        message: result.available
+          ? "Payment settings are not available for this subscription yet."
+          : "Payment settings unlock after the first recurring Paystack subscription is connected.",
         type: "info",
       });
     } catch (error) {
@@ -822,13 +888,13 @@ export default function BillingPage() {
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    to="/settings"
+                    to={settingsPagePath}
                     className="inline-flex items-center gap-1 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white/20 dark:text-slate-100"
                   >
                     Add billing email
                   </Link>
                   <Link
-                    to="/support?tab=tickets&compose=1&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace."
+                    to={`${supportPagePath}?tab=tickets&compose=1&category=Billing%20%26%20plan&priority=HIGH&subject=Need%20help%20going%20live%20with%20billing&description=Please%20help%20me%20finish%20Paystack%20billing%20setup%20for%20this%20workspace.`}
                     className="inline-flex items-center gap-1 rounded-lg border border-accent-primary/30 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary transition hover:bg-accent-primary/15 dark:text-blue-200"
                   >
                     Ask for setup help
@@ -936,12 +1002,27 @@ export default function BillingPage() {
 
                 <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                   {displayPlans.map((plan) => {
-                    const isCurrent = plan.id === effectivePlanId;
+                    const selectedInterval =
+                      plan.id === "PRO"
+                        ? normalizeBillingInterval(selectedProInterval, "MONTHLY")
+                        : getPlanBillingInfo(plan.id).interval;
+                    const billingInfo = getPlanBillingInfo(plan.id, selectedInterval);
+                    const isCurrentPlan = plan.id === effectivePlanId;
+                    const isCurrentSelection =
+                      isCurrentPlan && (plan.id !== "PRO" || activeBillingInterval === selectedInterval);
                     const isFocused = focusPlanId === plan.id;
-                    const billingInfo = getPlanBillingInfo(plan.id);
                     const isEnterprise = plan.id === "ENTERPRISE";
                     const isFreeDowngrade = plan.id === "FREE" && effectivePlanId !== "FREE";
-                    const busy = processingPlanId === plan.id;
+                    const busyKey = plan.id === "PRO" ? `${plan.id}:${selectedInterval}` : plan.id;
+                    const busy = processingPlanId === busyKey;
+                    const compareAtPriceLabel =
+                      plan.id === "PRO" ? billingInfo.compareAtLabel || "" : plan.compareAtPriceLabel;
+                    const priceLabel =
+                      plan.id === "PRO" ? billingInfo.priceLabel || plan.priceLabel : plan.priceLabel;
+                    const cycleLabel =
+                      plan.id === "PRO" ? billingInfo.cycleLabel || plan.cycleLabel : plan.cycleLabel;
+                    const promoNote =
+                      plan.id === "PRO" ? billingInfo.promoNote || billingInfo.label : plan.promoNote || billingInfo.label;
 
                     return (
                       <article
@@ -956,7 +1037,7 @@ export default function BillingPage() {
                         }}
                         tabIndex={-1}
                         className={`relative overflow-hidden rounded-2xl border p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition focus:outline-none dark:shadow-[0_14px_34px_rgba(2,6,23,0.42)] ${
-                          isCurrent
+                          isCurrentPlan
                             ? "border-accent-primary/45 bg-gradient-to-br from-accent-primary/15 via-cyan-500/10 to-emerald-500/10 dark:from-accent-primary/24 dark:via-cyan-500/12 dark:to-emerald-500/12"
                             : "border-slate-200/80 bg-white/72 dark:border-slate-800/80 dark:bg-slate-900/64"
                         } ${
@@ -965,7 +1046,7 @@ export default function BillingPage() {
                             : ""
                         }`}
                       >
-                        {plan.recommended && !isCurrent && (
+                        {plan.recommended && !isCurrentPlan && (
                           <span className="absolute right-3 top-3 inline-flex rounded-full border border-violet-300/60 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-violet-700 dark:border-violet-400/45 dark:bg-violet-500/20 dark:text-violet-200">
                             Most Popular
                           </span>
@@ -975,7 +1056,7 @@ export default function BillingPage() {
                           <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                             {plan.name}
                           </span>
-                          {isCurrent && (
+                          {isCurrentPlan && (
                             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/20 dark:text-emerald-100">
                               <BadgeCheck className="h-3 w-3" />
                               Active
@@ -983,21 +1064,54 @@ export default function BillingPage() {
                           )}
                         </div>
 
-                        <div className="mt-2 flex items-end gap-2">
-                          {plan.compareAtPriceLabel && (
-                            <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
-                              {plan.compareAtPriceLabel}
-                            </span>
-                          )}
-                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                            {plan.priceLabel}
+                        {plan.id === "PRO" && (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {proBillingOptions.map((option) => {
+                              const optionSelected = selectedProInterval === option.interval;
+                              return (
+                                <button
+                                  key={option.interval}
+                                  type="button"
+                                  onClick={() => setSelectedProInterval(option.interval)}
+                                  className={`rounded-xl border px-3 py-2 text-left transition ${
+                                    optionSelected
+                                      ? "border-accent-primary/50 bg-accent-primary/12 text-slate-900 dark:border-accent-primary/40 dark:bg-accent-primary/16 dark:text-slate-100"
+                                      : "border-slate-200/80 bg-white/70 text-slate-600 hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-900"
+                                  }`}
+                                >
+                                  <div className="text-xs font-semibold">
+                                    {option.interval === "ANNUAL" ? "Annual" : "Monthly"}
+                                  </div>
+                                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                    {option.savingsLabel || "Flexible billing"}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {(compareAtPriceLabel || priceLabel) && (
+                          <div className="mt-2 flex items-end gap-2">
+                            {compareAtPriceLabel && (
+                              <span className="text-xs font-medium text-slate-400 line-through dark:text-slate-500">
+                                {compareAtPriceLabel}
+                              </span>
+                            )}
+                            {priceLabel && (
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                {priceLabel}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {cycleLabel && (
+                          <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            {cycleLabel}
                           </p>
-                        </div>
-                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          {plan.cycleLabel}
-                        </p>
+                        )}
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                          {plan.promoNote || billingInfo.label}
+                          {promoNote}
                         </p>
                         <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{plan.tagline}</p>
 
@@ -1039,7 +1153,7 @@ export default function BillingPage() {
                             >
                               Talk to Sales
                             </Link>
-                          ) : isCurrent ? (
+                          ) : isCurrentSelection ? (
                             <button
                               type="button"
                               disabled
@@ -1065,7 +1179,7 @@ export default function BillingPage() {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => handleCheckout(plan.id)}
+                              onClick={() => handleCheckout(plan.id, selectedInterval)}
                               disabled={
                                 busy ||
                                 verifyingPayment ||
@@ -1080,7 +1194,11 @@ export default function BillingPage() {
                                   ? "Connection required"
                                 : busy
                                   ? "Redirecting..."
-                                  : `Upgrade to ${plan.name}`}
+                                  : plan.id === "PRO"
+                                    ? isCurrentPlan
+                                      ? `Switch to ${selectedInterval === "ANNUAL" ? "annual" : "monthly"}`
+                                      : `Choose ${selectedInterval === "ANNUAL" ? "annual" : "monthly"} ${plan.name}`
+                                    : `Upgrade to ${plan.name}`}
                             </button>
                           )}
                         </div>
@@ -1131,7 +1249,7 @@ export default function BillingPage() {
                     ) : null}
                   </div>
                   <Link
-                    to="/settings"
+                    to={settingsPagePath}
                     className="mt-3 inline-flex text-xs font-semibold text-accent-primary transition hover:text-blue-500 dark:text-blue-300"
                   >
                     Update billing profile in Settings
@@ -1157,7 +1275,9 @@ export default function BillingPage() {
                     </p>
                   </div>
                   <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                    Change your payment card in payment settings.
+                    {billing?.paymentSettingsAvailable
+                      ? "Change your payment card in payment settings."
+                      : "Payment settings unlock after the first recurring Paystack subscription is connected."}
                   </p>
                 </div>
 
@@ -1192,7 +1312,7 @@ export default function BillingPage() {
                         : "Cancel plan"}
                   </button>
                   <Link
-                    to="/support"
+                    to={supportPagePath}
                     className="mt-3 inline-flex text-xs font-semibold text-accent-primary transition hover:text-blue-500 dark:text-blue-300"
                   >
                     Need billing help? Ask for help.

@@ -4,6 +4,7 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router-dom
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import EmptyState from "../../components/EmptyState";
+import PlatformInlineLoader from "../../components/PlatformInlineLoader";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
 import { useToast } from "../../components/ToastProvider";
 import { usePlatformAuth } from "../../auth/AuthProvider";
@@ -513,9 +514,7 @@ export default function PlatformAppsPage() {
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-6 text-sm text-[var(--atlas-muted)]">
-              Loading live apps...
-            </div>
+            <PlatformInlineLoader label="Loading live apps..." />
           ) : live.length === 0 ? (
             <div className="space-y-3">
               <EmptyState
@@ -560,9 +559,7 @@ export default function PlatformAppsPage() {
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)] px-4 py-6 text-sm text-[var(--atlas-muted)]">
-              Loading planned apps...
-            </div>
+            <PlatformInlineLoader label="Loading planned apps..." />
           ) : upcoming.length === 0 ? (
             <div className="space-y-3">
               <EmptyState

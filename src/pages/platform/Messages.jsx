@@ -17,6 +17,7 @@ import Card from "../../components/Card";
 import Badge from "../../components/Badge";
 import Button from "../../components/Button";
 import EmptyState from "../../components/EmptyState";
+import PlatformInlineLoader from "../../components/PlatformInlineLoader";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
 import { useToast } from "../../components/ToastProvider";
 import { PLATFORM_ENDPOINTS, cleanQueryParams } from "../../api/endpoints";
@@ -27,7 +28,7 @@ const STATUS_OPTIONS = ["ALL", "OPEN", "PENDING", "RESOLVED"];
 const LANE_OPTIONS = ["ALL", "STANDARD", "PRIORITY", "DEDICATED"];
 const ANNOUNCEMENT_AUDIENCE_OPTIONS = [
   { value: "ALL_ACTIVE", label: "All active workspaces" },
-  { value: "SPECIFIC", label: "One workspace" },
+  { value: "SPECIFIC", label: "Selected workspaces" },
 ];
 const QUICK_REPLY_TEMPLATES = [
   {
@@ -145,7 +146,7 @@ export default function PlatformMessagesPage() {
   const [announcementTitle, setAnnouncementTitle] = React.useState("");
   const [announcementMessage, setAnnouncementMessage] = React.useState("");
   const [announcementAudience, setAnnouncementAudience] = React.useState("ALL_ACTIVE");
-  const [announcementTenantId, setAnnouncementTenantId] = React.useState("");
+  const [announcementTenantIds, setAnnouncementTenantIds] = React.useState([]);
   const [announcementTenants, setAnnouncementTenants] = React.useState([]);
   const [announcementTenantsLoading, setAnnouncementTenantsLoading] = React.useState(false);
   const [sendingAnnouncement, setSendingAnnouncement] = React.useState(false);
@@ -268,7 +269,7 @@ export default function PlatformMessagesPage() {
       sendingAnnouncement ||
       !announcementTitle.trim() ||
       !announcementMessage.trim() ||
-      (announcementAudience === "SPECIFIC" && !announcementTenantId)
+      (announcementAudience === "SPECIFIC" && announcementTenantIds.length === 0)
     ) {
       return;
     }
@@ -285,14 +286,16 @@ export default function PlatformMessagesPage() {
         message: announcementMessage.trim(),
         audience: announcementAudience,
         tenantIds:
-          announcementAudience === "SPECIFIC" ? [Number(announcementTenantId)] : [],
+          announcementAudience === "SPECIFIC"
+            ? announcementTenantIds.map((tenantId) => Number(tenantId)).filter(Number.isFinite)
+            : [],
       });
       const payload = unwrapApiResponse(response.data, "Failed to send announcement");
       const audienceCount = Number(payload?.tenantCount || 0);
       setAnnouncementTitle("");
       setAnnouncementMessage("");
       setAnnouncementAudience("ALL_ACTIVE");
-      setAnnouncementTenantId("");
+      setAnnouncementTenantIds([]);
       notify(
         audienceCount > 0
           ? `Announcement sent to ${formatNumber(audienceCount)} workspace${audienceCount === 1 ? "" : "s"}.`
@@ -304,6 +307,16 @@ export default function PlatformMessagesPage() {
     } finally {
       setSendingAnnouncement(false);
     }
+  }
+
+  function toggleAnnouncementTenant(tenantId) {
+    const normalizedId = String(tenantId || "").trim();
+    if (!normalizedId) return;
+    setAnnouncementTenantIds((current) =>
+      current.includes(normalizedId)
+        ? current.filter((value) => value !== normalizedId)
+        : [...current, normalizedId],
+    );
   }
 
   async function handleSendReply(event) {
@@ -406,12 +419,14 @@ export default function PlatformMessagesPage() {
             </div>
             <div className="rounded-2xl border border-blue-300/50 bg-white/70 px-4 py-3 text-xs leading-6 text-blue-950 shadow-[0_14px_34px_rgba(37,99,235,0.12)] dark:border-blue-300/15 dark:bg-white/5 dark:text-blue-100">
               <div className="font-semibold uppercase tracking-[0.16em]">Delivery</div>
-              <div className="mt-1">
-                {announcementAudience === "SPECIFIC"
-                  ? "Selected workspace only"
-                  : "All active workspaces"}
+                <div className="mt-1">
+                  {announcementAudience === "SPECIFIC"
+                    ? selectedAnnouncementTenantCount > 0
+                      ? `${formatNumber(selectedAnnouncementTenantCount)} workspace${selectedAnnouncementTenantCount === 1 ? "" : "s"} selected`
+                      : "Choose one or more workspaces"
+                    : "All active workspaces"}
+                </div>
               </div>
-            </div>
           </div>
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-blue-300/65 bg-[#dbeafe] shadow-[0_16px_34px_rgba(37,99,235,0.16)] dark:border-blue-300/18 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.24),rgba(15,23,42,0.96))]">
@@ -472,23 +487,55 @@ export default function PlatformMessagesPage() {
                   </option>
                 ))}
               </select>
-              <select
-                value={announcementTenantId}
-                onChange={(event) => setAnnouncementTenantId(event.target.value)}
-                className="atlas-input"
-                disabled={announcementAudience !== "SPECIFIC" || announcementTenantsLoading}
-              >
-                <option value="">
-                  {announcementTenantsLoading
-                    ? "Loading workspaces..."
-                    : "Choose a workspace"}
-                </option>
-                {announcementTenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.name} · {tenant.plan || "FREE"}
-                  </option>
-                ))}
-              </select>
+              <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/55 p-3">
+                {announcementAudience !== "SPECIFIC" ? (
+                  <div className="text-sm text-[var(--atlas-muted)]">
+                    This banner will go to every active workspace.
+                  </div>
+                ) : announcementTenantsLoading ? (
+                  <PlatformInlineLoader label="Loading workspaces..." className="border-0 bg-transparent px-0 py-0" />
+                ) : announcementTenants.length === 0 ? (
+                  <div className="text-sm text-[var(--atlas-muted)]">
+                    No active workspaces are ready for targeted delivery.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+                      Choose one or more workspaces
+                    </div>
+                    <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                      {announcementTenants.map((tenant) => {
+                        const checked = announcementTenantIds.includes(String(tenant.id));
+                        return (
+                          <label
+                            key={tenant.id}
+                            className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-2.5 transition ${
+                              checked
+                                ? "border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/88"
+                                : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/50 hover:bg-[color:var(--atlas-surface)]/70"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleAnnouncementTenant(tenant.id)}
+                              className="mt-1 h-4 w-4 rounded border-[color:var(--atlas-border-strong)]"
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-[var(--atlas-text-strong)]">
+                                {tenant.name}
+                              </span>
+                              <span className="block text-xs text-[var(--atlas-muted)]">
+                                {tenant.plan || "FREE"}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -509,7 +556,7 @@ export default function PlatformMessagesPage() {
                 sendingAnnouncement ||
                 !announcementTitle.trim() ||
                 !announcementMessage.trim() ||
-                (announcementAudience === "SPECIFIC" && !announcementTenantId)
+                (announcementAudience === "SPECIFIC" && announcementTenantIds.length === 0)
               }
             >
               <SendHorizontal size={14} />
@@ -615,11 +662,7 @@ export default function PlatformMessagesPage() {
         <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
           <Card className="atlas-glass-card min-h-[520px] p-3">
             {loading ? (
-              <div className="space-y-3 p-2">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div key={`message-skeleton-${index}`} className="skeleton-glass h-24 rounded-2xl" />
-                ))}
-              </div>
+              <PlatformInlineLoader label="Loading platform messages..." className="h-full min-h-[420px]" />
             ) : tickets.length === 0 ? (
               <EmptyState
                 title="No tenant messages"
@@ -853,3 +896,4 @@ export default function PlatformMessagesPage() {
     </div>
   );
 }
+  const selectedAnnouncementTenantCount = announcementTenantIds.length;

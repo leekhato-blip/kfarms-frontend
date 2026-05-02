@@ -117,6 +117,7 @@ describe("billingService", () => {
     const checkout = await createCheckoutSession({
       tenantId: 22,
       planId: "PRO",
+      billingInterval: "ANNUAL",
       successUrl: "https://app.example.com/billing",
       customerEmail: "owner@farm.test",
     });
@@ -124,6 +125,7 @@ describe("billingService", () => {
     expect(checkout.mode).toBe("placeholder");
     expect(checkout.checkoutUrl).toContain("paymentStatus=success");
     expect(checkout.checkoutUrl).toContain(`reference=${encodeURIComponent(checkout.reference)}`);
+    expect(checkout.checkoutUrl).toContain("interval=ANNUAL");
 
     apiClient.post.mockRejectedValueOnce({
       response: {
@@ -138,17 +140,55 @@ describe("billingService", () => {
       tenantId: 22,
       reference: checkout.reference,
       planId: "PRO",
+      billingInterval: "ANNUAL",
     });
 
     expect(verified.mode).toBe("placeholder");
     expect(verified.billing.planId).toBe("PRO");
     expect(verified.billing.provider).toBe("TEST MODE");
+    expect(verified.billing.interval).toBe("ANNUAL");
+    expect(verified.billing.amount).toBe(90000);
     expect(verified.invoice.reference).toBe(checkout.reference);
 
     const overrides = JSON.parse(
       globalThis.window.localStorage.getItem("kf-placeholder-tenant-plan-overrides"),
     );
     expect(overrides["22"]).toBe("PRO");
+  });
+
+  it("sends the selected billing interval and omits blank billing emails", async () => {
+    apiClient.post.mockResolvedValueOnce({
+      data: {
+        data: {
+          checkoutUrl: "https://paystack.test/checkout",
+          reference: "CHK-123",
+          provider: "PAYSTACK",
+          amount: 90000,
+          currency: "NGN",
+          billingInterval: "ANNUAL",
+        },
+      },
+    });
+
+    const result = await createCheckoutSession({
+      tenantId: 12,
+      planId: "PRO",
+      billingInterval: "ANNUAL",
+      successUrl: "https://app.example.com/billing",
+      cancelUrl: "https://app.example.com/billing?paymentStatus=cancelled",
+      customerEmail: "   ",
+    });
+
+    expect(result.interval).toBe("ANNUAL");
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/billing/checkout/session",
+      expect.objectContaining({
+        planId: "PRO",
+        billingInterval: "ANNUAL",
+      }),
+      expect.any(Object),
+    );
+    expect(apiClient.post.mock.calls[0][1]).not.toHaveProperty("customerEmail");
   });
 
   it("generates a local text receipt for placeholder invoices", async () => {

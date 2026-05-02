@@ -732,6 +732,7 @@ export default function Topbar() {
 
   const unreadCount = notifications.length;
   const visibleNotifications = notifications.slice(0, NOTIFICATION_DROPDOWN_LIMIT);
+  const fishEnabled = hasFarmModule(activeTenant, FARM_MODULES.FISH_FARMING);
 
   async function handleMarkRead(id) {
     const res = await markNotificationRead(id, activeTenantId);
@@ -795,6 +796,14 @@ export default function Topbar() {
     }
     if (action === "inventory") {
       setInventoryModalOpen(true);
+      return;
+    }
+    if (action === "poultry-mortality") {
+      navigate(`${KFARMS_ROUTE_REGISTRY.poultry.appPath}?create=mortality`);
+      return;
+    }
+    if (action === "fish-mortality") {
+      navigate(`${KFARMS_ROUTE_REGISTRY.fishPonds.appPath}?create=mortality`);
       return;
     }
     if (action === "export") {
@@ -1467,6 +1476,44 @@ export default function Topbar() {
                         <div className="text-sm font-medium">Record eggs</div>
                         <div className="text-xs text-slate-500">
                           Save today&apos;s egg count
+                        </div>
+                      </div>
+                    </li>
+                  )}
+
+                  {poultryEnabled && (
+                    <li
+                      className={`${quickMenuItemClass} cursor-pointer`}
+                      onClick={() => {
+                        void quickAdd("poultry-mortality");
+                      }}
+                    >
+                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-rose-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-rose-500/20">
+                        <Feather className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Poultry loss</div>
+                        <div className="text-xs text-slate-500">
+                          Record flock mortality fast
+                        </div>
+                      </div>
+                    </li>
+                  )}
+
+                  {fishEnabled && (
+                    <li
+                      className={`${quickMenuItemClass} cursor-pointer`}
+                      onClick={() => {
+                        void quickAdd("fish-mortality");
+                      }}
+                    >
+                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-200/60 text-slate-700 transition group-hover:bg-rose-100 dark:bg-white/5 dark:text-slate-200 dark:group-hover:bg-rose-500/20">
+                        <Droplets className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Fish loss</div>
+                        <div className="text-xs text-slate-500">
+                          Record pond mortality fast
                         </div>
                       </div>
                     </li>

@@ -137,6 +137,9 @@ const AUDIT_ACTION_OPTIONS = [
   { value: "MEMBER_ACTIVATED", label: "Member activated" },
   { value: "MEMBER_DEACTIVATED", label: "Member deactivated" },
   { value: "MEMBER_REMOVED", label: "Member removed" },
+  { value: "RECORD_CREATED", label: "Record created" },
+  { value: "RECORD_UPDATED", label: "Record updated" },
+  { value: "RECORD_DELETED", label: "Record deleted" },
 ];
 
 const WORKSPACE_ROLE_FILTER_OPTIONS = [
@@ -194,6 +197,21 @@ const AUDIT_ACTION_META = Object.freeze({
   },
   MEMBER_REMOVED: {
     label: "Member removed",
+    classes:
+      "border-rose-300/40 bg-rose-500/10 text-rose-600 dark:text-rose-100",
+  },
+  RECORD_CREATED: {
+    label: "Record created",
+    classes:
+      "border-emerald-300/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-100",
+  },
+  RECORD_UPDATED: {
+    label: "Record updated",
+    classes:
+      "border-sky-300/40 bg-sky-500/10 text-sky-600 dark:text-sky-100",
+  },
+  RECORD_DELETED: {
+    label: "Record deleted",
     classes:
       "border-rose-300/40 bg-rose-500/10 text-rose-600 dark:text-rose-100",
   },
@@ -698,12 +716,15 @@ export default function UsersPage() {
 
   const tenantRole = normalizeWorkspaceRole(activeTenant?.myRole);
   const isEnterprisePlan = normalizePlanId(activeTenant?.plan, "FREE") === "ENTERPRISE";
+  const isProOrHigherPlan = ["PRO", "ENTERPRISE"].includes(
+    normalizePlanId(activeTenant?.plan, "FREE"),
+  );
   const canViewUsers = hasAnyWorkspacePermission(activeTenant, [
     WORKSPACE_PERMISSIONS.USERS_VIEW,
     WORKSPACE_PERMISSIONS.USERS_MANAGE,
   ]);
   const canViewAudit =
-    isEnterprisePlan &&
+    isProOrHigherPlan &&
     hasAnyWorkspacePermission(activeTenant, [WORKSPACE_PERMISSIONS.AUDIT_VIEW]);
   const canManageTeam = hasAnyWorkspacePermission(activeTenant, [
     WORKSPACE_PERMISSIONS.USERS_MANAGE,
@@ -1262,7 +1283,7 @@ export default function UsersPage() {
     ? "Invite teammates, adjust access, and keep team permissions clean from one place."
     : canViewUsers
       ? "Review members, invitations, and role coverage without changing access."
-      : "Review the recorded audit trail for access activity in this workspace.";
+      : "Review the recorded activity trail for member access and workspace records.";
   const workspaceModeLabel = canManageTeam
     ? "Admin controls"
     : canViewUsers
@@ -1286,17 +1307,17 @@ export default function UsersPage() {
       : activeTab === "invitations"
         ? `${formatNumber(filteredInvitations.length)} invites`
         : `${formatNumber(auditTotalItems)} events`;
-  const activeSectionTitle = activeTab === "audit" ? "Access history" : "Team roster";
+  const activeSectionTitle = activeTab === "audit" ? "Activity log" : "Team roster";
   const activeSectionDescription =
     activeTab === "audit"
-      ? "Review invitation changes, role updates, and access events recorded for this workspace."
+      ? "Review invitation changes, role updates, and record activity captured for this workspace."
       : "Review active teammates and pending invitations for this workspace.";
   const currentSearchPlaceholder =
     activeTab === "members"
       ? "Search members by name, email, role, or status"
       : activeTab === "invitations"
         ? "Search invitations by email, role, or inviter"
-        : "Search audit by actor, target, description, or change";
+        : "Search activity by actor, target, description, or change";
   const activeFilterBadges = [
     hasSearch ? `Search: ${search}` : "",
     activeTab === "members" && memberRoleFilter
@@ -1757,7 +1778,7 @@ export default function UsersPage() {
             "Start with the access cards so you know your role, active teammates, and pending invites at a glance.",
             "Use Members for people who can already sign in and Invitations for people who are still joining.",
             ...(canViewAudit
-              ? ["Use Audit log when you need to explain role changes, invite activity, or access updates."]
+              ? ["Use Audit log when you need to explain role changes, invite activity, or record updates."]
               : ["Keep roles small and clear so workers only see what they need."]),
           ],
           tip: canViewAudit

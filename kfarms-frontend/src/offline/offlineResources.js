@@ -396,6 +396,63 @@ function patchEggSummary(responseData, mutation) {
   return responseData;
 }
 
+function buildFishPondMortalityRecord(payload, requestId, now, baseRecord = null) {
+  const count = toNumber(payload?.count);
+  const mortalityDate = payload?.mortalityDate ?? todayDateOnly();
+  const currentStock = Math.max(toNumber(baseRecord?.currentStock) - count, 0);
+  return createBaseRecord(
+    {
+      ...(baseRecord || {}),
+      id: baseRecord?.id || `offline-fishpond-mortality-${requestId}`,
+      currentStock,
+      mortalityCount: toNumber(baseRecord?.mortalityCount) + count,
+      mortalityThisWeek: toNumber(baseRecord?.mortalityThisWeek) + count,
+      mortalityThisMonth: toNumber(baseRecord?.mortalityThisMonth) + count,
+      lastMortalityDate: mortalityDate,
+      status:
+        currentStock === 0 && String(baseRecord?.status || "").toUpperCase() === "ACTIVE"
+          ? "EMPTY"
+          : baseRecord?.status ?? "ACTIVE",
+      note: payload?.note ?? baseRecord?.note ?? null,
+      updatedAt: now,
+    },
+    requestId,
+    now,
+  );
+}
+
+function patchFishPondSummary(responseData, mutation) {
+  const summary = responseData?.data;
+  const record = mutation?.optimisticData;
+  if (!summary || !record) return responseData;
+
+  if (mutation.action === "create") {
+    summary.totalFishPonds = toNumber(summary.totalFishPonds) + 1;
+    summary.totalFishes = toNumber(summary.totalFishes) + toNumber(record.currentStock);
+    summary.totalQuantity = toNumber(summary.totalQuantity) + toNumber(record.capacity);
+    summary.countByStatus = {
+      ...(summary.countByStatus || {}),
+      [record.status || "ACTIVE"]: toNumber(summary?.countByStatus?.[record.status || "ACTIVE"]) + 1,
+    };
+    summary.countByPondType = {
+      ...(summary.countByPondType || {}),
+      [record.pondType || "GROW_OUT"]: toNumber(summary?.countByPondType?.[record.pondType || "GROW_OUT"]) + 1,
+    };
+    summary.pondCards = mergeIntoList(summary.pondCards || [], record);
+    return responseData;
+  }
+
+  if (mutation.action !== "mortality") return responseData;
+
+  const count = toNumber(mutation.payload?.count);
+  summary.totalFishes = Math.max(toNumber(summary.totalFishes) - count, 0);
+  summary.totalMortality = toNumber(summary.totalMortality) + count;
+  summary.weeklyMortality = toNumber(summary.weeklyMortality) + count;
+  summary.monthlyMortality = toNumber(summary.monthlyMortality) + count;
+  summary.pondCards = mergeIntoList(summary.pondCards || [], record);
+  return responseData;
+}
+
 function buildFeedRecord(payload, requestId, now, baseRecord = null) {
   const quantity = toNumber(payload?.quantity, toNumber(baseRecord?.quantity));
   const unitCost = toNumber(payload?.unitCost, toNumber(baseRecord?.unitCost));
@@ -516,6 +573,76 @@ function buildLivestockRecord(payload, requestId, now, baseRecord = null) {
     requestId,
     now,
   );
+}
+
+function buildLivestockMortalityRecord(payload, requestId, now, baseRecord = null) {
+  const count = toNumber(payload?.count);
+  const mortalityDate = payload?.mortalityDate ?? todayDateOnly();
+  return createBaseRecord(
+    {
+      ...(baseRecord || {}),
+      id: baseRecord?.id || `offline-livestock-mortality-${requestId}`,
+      currentStock: Math.max(toNumber(baseRecord?.currentStock) - count, 0),
+      mortality: toNumber(baseRecord?.mortality) + count,
+      mortalityThisWeek: toNumber(baseRecord?.mortalityThisWeek) + count,
+      mortalityThisMonth: toNumber(baseRecord?.mortalityThisMonth) + count,
+      lastMortalityDate: mortalityDate,
+      note: payload?.note ?? baseRecord?.note ?? null,
+      updatedAt: now,
+    },
+    requestId,
+    now,
+  );
+}
+
+function patchLivestockSummary(responseData, mutation, path) {
+  const summary = responseData?.data;
+  const record = mutation?.optimisticData;
+  if (!summary || !record) return responseData;
+
+  if (path === "/api/livestock/summary") {
+    if (mutation.action === "create") {
+      summary.totalLivestockBatches = toNumber(summary.totalLivestockBatches) + 1;
+      summary.totalQuantityAlive = toNumber(summary.totalQuantityAlive) + toNumber(record.currentStock);
+      summary.totalMortality = toNumber(summary.totalMortality) + toNumber(record.mortality);
+      summary.countByType = {
+        ...(summary.countByType || {}),
+        [record.type || "OTHER"]:
+          toNumber(summary?.countByType?.[record.type || "OTHER"]) + toNumber(record.currentStock),
+      };
+      return responseData;
+    }
+
+    if (mutation.action === "mortality") {
+      const count = toNumber(mutation.payload?.count);
+      summary.totalQuantityAlive = Math.max(toNumber(summary.totalQuantityAlive) - count, 0);
+      summary.totalMortality = toNumber(summary.totalMortality) + count;
+      summary.weeklyMortality = toNumber(summary.weeklyMortality) + count;
+      summary.monthlyMortality = toNumber(summary.monthlyMortality) + count;
+    }
+
+    return responseData;
+  }
+
+  if (path === "/api/livestock/overview" && mutation.action === "mortality") {
+    const count = toNumber(mutation.payload?.count);
+    summary.totals = {
+      ...(summary.totals || {}),
+      totalAlive: Math.max(toNumber(summary?.totals?.totalAlive) - count, 0),
+      totalMortality: toNumber(summary?.totals?.totalMortality) + count,
+      weeklyMortality: toNumber(summary?.totals?.weeklyMortality) + count,
+      monthlyMortality: toNumber(summary?.totals?.monthlyMortality) + count,
+      mortalityRate: toNumber(record.mortalityRate, toNumber(summary?.totals?.mortalityRate)),
+    };
+    summary.batchCards = mergeIntoList(summary.batchCards || [], record);
+    summary.mortalityByBatch = mergeIntoList(summary.mortalityByBatch || [], record);
+    summary.meta = {
+      ...(summary.meta || {}),
+      lastUpdated: record.updatedAt || nowIso(),
+    };
+  }
+
+  return responseData;
 }
 
 function buildInventoryAdjustmentRecord(payload, requestId, now, baseRecord = null) {
@@ -658,11 +785,15 @@ const RESOURCE_CONFIGS = {
     summaryPath: "/api/fishpond/summary",
     detailPattern: /^\/api\/fishpond\/([^/]+)$/,
     buildRecord(action, payload, requestId, now, baseRecord) {
+      if (action === "mortality") {
+        return buildFishPondMortalityRecord(payload, requestId, now, baseRecord);
+      }
       if (action === "adjust") {
         return buildFishPondStockAdjustment(payload, requestId, now, baseRecord);
       }
       return buildFishPondRecord(payload, requestId, now, baseRecord);
     },
+    patchSummary: patchFishPondSummary,
   },
   "fish-hatch": {
     listPath: "/api/fish-hatch",
@@ -675,10 +806,15 @@ const RESOURCE_CONFIGS = {
   livestock: {
     listPath: "/api/livestock",
     summaryPath: "/api/livestock/summary",
+    summaryPaths: ["/api/livestock/overview"],
     detailPattern: /^\/api\/livestock\/([^/]+)$/,
     buildRecord(action, payload, requestId, now, baseRecord) {
+      if (action === "mortality") {
+        return buildLivestockMortalityRecord(payload, requestId, now, baseRecord);
+      }
       return buildLivestockRecord(payload, requestId, now, baseRecord);
     },
+    patchSummary: patchLivestockSummary,
   },
   tasks: {
     listPaths: ["/api/tasks", "/api/tasks/upcoming"],
@@ -787,7 +923,7 @@ export function applyOfflineMutationToResponse({
   if (!config) return responseData;
 
   if (isResourceSummaryPath(config, path) && typeof config.patchSummary === "function") {
-    return config.patchSummary(responseData, mutation);
+    return config.patchSummary(responseData, mutation, path);
   }
 
   if (isResourceListPath(config, path) && typeof config.patchList === "function") {

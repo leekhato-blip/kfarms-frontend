@@ -1,6 +1,8 @@
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
+  Download,
+  Droplets,
   Egg,
   LayoutGrid,
   Package,
@@ -9,6 +11,7 @@ import {
   Truck,
   Wheat,
   X,
+  Feather,
 } from "lucide-react";
 import { KFARMS_ROUTE_REGISTRY } from "../apps/kfarms/paths";
 import { WORKSPACE_QUICK_ACTION_EVENT } from "../constants/workspaceQuickActions";
@@ -66,14 +69,35 @@ const BASE_QUICK_ACTIONS = Object.freeze([
     iconTone:
       "bg-amber-500/16 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
   },
+  {
+    id: "export",
+    label: "Export",
+    action: "export",
+    icon: Download,
+    iconTone:
+      "bg-blue-500/16 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200",
+  },
 ]);
 
 export default function WorkspaceBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { activeTenant } = useTenant();
   const [expanded, setExpanded] = React.useState(false);
   const rootRef = React.useRef(null);
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
+  const fishEnabled = hasFarmModule(activeTenant, FARM_MODULES.FISH_FARMING);
+
+  const isNavItemActive = React.useCallback(
+    (to) => {
+      const currentPath = location.pathname;
+      if (to === KFARMS_ROUTE_REGISTRY.dashboard.appPath) {
+        return currentPath === to;
+      }
+      return currentPath === to || currentPath.startsWith(`${to}/`);
+    },
+    [location.pathname]
+  );
 
   const quickActions = React.useMemo(() => {
     if (!poultryEnabled) {
@@ -101,6 +125,26 @@ export default function WorkspaceBottomNav() {
           "bg-amber-500/16 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
       },
       {
+        id: "poultry-mortality",
+        label: "Bird loss",
+        action: "poultry-mortality",
+        icon: Feather,
+        iconTone:
+          "bg-rose-500/16 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+      },
+      ...(fishEnabled
+        ? [
+            {
+              id: "fish-mortality",
+              label: "Fish loss",
+              action: "fish-mortality",
+              icon: Droplets,
+              iconTone:
+                "bg-rose-500/16 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+            },
+          ]
+        : []),
+      {
         id: "inventory",
         label: "Stock",
         action: "inventory",
@@ -109,7 +153,7 @@ export default function WorkspaceBottomNav() {
           "bg-indigo-500/16 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200",
       },
     ];
-  }, [poultryEnabled]);
+  }, [fishEnabled, poultryEnabled]);
 
   React.useEffect(() => {
     setExpanded(false);
@@ -158,7 +202,7 @@ export default function WorkspaceBottomNav() {
           }`}
         >
           <div className="rounded-[1.7rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,245,251,0.94))] px-2 py-2.5 shadow-[0_20px_40px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,17,32,0.98),rgba(11,25,45,0.96))]">
-            <div className="flex items-stretch gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {quickActions.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -166,7 +210,7 @@ export default function WorkspaceBottomNav() {
                     key={item.id}
                     type="button"
                     onClick={() => handleQuickAction(item.action)}
-                    className="group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-[1.05rem] border border-slate-200/80 bg-white/90 px-1.5 py-2.5 text-center text-[0.62rem] font-semibold leading-tight text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/28 hover:text-accent-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-accent-primary/40"
+                    className="group flex min-w-0 flex-col items-center gap-1.5 rounded-[1.05rem] border border-slate-200/80 bg-white/90 px-1.5 py-2.5 text-center text-[0.62rem] font-semibold leading-tight text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/28 hover:text-accent-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-accent-primary/40"
                   >
                     <span
                       className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 ${item.iconTone}`}
@@ -192,34 +236,29 @@ export default function WorkspaceBottomNav() {
           {NAV_ITEMS.slice(0, 2).map((item) => {
             const Icon = item.icon;
             return (
-              <NavLink
+              <button
                 key={item.id}
-                to={item.to}
-                className={({ isActive }) =>
-                  `relative z-10 group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-[0.95rem] px-1 py-1.5 text-[0.58rem] font-semibold leading-[1.05rem] tracking-[0.01em] transition-all duration-200 ${
-                    isActive
-                      ? "bg-accent-primary/10 text-accent-primary dark:bg-accent-primary/16 dark:text-white"
-                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-                  }`
-                }
+                type="button"
+                onClick={() => navigate(item.to)}
+                className={`relative z-10 group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-[0.95rem] px-1 py-1.5 text-[0.58rem] font-semibold leading-[1.05rem] tracking-[0.01em] transition-all duration-200 ${
+                  isNavItemActive(item.to)
+                    ? "bg-accent-primary/10 text-accent-primary dark:bg-accent-primary/16 dark:text-white"
+                    : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                }`}
               >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={`inline-flex h-[1.95rem] w-[1.95rem] items-center justify-center rounded-[0.9rem] transition-all duration-200 ${
-                        isActive
-                          ? "bg-white text-accent-primary shadow-[0_8px_18px_rgba(37,99,235,0.16)] dark:bg-white/10 dark:text-white"
-                          : "bg-slate-200/65 text-slate-600 group-hover:bg-slate-200 dark:bg-white/[0.05] dark:text-slate-200 dark:group-hover:bg-white/[0.08]"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="block max-w-full whitespace-nowrap text-center">
-                      {item.label}
-                    </span>
-                  </>
-                )}
-              </NavLink>
+                <span
+                  className={`inline-flex h-[1.95rem] w-[1.95rem] items-center justify-center rounded-[0.9rem] transition-all duration-200 ${
+                    isNavItemActive(item.to)
+                      ? "bg-white text-accent-primary shadow-[0_8px_18px_rgba(37,99,235,0.16)] dark:bg-white/10 dark:text-white"
+                      : "bg-slate-200/65 text-slate-600 group-hover:bg-slate-200 dark:bg-white/[0.05] dark:text-slate-200 dark:group-hover:bg-white/[0.08]"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="block max-w-full whitespace-nowrap text-center">
+                  {item.label}
+                </span>
+              </button>
             );
           })}
 
@@ -228,34 +267,29 @@ export default function WorkspaceBottomNav() {
           {NAV_ITEMS.slice(2).map((item) => {
             const Icon = item.icon;
             return (
-              <NavLink
+              <button
                 key={item.id}
-                to={item.to}
-                className={({ isActive }) =>
-                  `relative z-10 group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-[0.95rem] px-1 py-1.5 text-[0.58rem] font-semibold leading-[1.05rem] tracking-[0.01em] transition-all duration-200 ${
-                    isActive
-                      ? "bg-accent-primary/10 text-accent-primary dark:bg-accent-primary/16 dark:text-white"
-                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-                  }`
-                }
+                type="button"
+                onClick={() => navigate(item.to)}
+                className={`relative z-10 group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-[0.95rem] px-1 py-1.5 text-[0.58rem] font-semibold leading-[1.05rem] tracking-[0.01em] transition-all duration-200 ${
+                  isNavItemActive(item.to)
+                    ? "bg-accent-primary/10 text-accent-primary dark:bg-accent-primary/16 dark:text-white"
+                    : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                }`}
               >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={`inline-flex h-[1.95rem] w-[1.95rem] items-center justify-center rounded-[0.9rem] transition-all duration-200 ${
-                        isActive
-                          ? "bg-white text-accent-primary shadow-[0_8px_18px_rgba(37,99,235,0.16)] dark:bg-white/10 dark:text-white"
-                          : "bg-slate-200/65 text-slate-600 group-hover:bg-slate-200 dark:bg-white/[0.05] dark:text-slate-200 dark:group-hover:bg-white/[0.08]"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="block max-w-full whitespace-nowrap text-center">
-                      {item.label}
-                    </span>
-                  </>
-                )}
-              </NavLink>
+                <span
+                  className={`inline-flex h-[1.95rem] w-[1.95rem] items-center justify-center rounded-[0.9rem] transition-all duration-200 ${
+                    isNavItemActive(item.to)
+                      ? "bg-white text-accent-primary shadow-[0_8px_18px_rgba(37,99,235,0.16)] dark:bg-white/10 dark:text-white"
+                      : "bg-slate-200/65 text-slate-600 group-hover:bg-slate-200 dark:bg-white/[0.05] dark:text-slate-200 dark:group-hover:bg-white/[0.08]"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="block max-w-full whitespace-nowrap text-center">
+                  {item.label}
+                </span>
+              </button>
             );
           })}
 

@@ -14,18 +14,22 @@ import TrashModal from "../components/TrashModal";
 import LivestockFormModal from "../components/LivestockFormModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
 import ExportModal from "../components/ExportModal";
+import MortalityQuickModal from "../components/MortalityQuickModal";
 import {
   getLivestock,
+  getLivestockById,
   deleteLivestock,
   getLivestockSummary,
   getLivestockOverview,
   getDeletedLivestock,
   restoreLivestock,
   permanentDeleteLivestock,
+  recordLivestockMortality,
 } from "../services/livestockService";
 import { exportReport } from "../services/reportService";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import useQuickCreateModal from "../hooks/useQuickCreateModal";
 import {
   Plus,
   Trash2,
@@ -39,6 +43,7 @@ import {
   ShieldCheck,
   Download,
   RefreshCw,
+  Skull,
 } from "lucide-react";
 
 const livestockTypes = [
@@ -106,6 +111,9 @@ export default function LivestockPage() {
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [mortalityModalOpen, setMortalityModalOpen] = useState(false);
+  const [mortalitySaving, setMortalitySaving] = useState(false);
+  const [mortalityTargetId, setMortalityTargetId] = useState("");
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [showAllMobileGroups, setShowAllMobileGroups] = useState(false);
@@ -137,6 +145,18 @@ export default function LivestockPage() {
               "—",
           },
           { label: "Mortality", value: formatNumber(detailItem.mortality) },
+          {
+            label: "This Week",
+            value: formatNumber(detailItem.mortalityThisWeek),
+          },
+          {
+            label: "This Month",
+            value: formatNumber(detailItem.mortalityThisMonth),
+          },
+          {
+            label: "Last Mortality",
+            value: formatDate(detailItem.lastMortalityDate),
+          },
           {
             label: "Source",
             value: detailItem.sourceType?.replace("_", " ") || "—",
@@ -193,6 +213,17 @@ export default function LivestockPage() {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    }).format(date);
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
     }).format(date);
   }
 
@@ -307,9 +338,43 @@ export default function LivestockPage() {
     setModalOpen(true);
   }
 
-  function openEdit(item) {
-    setEditing(item);
-    setModalOpen(true);
+  function openMortalityModal(item = null) {
+    setMortalityTargetId(item?.id ? String(item.id) : "");
+    setMortalityModalOpen(true);
+  }
+
+  useQuickCreateModal(
+    () => {
+      openMortalityModal();
+    },
+    { match: "mortality" },
+  );
+
+  async function openEdit(item) {
+    const hasFullEditData =
+      item &&
+      item.currentStock != null &&
+      item.arrivalDate &&
+      item.sourceType &&
+      (item.type !== "LAYER" || item.keepingMethod);
+
+    if (hasFullEditData) {
+      setEditing(item);
+      setModalOpen(true);
+      return;
+    }
+
+    try {
+      const fullRecord = await getLivestockById(item.id);
+      setEditing(fullRecord || item);
+      setModalOpen(true);
+    } catch (error) {
+      console.error("Failed to load flock details for editing", error);
+      setToast({
+        message: "Could not load the current stock for editing just now.",
+        type: "error",
+      });
+    }
   }
 
   async function handleExport({ type, category, start, end }) {
@@ -322,7 +387,7 @@ export default function LivestockPage() {
         start: start || undefined,
         end: end || undefined,
       });
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = filename || `${category || "livestock"}.${type || "csv"}`;
@@ -377,6 +442,56 @@ export default function LivestockPage() {
     } finally {
       setConfirmOpen(false);
       setDeleteTarget(null);
+    }
+  }
+
+  async function submitMortality({ entityId, count, mortalityDate, note }) {
+    if (mortalitySaving) return;
+    setMortalitySaving(true);
+    try {
+      const baseRecord =
+        items.find((item) => String(item.id) === String(entityId)) ||
+        (detailItem?.id && String(detailItem.id) === String(entityId) ? detailItem : null);
+      const saved = await recordLivestockMortality(
+        Number(entityId),
+        {
+          count,
+          mortalityDate,
+          note: note || null,
+        },
+        {
+          baseRecord,
+        },
+      );
+      const pendingOffline = isOfflinePendingRecord(saved);
+
+      setItems((current) =>
+        current.map((item) => (String(item.id) === String(saved.id) ? saved : item)),
+      );
+      if (detailItem?.id && String(detailItem.id) === String(entityId)) {
+        setDetailItem(saved);
+      }
+
+      if (!pendingOffline) {
+        await Promise.all([fetchList(meta.page ?? 0), fetchOverview()]);
+        if (detailItem?.id && String(detailItem.id) === String(entityId)) {
+          const updated = await getLivestockById(Number(entityId));
+          setDetailItem(updated);
+        }
+      }
+      setMortalityModalOpen(false);
+      setMortalityTargetId("");
+      setToast({
+        message: pendingOffline
+          ? "Mortality saved offline. It will sync automatically."
+          : "Mortality recorded",
+        type: pendingOffline ? "info" : "success",
+      });
+    } catch (error) {
+      console.error("Failed to record poultry mortality", error);
+      throw error;
+    } finally {
+      setMortalitySaving(false);
     }
   }
 
@@ -461,6 +576,32 @@ export default function LivestockPage() {
       }))
       .filter((entry) => entry.count > 0);
   }, [typeCounts]);
+
+  const mortalityBreakdownRows = useMemo(() => {
+    return filteredGroupCards
+      .map((batch) => ({
+        id: batch.id,
+        batchName: batch.batchName,
+        type: batch.type,
+        alive: Number(batch.alive || batch.currentStock || 0),
+        total: Number(batch.mortalityTotal || batch.mortality || 0),
+        week: Number(batch.mortalityThisWeek || 0),
+        month: Number(batch.mortalityThisMonth || 0),
+        lastDate: batch.lastMortalityDate || "",
+      }))
+      .sort((left, right) => {
+        if (right.month !== left.month) return right.month - left.month;
+        if (right.week !== left.week) return right.week - left.week;
+        return String(left.batchName || "").localeCompare(String(right.batchName || ""));
+      });
+  }, [filteredGroupCards]);
+
+  const weeklyMortalityTotal =
+    overviewTotals.weeklyMortality ??
+    mortalityBreakdownRows.reduce((sum, row) => sum + row.week, 0);
+  const monthlyMortalityTotal =
+    overviewTotals.monthlyMortality ??
+    mortalityBreakdownRows.reduce((sum, row) => sum + row.month, 0);
 
   const typeDonutData = useMemo(() => {
     const palette = {
@@ -628,6 +769,13 @@ export default function LivestockPage() {
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add poultry flock</span>
+                </button>
+                <button
+                  onClick={() => openMortalityModal()}
+                  className="inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-300/60 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-500/15 md:h-auto md:min-h-0 md:w-auto dark:border-rose-400/30 dark:text-rose-200 dark:hover:bg-rose-500/20"
+                >
+                  <Skull className="h-4 w-4" />
+                  <span>Record mortality</span>
                 </button>
                 <button
                   onClick={() => setExportOpen(true)}
@@ -963,8 +1111,33 @@ export default function LivestockPage() {
                                     {formatDateTime(batch.lastUpdated)}
                                   </div>
                                 </div>
+                                <div>
+                                  <div className="text-lightMuted dark:text-darkMuted">This week</div>
+                                  <div className="text-sm font-semibold">
+                                    {formatNumber(batch.mortalityThisWeek)}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-lightMuted dark:text-darkMuted">This month</div>
+                                  <div className="text-sm font-semibold">
+                                    {formatNumber(batch.mortalityThisMonth)}
+                                  </div>
+                                </div>
                               </div>
                               <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openMortalityModal(batch);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-rose-500 dark:text-rose-300"
+                                  title="Record mortality"
+                                >
+                                  <Skull className="w-4 h-4" />
+                                  <span className="text-xs font-semibold">
+                                    Mortality
+                                  </span>
+                                </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1063,8 +1236,30 @@ export default function LivestockPage() {
                                     {formatDateTime(batch.lastUpdated)}
                                   </div>
                                 </div>
+                                <div>
+                                  <div className="text-lightMuted dark:text-darkMuted">This week</div>
+                                  <div className="text-sm font-semibold">
+                                    {formatNumber(batch.mortalityThisWeek)}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-lightMuted dark:text-darkMuted">This month</div>
+                                  <div className="text-sm font-semibold">
+                                    {formatNumber(batch.mortalityThisMonth)}
+                                  </div>
+                                </div>
                               </div>
                               <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openMortalityModal(batch);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-rose-500 dark:text-rose-300"
+                                  title="Record mortality"
+                                >
+                                  <Skull className="w-4 h-4" />
+                                </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1103,6 +1298,138 @@ export default function LivestockPage() {
                   >
                     {showAllActiveGroups ? "View Less" : "View All"}
                   </button>
+                )}
+              </div>
+
+              <div className="rounded-xl bg-white/10 p-4 shadow-neo dark:bg-darkCard/70 dark:shadow-dark">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-2 text-rose-700 dark:text-rose-200">
+                      <Skull className="h-4 w-4" />
+                      <h2 className="font-header font-semibold">Mortality breakdown</h2>
+                    </div>
+                    <p className="mt-1 text-xs text-lightMuted dark:text-darkMuted">
+                      Compare this week and this month for each visible flock.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:min-w-[220px]">
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm dark:bg-darkCard/50">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-lightMuted dark:text-darkMuted">
+                        This week
+                      </div>
+                      <div className="mt-1 text-lg font-semibold text-lightText dark:text-darkText">
+                        {formatNumber(weeklyMortalityTotal)}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm dark:bg-darkCard/50">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-lightMuted dark:text-darkMuted">
+                        This month
+                      </div>
+                      <div className="mt-1 text-lg font-semibold text-lightText dark:text-darkText">
+                        {formatNumber(monthlyMortalityTotal)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {mortalityBreakdownRows.length === 0 ? (
+                  <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-white/5 px-4 py-5 text-sm text-lightMuted dark:bg-darkCard/50 dark:text-darkMuted">
+                    Add a flock first, then use record mortality to start the weekly and monthly view.
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 space-y-3 md:hidden">
+                      {mortalityBreakdownRows.slice(0, 6).map((row) => (
+                        <div
+                          key={`mortality-mobile-${row.id}`}
+                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 dark:bg-darkCard/50"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm font-semibold text-lightText dark:text-darkText">
+                                {row.batchName}
+                              </div>
+                              <div className="text-xs text-lightMuted dark:text-darkMuted">
+                                {formatType(row.type)} · Alive {formatNumber(row.alive)}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => openMortalityModal(row)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-400/20 bg-rose-500/10 px-2.5 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-200"
+                            >
+                              <Skull className="h-3.5 w-3.5" />
+                              Record
+                            </button>
+                          </div>
+                          <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-lightText dark:text-darkText">
+                            <div>
+                              <div className="text-lightMuted dark:text-darkMuted">Week</div>
+                              <div className="mt-1 font-semibold">{formatNumber(row.week)}</div>
+                            </div>
+                            <div>
+                              <div className="text-lightMuted dark:text-darkMuted">Month</div>
+                              <div className="mt-1 font-semibold">{formatNumber(row.month)}</div>
+                            </div>
+                            <div>
+                              <div className="text-lightMuted dark:text-darkMuted">Last</div>
+                              <div className="mt-1 font-semibold">{formatDate(row.lastDate)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 hidden overflow-x-auto md:block">
+                      <table className="w-full min-w-[720px] text-sm border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/50 [&_tbody_tr]:shadow-soft">
+                        <thead>
+                          <tr className="text-[11px] font-header uppercase tracking-[0.18em] text-lightMuted dark:text-darkMuted">
+                            <th className="text-left">Flock</th>
+                            <th className="text-left">Type</th>
+                            <th className="text-right">Total Losses</th>
+                            <th className="text-right">This Week</th>
+                            <th className="text-right">This Month</th>
+                            <th className="text-left">Last Recorded</th>
+                            <th className="text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mortalityBreakdownRows.map((row) => (
+                            <tr key={`mortality-row-${row.id}`}>
+                              <td className="text-left font-semibold text-lightText dark:text-darkText">
+                                {row.batchName}
+                              </td>
+                              <td className="text-left text-lightText dark:text-darkText">
+                                {formatType(row.type)}
+                              </td>
+                              <td className="text-right font-semibold text-lightText dark:text-darkText">
+                                {formatNumber(row.total)}
+                              </td>
+                              <td className="text-right font-semibold text-lightText dark:text-darkText">
+                                {formatNumber(row.week)}
+                              </td>
+                              <td className="text-right font-semibold text-lightText dark:text-darkText">
+                                {formatNumber(row.month)}
+                              </td>
+                              <td className="text-left text-lightText dark:text-darkText">
+                                {formatDate(row.lastDate)}
+                              </td>
+                              <td className="text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => openMortalityModal(row)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-500/15 dark:text-rose-200"
+                                >
+                                  <Skull className="h-3.5 w-3.5" />
+                                  Record
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -1342,6 +1669,16 @@ export default function LivestockPage() {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          openMortalityModal(item);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/5 text-rose-500 dark:text-rose-300"
+                                        title="Record mortality"
+                                      >
+                                        <Skull className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           openEdit(item);
                                         }}
                                         className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/5 text-accent-primary"
@@ -1453,6 +1790,16 @@ export default function LivestockPage() {
                                 </td>
                                 <td className="text-center">
                                   <div className="inline-flex items-center gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openMortalityModal(item);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-rose-500 dark:text-rose-300"
+                                      title="Record mortality"
+                                    >
+                                      <Skull className="w-5 h-5" />
+                                    </button>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1658,8 +2005,18 @@ export default function LivestockPage() {
                   >
                     Update count
                   </button>
+                  <button
+                    onClick={() => {
+                      const target = items.find((item) => String(item.id) === String(selectedGroupId)) || items[0];
+                      if (target) openMortalityModal(target);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-rose-400/20 bg-rose-500/10 text-rose-700 hover:bg-rose-500/15 dark:text-rose-200"
+                  >
+                    <Skull className="h-4 w-4" />
+                    Record mortality
+                  </button>
                   <p className="text-xs text-lightMuted dark:text-darkMuted">
-                    Opens the editor to update count and losses.
+                    Use update count for stock changes and record mortality for losses.
                   </p>
                 </div>
               </div>
@@ -1793,6 +2150,27 @@ export default function LivestockPage() {
                 fetchOverview();
               }
             }}
+          />
+
+          <MortalityQuickModal
+            open={mortalityModalOpen}
+            title="Record poultry mortality"
+            subtitle="Choose a flock, enter the loss count, and keep the weekly and monthly breakdown current."
+            itemLabel="Flock"
+            items={items.map((item) => ({
+              id: item.id,
+              label: item.batchName,
+              meta: `${formatType(item.type)} · Alive ${formatNumber(item.currentStock)}`,
+            }))}
+            selectedId={mortalityTargetId}
+            submitting={mortalitySaving}
+            submitLabel="Save mortality"
+            onClose={() => {
+              if (mortalitySaving) return;
+              setMortalityModalOpen(false);
+              setMortalityTargetId("");
+            }}
+            onSubmit={submitMortality}
           />
 
           <ExportModal

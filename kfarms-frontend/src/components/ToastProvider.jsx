@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
+import { createPortal } from "react-dom";
 import { CircleAlert, CircleCheck, Info, X } from "lucide-react";
 
 const ToastContext = React.createContext(null);
@@ -44,29 +45,34 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-[95] flex w-full max-w-sm flex-col gap-2">
-        {toasts.map((toast) => {
-          const Icon = iconFor(toast.type);
-          return (
-            <div
-              key={toast.id}
-              className={`pointer-events-auto rounded-lg border px-3 py-2 shadow-2xl backdrop-blur ${styleFor(toast.type)}`}
-            >
-              <div className="flex items-start gap-2">
-                <Icon size={16} className="mt-0.5" />
-                <p className="flex-1 text-sm">{toast.message}</p>
-                <button
-                  type="button"
-                  onClick={() => dismiss(toast.id)}
-                  className="rounded p-0.5 hover:bg-black/10 dark:hover:bg-white/10"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {typeof document !== "undefined"
+        ? createPortal(
+            <div className="pointer-events-none fixed left-1/2 top-4 z-[180] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-3 sm:left-auto sm:right-4 sm:translate-x-0 sm:px-0">
+              {toasts.map((toast) => {
+                const Icon = iconFor(toast.type);
+                return (
+                  <div
+                    key={toast.id}
+                    className={`pointer-events-auto rounded-lg border px-3 py-2 shadow-2xl backdrop-blur ${styleFor(toast.type)}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <Icon size={16} className="mt-0.5" />
+                      <p className="flex-1 text-sm">{toast.message}</p>
+                      <button
+                        type="button"
+                        onClick={() => dismiss(toast.id)}
+                        className="rounded p-0.5 hover:bg-black/10 dark:hover:bg-white/10"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>,
+            document.body,
+          )
+        : null}
     </ToastContext.Provider>
   );
 }

@@ -115,3 +115,17 @@ export async function adjustLivestockStock(id, payload) {
   const res = await api.post(`/livestock/${id}/adjust-stock`, payload);
   return res.data.data;
 }
+
+export async function recordLivestockMortality(id, payload, options = {}) {
+  const res = await api.post(
+    `/livestock/${id}/mortality`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "livestock",
+      action: "mortality",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
+  return res.data.data;
+}

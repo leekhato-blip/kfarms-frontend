@@ -107,3 +107,17 @@ export async function adjustFishPondStock(id, payload, options = {}) {
   );
   return res.data.data;
 }
+
+export async function recordFishPondMortality(id, payload, options = {}) {
+  const res = await api.post(
+    `/fishpond/${id}/mortality`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "fishpond",
+      action: "mortality",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
+  return res.data.data;
+}

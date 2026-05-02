@@ -16,6 +16,37 @@ const BILLING_ENDPOINTS = {
   customerPortal: "/billing/portal/session",
 };
 
+const BILLING_INTERVAL_ALIASES = {
+  YEARLY: "ANNUAL",
+};
+
+const PRO_BILLING_OPTIONS = Object.freeze({
+  MONTHLY: {
+    amount: 10000,
+    currency: "NGN",
+    interval: "MONTHLY",
+    paymentRequired: true,
+    label: "NGN 10,000 / month",
+    priceLabel: "NGN 10,000",
+    cycleLabel: "per month",
+    promoNote: "Billed every month",
+  },
+  ANNUAL: {
+    amount: 90000,
+    currency: "NGN",
+    interval: "ANNUAL",
+    paymentRequired: true,
+    label: "NGN 90,000 / year",
+    priceLabel: "NGN 90,000",
+    cycleLabel: "per year",
+    promoNote: "25% off the monthly rate",
+    compareAtAmount: 120000,
+    compareAtLabel: "NGN 120,000",
+    savingsLabel: "Save 25%",
+    discountPercent: 25,
+  },
+});
+
 export const PLAN_BILLING_CATALOG = {
   FREE: {
     amount: 0,
@@ -25,11 +56,8 @@ export const PLAN_BILLING_CATALOG = {
     label: "Free",
   },
   PRO: {
-    amount: 10000,
-    currency: "NGN",
-    interval: "MONTHLY",
-    paymentRequired: true,
-    label: "NGN 10,000 / month",
+    ...PRO_BILLING_OPTIONS.MONTHLY,
+    billingOptions: PRO_BILLING_OPTIONS,
   },
   ENTERPRISE: {
     amount: 0,
@@ -74,6 +102,20 @@ function readStorageMap(key) {
 function writeStorageMap(key, value) {
   if (!canUseStorage()) return;
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function buildTenantRequestConfig(tenantId, config = {}) {
+  if (!tenantId) {
+    return config;
+  }
+
+  return {
+    ...config,
+    headers: {
+      ...(config.headers || {}),
+      "X-Tenant-Id": String(tenantId),
+    },
+  };
 }
 
 function syncTenantPlanOverride(tenantId, planId) {
@@ -128,18 +170,44 @@ function normalizeStatus(value, fallback = "ACTIVE") {
   return normalized;
 }
 
+export function normalizeBillingInterval(value, fallback = "MONTHLY") {
+  const normalized = String(value || fallback || "MONTHLY").trim().toUpperCase();
+  const resolved = BILLING_INTERVAL_ALIASES[normalized] || normalized;
+
+  if (resolved === "MONTHLY" || resolved === "ANNUAL" || resolved === "CONTRACT") {
+    return resolved;
+  }
+
+  return BILLING_INTERVAL_ALIASES[String(fallback || "MONTHLY").trim().toUpperCase()] ||
+    String(fallback || "MONTHLY").trim().toUpperCase();
+}
+
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toBoolean(value, fallback = false) {
+  if (typeof value === "boolean") return value;
+  if (value == null) return fallback;
+
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes") return true;
+  if (normalized === "false" || normalized === "0" || normalized === "no") return false;
+  return fallback;
 }
 
 function nowIso() {
   return new Date().toISOString();
 }
 
-function addMonthsIso(baseDate = new Date(), months = 1) {
+function addBillingIntervalIso(baseDate = new Date(), billingInterval = "MONTHLY") {
   const next = new Date(baseDate);
-  next.setMonth(next.getMonth() + months);
+  if (normalizeBillingInterval(billingInterval, "MONTHLY") === "ANNUAL") {
+    next.setFullYear(next.getFullYear() + 1);
+  } else {
+    next.setMonth(next.getMonth() + 1);
+  }
   return next.toISOString();
 }
 
@@ -173,19 +241,24 @@ function buildCheckoutRedirectUrl(targetUrl, params = {}) {
 
 function normalizeBillingState(raw = {}, fallbackPlan = "FREE") {
   const planId = normalizePlanId(raw.planId || raw.plan, normalizePlanId(fallbackPlan, "FREE"));
-  const catalog = PLAN_BILLING_CATALOG[planId] || PLAN_BILLING_CATALOG.FREE;
+  const catalog = getPlanBillingInfo(planId, raw.interval);
+  const interval = normalizeBillingInterval(raw.interval || catalog.interval, catalog.interval);
   return {
     planId,
     status: normalizeStatus(raw.status, "ACTIVE"),
     amount: toNumber(raw.amount, catalog.amount),
     currency: String(raw.currency || catalog.currency || "NGN").toUpperCase(),
-    interval: String(raw.interval || catalog.interval || "MONTHLY").toUpperCase(),
+    interval,
     provider: String(raw.provider || "NONE"),
     nextBillingDate: raw.nextBillingDate || raw.nextInvoiceAt || null,
     cancelAtPeriodEnd: Boolean(raw.cancelAtPeriodEnd),
     subscriptionReference: raw.subscriptionReference || raw.reference || "",
     paymentMethodBrand: raw.paymentMethodBrand || raw.cardBrand || "",
     paymentMethodLast4: raw.paymentMethodLast4 || raw.last4 || "",
+    paymentSettingsAvailable: toBoolean(
+      raw.paymentSettingsAvailable ?? raw.portalAvailable ?? raw.available,
+      Boolean(raw.providerSubscriptionCode),
+    ),
     updatedAt: raw.updatedAt || raw.createdAt || null,
   };
 }
@@ -237,8 +310,11 @@ function getStoredBillingState(tenantId, tenantPlan = "FREE") {
       currency: planMeta.currency,
       interval: planMeta.interval,
       provider: normalizedPlan === "FREE" ? "NONE" : "TEST MODE",
-      nextBillingDate: planMeta.paymentRequired ? addMonthsIso(new Date(), 1) : null,
+      nextBillingDate: planMeta.paymentRequired
+        ? addBillingIntervalIso(new Date(), planMeta.interval)
+        : null,
       cancelAtPeriodEnd: false,
+      paymentSettingsAvailable: false,
       updatedAt: nowIso(),
     },
     normalizedPlan,
@@ -386,14 +462,32 @@ function throwOfflineActionError(fallback) {
   throw new Error(fallback);
 }
 
-export function getPlanBillingInfo(planId) {
+export function getPlanBillingOptions(planId) {
   const normalized = normalizePlanId(planId, "FREE");
-  return PLAN_BILLING_CATALOG[normalized] || PLAN_BILLING_CATALOG.FREE;
+  if (normalized === "PRO") {
+    return Object.values(PRO_BILLING_OPTIONS);
+  }
+  return [PLAN_BILLING_CATALOG[normalized] || PLAN_BILLING_CATALOG.FREE];
+}
+
+export function getPlanBillingInfo(planId, billingInterval = "MONTHLY") {
+  const normalized = normalizePlanId(planId, "FREE");
+  const plan = PLAN_BILLING_CATALOG[normalized] || PLAN_BILLING_CATALOG.FREE;
+
+  if (normalized !== "PRO") {
+    return plan;
+  }
+
+  const resolvedInterval = normalizeBillingInterval(billingInterval, "MONTHLY");
+  return PRO_BILLING_OPTIONS[resolvedInterval] || PRO_BILLING_OPTIONS.MONTHLY;
 }
 
 export async function getBillingOverview({ tenantId, tenantPlan = "FREE" } = {}) {
   try {
-    const response = await apiClient.get(BILLING_ENDPOINTS.overview);
+    const response = await apiClient.get(
+      BILLING_ENDPOINTS.overview,
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data;
     const billing = cacheBillingStateForTenant({
       tenantId,
@@ -428,9 +522,12 @@ export async function getBillingOverview({ tenantId, tenantPlan = "FREE" } = {})
 
 export async function getBillingInvoices({ tenantId, page = 0, size = 10 } = {}) {
   try {
-    const response = await apiClient.get(BILLING_ENDPOINTS.invoices, {
-      params: { page, size },
-    });
+    const response = await apiClient.get(
+      BILLING_ENDPOINTS.invoices,
+      buildTenantRequestConfig(tenantId, {
+        params: { page, size },
+      }),
+    );
     const payload = response.data?.data ?? response.data;
     const items = Array.isArray(payload?.items)
       ? payload.items
@@ -490,20 +587,28 @@ export async function getBillingInvoices({ tenantId, page = 0, size = 10 } = {})
 export async function createCheckoutSession({
   tenantId,
   planId,
+  billingInterval = "MONTHLY",
   successUrl,
   cancelUrl,
   customerEmail,
 } = {}) {
   const normalizedPlan = normalizePlanId(planId, "PRO");
-  const planMeta = getPlanBillingInfo(normalizedPlan);
+  const normalizedInterval = normalizeBillingInterval(billingInterval, "MONTHLY");
+  const planMeta = getPlanBillingInfo(normalizedPlan, normalizedInterval);
+  const normalizedEmail = typeof customerEmail === "string" ? customerEmail.trim() : "";
 
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.checkoutSession, {
-      planId: normalizedPlan,
-      successUrl,
-      cancelUrl,
-      customerEmail,
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.checkoutSession,
+      {
+        planId: normalizedPlan,
+        billingInterval: normalizedInterval,
+        successUrl,
+        cancelUrl,
+        ...(normalizedEmail ? { customerEmail: normalizedEmail } : {}),
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       checkoutUrl: payload.checkoutUrl || payload.url || "",
@@ -511,6 +616,10 @@ export async function createCheckoutSession({
       provider: payload.provider || "PAYSTACK",
       amount: toNumber(payload.amount, planMeta.amount),
       currency: String(payload.currency || planMeta.currency || "NGN").toUpperCase(),
+      interval: normalizeBillingInterval(
+        payload.billingInterval || payload.interval || normalizedInterval,
+        normalizedInterval,
+      ),
       mode: "api",
     };
   } catch (error) {
@@ -523,9 +632,10 @@ export async function createCheckoutSession({
       savePendingCheckout(tenantId, {
         reference,
         planId: normalizedPlan,
+        billingInterval: normalizedInterval,
         amount: planMeta.amount,
         currency: planMeta.currency,
-        customerEmail: customerEmail || "",
+        customerEmail: normalizedEmail,
         createdAt: nowIso(),
       });
       await wait(180);
@@ -534,12 +644,14 @@ export async function createCheckoutSession({
           paymentStatus: "success",
           reference,
           plan: normalizedPlan,
+          interval: normalizedInterval,
           provider: "TEST_MODE",
         }),
         reference,
         provider: "TEST MODE",
         amount: planMeta.amount,
         currency: planMeta.currency,
+        interval: normalizedInterval,
         mode: "placeholder",
       };
     }
@@ -552,14 +664,21 @@ export async function verifyCheckoutSession({
   tenantId,
   reference,
   planId = "PRO",
+  billingInterval = "MONTHLY",
 } = {}) {
   const normalizedPlan = normalizePlanId(planId, "PRO");
+  const normalizedInterval = normalizeBillingInterval(billingInterval, "MONTHLY");
 
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.verifyCheckout, {
-      reference,
-      planId: normalizedPlan,
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.verifyCheckout,
+      {
+        reference,
+        planId: normalizedPlan,
+        billingInterval: normalizedInterval,
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     const billing = cacheBillingStateForTenant({
       tenantId,
@@ -588,7 +707,11 @@ export async function verifyCheckoutSession({
         throw new Error("Could not confirm this payment.");
       }
 
-      const planMeta = getPlanBillingInfo(checkout.planId || normalizedPlan);
+      const checkoutInterval = normalizeBillingInterval(
+        checkout.billingInterval || normalizedInterval,
+        normalizedInterval,
+      );
+      const planMeta = getPlanBillingInfo(checkout.planId || normalizedPlan, checkoutInterval);
       const updatedAt = nowIso();
       const billing = cacheBillingStateForTenant({
         tenantId,
@@ -601,10 +724,13 @@ export async function verifyCheckoutSession({
           currency: planMeta.currency,
           interval: planMeta.interval,
           provider: "TEST MODE",
-          nextBillingDate: planMeta.paymentRequired ? addMonthsIso(new Date(updatedAt), 1) : null,
+          nextBillingDate: planMeta.paymentRequired
+            ? addBillingIntervalIso(new Date(updatedAt), planMeta.interval)
+            : null,
           cancelAtPeriodEnd: false,
           paymentMethodBrand: planMeta.paymentRequired ? "visa" : "",
           paymentMethodLast4: planMeta.paymentRequired ? "4242" : "",
+          paymentSettingsAvailable: false,
           subscriptionReference: checkout.reference,
           updatedAt,
         },
@@ -637,7 +763,11 @@ export async function verifyCheckoutSession({
 
 export async function cancelSubscription({ tenantId } = {}) {
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.cancelSubscription);
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.cancelSubscription,
+      null,
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       billing: cacheBillingStateForTenant({
@@ -676,9 +806,13 @@ export async function cancelSubscription({ tenantId } = {}) {
 
 export async function downgradeToFreePlan({ tenantId } = {}) {
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.downgradeToFree, {
-      planId: "FREE",
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.downgradeToFree,
+      {
+        planId: "FREE",
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       billing: cacheBillingStateForTenant({
@@ -710,6 +844,7 @@ export async function downgradeToFreePlan({ tenantId } = {}) {
           subscriptionReference: "",
           paymentMethodBrand: "",
           paymentMethodLast4: "",
+          paymentSettingsAvailable: false,
           updatedAt: nowIso(),
         },
       });
@@ -724,14 +859,22 @@ export async function downgradeToFreePlan({ tenantId } = {}) {
   }
 }
 
-export async function createCustomerPortalSession({ returnUrl } = {}) {
+export async function createCustomerPortalSession({ tenantId, returnUrl } = {}) {
   try {
-    const response = await apiClient.post(BILLING_ENDPOINTS.customerPortal, {
-      returnUrl,
-    });
+    const response = await apiClient.post(
+      BILLING_ENDPOINTS.customerPortal,
+      {
+        returnUrl,
+      },
+      buildTenantRequestConfig(tenantId),
+    );
     const payload = response.data?.data ?? response.data ?? {};
     return {
       portalUrl: payload.portalUrl || payload.url || "",
+      available: toBoolean(
+        payload.available ?? payload.paymentSettingsAvailable,
+        Boolean(payload.portalUrl || payload.url),
+      ),
       mode: "api",
     };
   } catch (error) {
@@ -743,6 +886,7 @@ export async function createCustomerPortalSession({ returnUrl } = {}) {
       await wait(100);
       return {
         portalUrl: "",
+        available: false,
         mode: "placeholder",
       };
     }

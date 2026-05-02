@@ -20,6 +20,7 @@ import Button from "../../components/Button";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import EmptyState from "../../components/EmptyState";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
+import PlatformInlineLoader from "../../components/PlatformInlineLoader";
 import PlatformMobileSheet from "../../components/PlatformMobileSheet";
 import {
   PlatformInspectSection,
@@ -648,6 +649,7 @@ export default function PlatformUsersPage() {
     if (loading) {
       return (
         <div className="mt-4 flex-1 overflow-y-auto">
+          <PlatformInlineLoader label="Loading platform users..." className="mb-4" />
           <UserDetailSkeleton />
         </div>
       );

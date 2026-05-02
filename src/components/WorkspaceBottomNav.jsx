@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Download,
+  Droplets,
   Egg,
   LayoutGrid,
   Package,
@@ -10,6 +11,7 @@ import {
   Truck,
   Wheat,
   X,
+  Feather,
 } from "lucide-react";
 import { KFARMS_ROUTE_REGISTRY } from "../apps/kfarms/paths";
 import { WORKSPACE_QUICK_ACTION_EVENT } from "../constants/workspaceQuickActions";
@@ -84,6 +86,7 @@ export default function WorkspaceBottomNav() {
   const [expanded, setExpanded] = React.useState(false);
   const rootRef = React.useRef(null);
   const poultryEnabled = hasFarmModule(activeTenant, FARM_MODULES.POULTRY);
+  const fishEnabled = hasFarmModule(activeTenant, FARM_MODULES.FISH_FARMING);
 
   const isNavItemActive = React.useCallback(
     (to) => {
@@ -122,6 +125,26 @@ export default function WorkspaceBottomNav() {
           "bg-amber-500/16 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
       },
       {
+        id: "poultry-mortality",
+        label: "Bird loss",
+        action: "poultry-mortality",
+        icon: Feather,
+        iconTone:
+          "bg-rose-500/16 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+      },
+      ...(fishEnabled
+        ? [
+            {
+              id: "fish-mortality",
+              label: "Fish loss",
+              action: "fish-mortality",
+              icon: Droplets,
+              iconTone:
+                "bg-rose-500/16 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
+            },
+          ]
+        : []),
+      {
         id: "inventory",
         label: "Stock",
         action: "inventory",
@@ -130,7 +153,7 @@ export default function WorkspaceBottomNav() {
           "bg-indigo-500/16 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200",
       },
     ];
-  }, [poultryEnabled]);
+  }, [fishEnabled, poultryEnabled]);
 
   React.useEffect(() => {
     setExpanded(false);
@@ -179,7 +202,7 @@ export default function WorkspaceBottomNav() {
           }`}
         >
           <div className="rounded-[1.7rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,245,251,0.94))] px-2 py-2.5 shadow-[0_20px_40px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,17,32,0.98),rgba(11,25,45,0.96))]">
-            <div className="flex items-stretch gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {quickActions.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -187,7 +210,7 @@ export default function WorkspaceBottomNav() {
                     key={item.id}
                     type="button"
                     onClick={() => handleQuickAction(item.action)}
-                    className="group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-[1.05rem] border border-slate-200/80 bg-white/90 px-1.5 py-2.5 text-center text-[0.62rem] font-semibold leading-tight text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/28 hover:text-accent-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-accent-primary/40"
+                    className="group flex min-w-0 flex-col items-center gap-1.5 rounded-[1.05rem] border border-slate-200/80 bg-white/90 px-1.5 py-2.5 text-center text-[0.62rem] font-semibold leading-tight text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/28 hover:text-accent-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-accent-primary/40"
                   >
                     <span
                       className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 ${item.iconTone}`}

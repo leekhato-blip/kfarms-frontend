@@ -91,10 +91,9 @@ export default function BackendRecoveryPrompt() {
     if (browserOffline) {
       return {
         label: "Offline",
-        detail: "Your device is offline.",
         icon: WifiOff,
         className:
-          "border-amber-300/75 bg-amber-50/95 text-amber-950 shadow-[0_18px_38px_rgba(245,158,11,0.18)] dark:border-amber-400/45 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.97),rgba(69,26,3,0.96))] dark:text-amber-50",
+          "border-amber-300/75 bg-amber-50/96 text-amber-950 shadow-[0_12px_28px_rgba(245,158,11,0.18)] dark:border-amber-400/40 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.94),rgba(69,26,3,0.92))] dark:text-amber-50",
         iconClassName:
           "bg-amber-500/12 text-amber-800 dark:bg-amber-300/14 dark:text-amber-100",
       };
@@ -102,11 +101,10 @@ export default function BackendRecoveryPrompt() {
 
     if (backendDown) {
       return {
-        label: "Reconnecting",
-        detail: "Server connection is recovering.",
+        label: "Syncing",
         icon: LoaderCircle,
         className:
-          "border-sky-300/75 bg-sky-50/95 text-sky-950 shadow-[0_18px_38px_rgba(59,130,246,0.16)] dark:border-sky-400/40 dark:bg-[linear-gradient(135deg,rgba(10,18,35,0.98),rgba(8,47,73,0.95))] dark:text-sky-50",
+          "border-sky-300/75 bg-sky-50/96 text-sky-950 shadow-[0_12px_28px_rgba(59,130,246,0.16)] dark:border-sky-400/40 dark:bg-[linear-gradient(135deg,rgba(10,18,35,0.95),rgba(8,47,73,0.94))] dark:text-sky-50",
         iconClassName:
           "bg-sky-500/12 text-sky-700 dark:bg-sky-300/14 dark:text-sky-100",
       };
@@ -115,10 +113,9 @@ export default function BackendRecoveryPrompt() {
     if (showOnline) {
       return {
         label: "Online",
-        detail: "Connection is back.",
         icon: CheckCircle2,
         className:
-          "border-emerald-300/75 bg-emerald-50/95 text-emerald-950 shadow-[0_18px_38px_rgba(16,185,129,0.16)] dark:border-emerald-400/40 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.97),rgba(2,44,34,0.96))] dark:text-emerald-50",
+          "border-emerald-300/75 bg-emerald-50/96 text-emerald-950 shadow-[0_12px_28px_rgba(16,185,129,0.16)] dark:border-emerald-400/40 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.94),rgba(2,44,34,0.92))] dark:text-emerald-50",
         iconClassName:
           "bg-emerald-500/12 text-emerald-700 dark:bg-emerald-300/14 dark:text-emerald-100",
       };
@@ -185,28 +182,25 @@ export default function BackendRecoveryPrompt() {
 
   return (
     <div
-      className={`pointer-events-none fixed bottom-4 right-4 z-[90] transition-all duration-300 ease-out motion-reduce:transition-none ${
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+      className={`pointer-events-none fixed left-1/2 top-3 z-[90] -translate-x-1/2 transition-all duration-300 ease-out motion-reduce:transition-none ${
+        isVisible ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
       }`}
     >
       <div
-        className={`pointer-events-auto inline-flex max-w-[min(92vw,360px)] items-center gap-3 rounded-2xl border px-3.5 py-3 backdrop-blur-xl transition-[background-color,border-color,color,box-shadow] duration-300 ease-out motion-reduce:transition-none ${renderedStatus.className}`}
+        className={`pointer-events-auto inline-flex min-h-10 items-center gap-2.5 rounded-full border px-3 py-2 backdrop-blur-xl transition-[background-color,border-color,color,box-shadow] duration-300 ease-out motion-reduce:transition-none ${renderedStatus.className}`}
         role="status"
         aria-live="polite"
       >
         <span
-          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${renderedStatus.iconClassName}`}
+          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${renderedStatus.iconClassName}`}
         >
           <StatusIcon
             className={`h-4 w-4 ${
-              renderedStatus.label === "Reconnecting" ? "animate-spin" : ""
+              renderedStatus.label === "Syncing" ? "animate-spin" : ""
             }`}
           />
         </span>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">{renderedStatus.label}</div>
-          <div className="text-xs opacity-85">{renderedStatus.detail}</div>
-        </div>
+        <div className="text-sm font-semibold">{renderedStatus.label}</div>
       </div>
     </div>
   );

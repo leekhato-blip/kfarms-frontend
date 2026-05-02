@@ -1,32 +1,57 @@
 import api from "../api/apiClient";
 import { buildOfflineMutationConfig } from "../offline/offlineStore";
 
+function buildTenantRequestConfig(tenantId, config = {}) {
+  if (!tenantId) {
+    return config;
+  }
+
+  return {
+    ...config,
+    headers: {
+      ...(config.headers || {}),
+      "X-Tenant-Id": String(tenantId),
+    },
+  };
+}
+
 // Get livestock with filters + pagination
 export async function getLivestock(params = {}) {
-  const { page = 0, size = 10, batchName, type, arrivalDate } = params;
+  const { page = 0, size = 10, batchName, type, arrivalDate, tenantId } = params;
 
-  const res = await api.get("/livestock", {
-    params: {
-      page,
-      size,
-      batchName: batchName || undefined,
-      type: type || undefined,
-      arrivalDate: arrivalDate || undefined, // YYYY-MM-DD
-    },
-  });
+  const res = await api.get(
+    "/livestock",
+    buildTenantRequestConfig(tenantId, {
+      params: {
+        page,
+        size,
+        batchName: batchName || undefined,
+        type: type || undefined,
+        arrivalDate: arrivalDate || undefined, // YYYY-MM-DD
+      },
+    }),
+  );
 
+  return res.data.data;
+}
+
+export async function getLivestockById(id, { tenantId } = {}) {
+  const res = await api.get(
+    `/livestock/${id}`,
+    buildTenantRequestConfig(tenantId),
+  );
   return res.data.data;
 }
 
 // Get livestock summary
-export async function getLivestockSummary() {
-  const res = await api.get("/livestock/summary");
+export async function getLivestockSummary({ tenantId } = {}) {
+  const res = await api.get("/livestock/summary", buildTenantRequestConfig(tenantId));
   return res.data.data;
 }
 
 // Get livestock overview
-export async function getLivestockOverview() {
-  const res = await api.get("/livestock/overview");
+export async function getLivestockOverview({ tenantId } = {}) {
+  const res = await api.get("/livestock/overview", buildTenantRequestConfig(tenantId));
   return res.data.data;
 }
 
@@ -88,5 +113,19 @@ export async function permanentDeleteLivestock(id) {
 // Adjust stock
 export async function adjustLivestockStock(id, payload) {
   const res = await api.post(`/livestock/${id}/adjust-stock`, payload);
+  return res.data.data;
+}
+
+export async function recordLivestockMortality(id, payload, options = {}) {
+  const res = await api.post(
+    `/livestock/${id}/mortality`,
+    payload,
+    buildOfflineMutationConfig({
+      resource: "livestock",
+      action: "mortality",
+      baseRecord: options.baseRecord,
+      context: options.context,
+    }),
+  );
   return res.data.data;
 }

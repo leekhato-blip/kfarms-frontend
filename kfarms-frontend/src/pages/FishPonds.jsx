@@ -7,12 +7,14 @@ import GlassToast from "../components/GlassToast";
 import ConfirmModal from "../components/ConfirmModal";
 import TrashModal from "../components/TrashModal";
 import ItemDetailsModal from "../components/ItemDetailsModal";
+import MortalityQuickModal from "../components/MortalityQuickModal";
 import {
   getFishPonds,
   getFishPondSummary,
   deleteFishPond,
   permanentDeleteFishPond,
   adjustFishPondStock,
+  recordFishPondMortality,
   getDeletedFishPonds,
   restoreFishPond,
 } from "../services/fishPondService";
@@ -33,6 +35,8 @@ import { useTenant } from "../tenant/TenantContext";
 import { isPlanAtLeast, normalizePlanId } from "../constants/plans";
 import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
+import useQuickCreateModal from "../hooks/useQuickCreateModal";
 
 // icons
 import {
@@ -224,6 +228,7 @@ function MobileAccordion({ title, icon, children, defaultOpen = false }) {
 }
 
 export default function FishPondsPage() {
+  const isMobileViewport = useIsMobileViewport();
   const { activeTenant } = useTenant();
   const currentPlan = normalizePlanId(activeTenant?.plan, "FREE");
   const canManageHatches = isPlanAtLeast(currentPlan, "PRO");
@@ -323,6 +328,9 @@ export default function FishPondsPage() {
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [mortalityModalOpen, setMortalityModalOpen] = useState(false);
+  const [mortalitySaving, setMortalitySaving] = useState(false);
+  const [mortalityTargetId, setMortalityTargetId] = useState("");
 
   const [stockForm, setStockForm] = useState({
     pondId: "",
@@ -404,9 +412,12 @@ export default function FishPondsPage() {
         totalFishes: normalizeNumber(pondRes?.totalFishes),
         totalQuantity: normalizeNumber(pondRes?.totalQuantity),
         totalMortality: normalizeNumber(pondRes?.totalMortality),
+        weeklyMortality: normalizeNumber(pondRes?.weeklyMortality),
+        monthlyMortality: normalizeNumber(pondRes?.monthlyMortality),
         dueWaterChangeCount: normalizeNumber(pondRes?.dueWaterChangeCount),
         totalEmptyPonds: normalizeNumber(pondRes?.totalEmptyPonds),
         countByStatus: pondRes?.countByStatus || {},
+        pondCards: pondRes?.pondCards || [],
         monthlyStockTotals: pondRes?.monthlyStockTotals || {},
         alerts: pondRes?.alerts,
       });
@@ -474,6 +485,22 @@ export default function FishPondsPage() {
           label: "Current Stock",
           value: formatSummaryCount(pondDetail.currentStock),
         },
+        {
+          label: "Mortality Total",
+          value: formatSummaryCount(pondDetail.mortalityCount),
+        },
+        {
+          label: "This Week",
+          value: formatSummaryCount(pondDetail.mortalityThisWeek),
+        },
+        {
+          label: "This Month",
+          value: formatSummaryCount(pondDetail.mortalityThisMonth),
+        },
+        {
+          label: "Last Mortality",
+          value: formatDateLabel(pondDetail.lastMortalityDate),
+        },
         { label: "Capacity", value: formatSummaryCount(pondDetail.capacity) },
         {
           label: "Last Water Change",
@@ -536,6 +563,17 @@ export default function FishPondsPage() {
     return `${new Intl.NumberFormat("en-US", {
       maximumFractionDigits: 1,
     }).format(numeric)}%`;
+  }
+
+  function formatDateLabel(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    }).format(date);
   }
 
   // ------------------- SUMMARY CARDS (Desktop grid / Mobile carousel) -------------------
@@ -641,6 +679,27 @@ export default function FishPondsPage() {
     const start = hatchPage * hatchPageSize;
     return hatches.slice(start, start + hatchPageSize);
   }, [hatches, hatchPage]);
+
+  const pondMortalityRows = useMemo(() => {
+    const cards = Array.isArray(pondSummary.pondCards) ? pondSummary.pondCards : [];
+    return cards
+      .map((card) => ({
+        id: card.id,
+        pondName: card.pondName,
+        pondType: card.pondType,
+        status: card.status,
+        currentStock: Number(card.currentStock || 0),
+        total: Number(card.mortalityTotal || 0),
+        week: Number(card.mortalityThisWeek || 0),
+        month: Number(card.mortalityThisMonth || 0),
+        lastDate: card.lastMortalityDate || "",
+      }))
+      .sort((left, right) => {
+        if (right.month !== left.month) return right.month - left.month;
+        if (right.week !== left.week) return right.week - left.week;
+        return String(left.pondName || "").localeCompare(String(right.pondName || ""));
+      });
+  }, [pondSummary.pondCards]);
 
   // ------------------- CHARTS (styled like Supplies) -------------------
   const pondTrendData = useMemo(() => {
@@ -847,6 +906,16 @@ export default function FishPondsPage() {
     setPondEditing(null);
     setPondModalOpen(true);
   }
+  function openMortalityModal(record = null) {
+    setMortalityTargetId(record?.id ? String(record.id) : "");
+    setMortalityModalOpen(true);
+  }
+  useQuickCreateModal(
+    () => {
+      openMortalityModal();
+    },
+    { match: "mortality" },
+  );
   function openEditPond(record) {
     setPondEditing(record);
     setPondModalOpen(true);
@@ -886,7 +955,7 @@ export default function FishPondsPage() {
         start: start || undefined,
         end: end || undefined,
       });
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = filename || `${category || "fish-ponds"}.${type || "csv"}`;
@@ -1008,6 +1077,55 @@ export default function FishPondsPage() {
     }
   }
 
+  async function submitPondMortality({ entityId, count, mortalityDate, note }) {
+    if (mortalitySaving) return;
+    setMortalitySaving(true);
+    try {
+      const baseRecord =
+        ponds.find((pond) => String(pond.id) === String(entityId)) ||
+        (pondDetail?.id && String(pondDetail.id) === String(entityId) ? pondDetail : null);
+      const saved = await recordFishPondMortality(
+        Number(entityId),
+        {
+          count,
+          mortalityDate,
+          note: note || null,
+        },
+        {
+          baseRecord,
+        },
+      );
+      const pendingOffline = isOfflinePendingRecord(saved);
+
+      setPonds((current) =>
+        current.map((pond) => (String(pond.id) === String(saved.id) ? saved : pond)),
+      );
+      if (pondDetail?.id && String(pondDetail.id) === String(entityId)) {
+        setPondDetail(saved);
+      }
+
+      if (!pendingOffline) {
+        await Promise.all([
+          fetchPonds(pondMeta.page ?? 0, { showSkeleton: false }),
+          fetchSummaries(),
+        ]);
+      }
+      setMortalityModalOpen(false);
+      setMortalityTargetId("");
+      setToast({
+        message: pendingOffline
+          ? "Mortality saved offline. It will sync automatically."
+          : "Mortality recorded",
+        type: pendingOffline ? "info" : "success",
+      });
+    } catch (error) {
+      console.error("Failed to record fish mortality", error);
+      throw error;
+    } finally {
+      setMortalitySaving(false);
+    }
+  }
+
   const refreshPageData = useCallback(async () => {
     await Promise.all([
       fetchPonds(pondMeta.page ?? 0, { showSkeleton: false }),
@@ -1064,6 +1182,14 @@ export default function FishPondsPage() {
                     <Plus className="h-4 w-4" strokeWidth={2.5} />
                     Add pond
                   </button>
+                  <button
+                    onClick={() => openMortalityModal()}
+                    className="order-2 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-300/60 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-500/15 sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4 dark:border-rose-400/30 dark:text-rose-200 dark:hover:bg-rose-500/20"
+                    title="Record pond mortality"
+                  >
+                    <Skull className="h-4 w-4" />
+                    Record mortality
+                  </button>
 
                   <button
                     onClick={() => setExportOpen(true)}
@@ -1087,7 +1213,7 @@ export default function FishPondsPage() {
                         type: "info",
                       });
                     }}
-                    className={`order-2 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4 ${
+                    className={`order-5 inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition sm:order-none sm:h-auto sm:min-h-0 sm:w-auto sm:px-4 ${
                       canManageHatches
                         ? "border border-sky-400/35 bg-sky-500/15 text-sky-700 hover:bg-sky-500/20 dark:text-sky-200"
                         : "border border-accent-primary/30 bg-accent-primary/15 text-accent-primary hover:bg-accent-primary/25 dark:text-blue-200"
@@ -1388,6 +1514,19 @@ export default function FishPondsPage() {
                           </td>
                           <td className="text-center">
                             <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openMortalityModal(p);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-rose-500 dark:text-rose-300"
+                                title="Record mortality"
+                              >
+                                <Skull className="w-5 h-5" />
+                                <span className="text-xs font-semibold">
+                                  Mortality
+                                </span>
+                              </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1867,8 +2006,102 @@ export default function FishPondsPage() {
             </div>
           </div>
 
+          <div className="lg:col-span-4 rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="inline-flex items-center gap-2 text-rose-700 dark:text-rose-200">
+                  <Skull className="h-4 w-4" />
+                  <h2 className="font-header font-semibold">Mortality breakdown</h2>
+                </div>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-body">
+                  Track this week and this month for each pond, then record new losses quickly.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openMortalityModal()}
+                className="inline-flex items-center gap-2 rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-700 dark:text-rose-200"
+              >
+                <Skull className="h-3.5 w-3.5" />
+                Record
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 dark:bg-darkCard/50">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                  This week
+                </div>
+                <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">
+                  {formatSummaryCount(pondSummary.weeklyMortality)}
+                </div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 dark:bg-darkCard/50">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                  This month
+                </div>
+                <div className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">
+                  {formatSummaryCount(pondSummary.monthlyMortality)}
+                </div>
+              </div>
+            </div>
+
+            {pondMortalityRows.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed border-white/10 bg-white/5 px-4 py-5 text-sm text-slate-500 dark:bg-darkCard/50 dark:text-slate-400">
+                Add a pond first, then record mortality to build the weekly and monthly view.
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {pondMortalityRows.slice(0, 5).map((row) => (
+                  <div
+                    key={`pond-mortality-${row.id}`}
+                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 dark:bg-darkCard/50"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                          {row.pondName}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {row.pondType} · Stock {formatSummaryCount(row.currentStock)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openMortalityModal(row)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-rose-400/20 bg-rose-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 dark:text-rose-200"
+                      >
+                        <Skull className="h-3.5 w-3.5" />
+                        Add
+                      </button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-2 text-xs text-slate-700 dark:text-slate-200">
+                      <div>
+                        <div className="text-slate-500 dark:text-slate-400">Total</div>
+                        <div className="mt-1 font-semibold">{formatSummaryCount(row.total)}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500 dark:text-slate-400">Week</div>
+                        <div className="mt-1 font-semibold">{formatSummaryCount(row.week)}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500 dark:text-slate-400">Month</div>
+                        <div className="mt-1 font-semibold">{formatSummaryCount(row.month)}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-500 dark:text-slate-400">Last</div>
+                        <div className="mt-1 font-semibold">{formatDateLabel(row.lastDate)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* DESKTOP ONLY: show these charts beside stock adjustment */}
-          <div className="hidden md:block lg:col-span-4 rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
+          {!isMobileViewport ? (
+            <div className="hidden md:block lg:col-span-4 rounded-xl bg-white/10 dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
             <h2 className="font-header font-semibold mb-3">Ponds by Type</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
               Distribution of ponds by type.
@@ -1901,9 +2134,11 @@ export default function FishPondsPage() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : null}
 
-          <div className="hidden md:block lg:col-span-4 rounded-xl bg-lightCard dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
+          {!isMobileViewport ? (
+            <div className="hidden md:block lg:col-span-4 rounded-xl bg-lightCard dark:bg-darkCard/70 border border-white/10 dark:shadow-dark shadow-neo p-6">
             <h2 className="font-header font-semibold mb-3">
               Monthly Hatch Trend
             </h2>
@@ -1938,11 +2173,13 @@ export default function FishPondsPage() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : null}
         </div>
 
         {/* MOBILE ONLY: collapsible charts */}
-        <div className="md:hidden space-y-4">
+        {isMobileViewport ? (
+          <div className="space-y-4">
           <MobileAccordion
             title="Ponds by Type"
             icon={<Egg className="w-5 h-5 text-sky-400" />}
@@ -2044,13 +2281,15 @@ export default function FishPondsPage() {
               )}
             </div>
           </MobileAccordion>
-        </div>
+          </div>
+        ) : null}
 
         {/* DESKTOP ONLY: full-width line chart (same vibe as Supplies chart card) */}
-        <div
-          className="hidden md:block mt-2 rounded-xl bg-white/6 dark:bg-darkCard/60 p-4 dark:shadow-dark shadow-neo"
-          style={{ minHeight: 260 }}
-        >
+        {!isMobileViewport ? (
+          <div
+            className="hidden md:block mt-2 rounded-xl bg-white/6 dark:bg-darkCard/60 p-4 dark:shadow-dark shadow-neo"
+            style={{ minHeight: 260 }}
+          >
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-body">
             Overall stock trend across recent months.
           </p>
@@ -2082,7 +2321,8 @@ export default function FishPondsPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        ) : null}
 
         </div>
 
@@ -2143,6 +2383,27 @@ export default function FishPondsPage() {
           defaultType="csv"
           defaultStart={pondFilters.lastWaterChange || ""}
           defaultEnd={pondFilters.lastWaterChange || ""}
+        />
+
+        <MortalityQuickModal
+          open={mortalityModalOpen}
+          title="Record fish mortality"
+          subtitle="Choose a pond, enter the loss count, and keep the weekly and monthly pond breakdown current."
+          itemLabel="Pond"
+          items={ponds.map((pond) => ({
+            id: pond.id,
+            label: pond.pondName,
+            meta: `${pond.pondType} · Stock ${formatSummaryCount(pond.currentStock)}`,
+          }))}
+          selectedId={mortalityTargetId}
+          submitting={mortalitySaving}
+          submitLabel="Save mortality"
+          onClose={() => {
+            if (mortalitySaving) return;
+            setMortalityModalOpen(false);
+            setMortalityTargetId("");
+          }}
+          onSubmit={submitPondMortality}
         />
 
         {/* Confirm Modal */}

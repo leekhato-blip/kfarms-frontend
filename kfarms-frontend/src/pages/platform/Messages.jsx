@@ -2,18 +2,22 @@ import React from "react";
 import {
   Building2,
   FilterX,
+  Info,
   LifeBuoy,
+  Megaphone,
   MessageSquareText,
   RefreshCw,
   SendHorizontal,
   ShieldAlert,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import Card from "../../components/Card";
 import Badge from "../../components/Badge";
 import Button from "../../components/Button";
 import EmptyState from "../../components/EmptyState";
+import PlatformInlineLoader from "../../components/PlatformInlineLoader";
 import PlatformMetricCard from "../../components/PlatformMetricCard";
 import { useToast } from "../../components/ToastProvider";
 import { PLATFORM_ENDPOINTS, cleanQueryParams } from "../../api/endpoints";
@@ -22,6 +26,10 @@ import { formatDateTime, formatNumber } from "../../utils/formatters";
 
 const STATUS_OPTIONS = ["ALL", "OPEN", "PENDING", "RESOLVED"];
 const LANE_OPTIONS = ["ALL", "STANDARD", "PRIORITY", "DEDICATED"];
+const ANNOUNCEMENT_AUDIENCE_OPTIONS = [
+  { value: "ALL_ACTIVE", label: "All active workspaces" },
+  { value: "SPECIFIC", label: "Selected workspaces" },
+];
 const QUICK_REPLY_TEMPLATES = [
   {
     id: "request-context",
@@ -135,6 +143,39 @@ export default function PlatformMessagesPage() {
   const [replyBody, setReplyBody] = React.useState("");
   const [replying, setReplying] = React.useState(false);
   const [updatingStatus, setUpdatingStatus] = React.useState(false);
+  const [announcementTitle, setAnnouncementTitle] = React.useState("");
+  const [announcementMessage, setAnnouncementMessage] = React.useState("");
+  const [announcementAudience, setAnnouncementAudience] = React.useState("ALL_ACTIVE");
+  const [announcementTenantIds, setAnnouncementTenantIds] = React.useState([]);
+  const [announcementTenants, setAnnouncementTenants] = React.useState([]);
+  const [announcementTenantsLoading, setAnnouncementTenantsLoading] = React.useState(false);
+  const [sendingAnnouncement, setSendingAnnouncement] = React.useState(false);
+
+  const fetchAnnouncementTenants = React.useCallback(async () => {
+    if (platformDataMode === "demo") {
+      setAnnouncementTenants([]);
+      setAnnouncementTenantsLoading(false);
+      return;
+    }
+
+    setAnnouncementTenantsLoading(true);
+    try {
+      const response = await platformAxios.get(PLATFORM_ENDPOINTS.tenants, {
+        params: cleanQueryParams({
+          status: "ACTIVE",
+          page: 0,
+          size: 200,
+        }),
+      });
+      const payload = unwrapApiResponse(response.data, "Failed to load workspaces");
+      setAnnouncementTenants(normalizeItems(payload));
+    } catch (tenantError) {
+      setAnnouncementTenants([]);
+      notify(getApiErrorMessage(tenantError, "Failed to load workspaces"), "error");
+    } finally {
+      setAnnouncementTenantsLoading(false);
+    }
+  }, [notify, platformDataMode]);
 
   const fetchTickets = React.useCallback(async ({ silent = false } = {}) => {
     if (silent) {
@@ -186,6 +227,10 @@ export default function PlatformMessagesPage() {
     fetchTickets();
   }, [fetchTickets]);
 
+  React.useEffect(() => {
+    fetchAnnouncementTenants().catch(() => {});
+  }, [fetchAnnouncementTenants]);
+
   const selectedTicket = React.useMemo(
     () => tickets.find((ticket) => ticket.ticketId === selectedTicketId) || tickets[0] || null,
     [selectedTicketId, tickets],
@@ -216,6 +261,62 @@ export default function PlatformMessagesPage() {
 
   function handleUseTemplate(templateBody) {
     setReplyBody((current) => (current.trim() ? `${current.trim()}\n\n${templateBody}` : templateBody));
+  }
+
+  async function handleSendAnnouncement(event) {
+    event.preventDefault();
+    if (
+      sendingAnnouncement ||
+      !announcementTitle.trim() ||
+      !announcementMessage.trim() ||
+      (announcementAudience === "SPECIFIC" && announcementTenantIds.length === 0)
+    ) {
+      return;
+    }
+
+    if (platformDataMode === "demo") {
+      notify("Demo preview is read-only for announcements.", "info");
+      return;
+    }
+
+    setSendingAnnouncement(true);
+    try {
+      const response = await platformAxios.post(PLATFORM_ENDPOINTS.announcements, {
+        title: announcementTitle.trim(),
+        message: announcementMessage.trim(),
+        audience: announcementAudience,
+        tenantIds:
+          announcementAudience === "SPECIFIC"
+            ? announcementTenantIds.map((tenantId) => Number(tenantId)).filter(Number.isFinite)
+            : [],
+      });
+      const payload = unwrapApiResponse(response.data, "Failed to send announcement");
+      const audienceCount = Number(payload?.tenantCount || 0);
+      setAnnouncementTitle("");
+      setAnnouncementMessage("");
+      setAnnouncementAudience("ALL_ACTIVE");
+      setAnnouncementTenantIds([]);
+      notify(
+        audienceCount > 0
+          ? `Announcement sent to ${formatNumber(audienceCount)} workspace${audienceCount === 1 ? "" : "s"}.`
+          : "Announcement sent.",
+        "success",
+      );
+    } catch (announcementError) {
+      notify(getApiErrorMessage(announcementError, "Failed to send announcement"), "error");
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  }
+
+  function toggleAnnouncementTenant(tenantId) {
+    const normalizedId = String(tenantId || "").trim();
+    if (!normalizedId) return;
+    setAnnouncementTenantIds((current) =>
+      current.includes(normalizedId)
+        ? current.filter((value) => value !== normalizedId)
+        : [...current, normalizedId],
+    );
   }
 
   async function handleSendReply(event) {
@@ -299,6 +400,170 @@ export default function PlatformMessagesPage() {
             Refresh
           </Button>
         </div>
+      </Card>
+
+      <Card className="atlas-stage-card overflow-hidden p-0">
+        <div className="border-b border-[color:var(--atlas-border)] bg-[linear-gradient(135deg,rgba(219,234,254,0.94),rgba(239,246,255,0.98))] px-5 py-5 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.18),rgba(15,23,42,0.9))]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
+              <div className="atlas-signal-chip w-fit">
+                <Megaphone size={12} />
+                App Announcement
+              </div>
+              <h2 className="mt-4 font-header text-2xl font-semibold leading-tight text-[var(--atlas-text-strong)]">
+                Send promo and update banners to app users.
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-[var(--atlas-muted)]">
+                This sends a slim GitHub-style announcement bar across the workspace so users see promos, updates, and important notices fast.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-blue-300/50 bg-white/70 px-4 py-3 text-xs leading-6 text-blue-950 shadow-[0_14px_34px_rgba(37,99,235,0.12)] dark:border-blue-300/15 dark:bg-white/5 dark:text-blue-100">
+              <div className="font-semibold uppercase tracking-[0.16em]">Delivery</div>
+                <div className="mt-1">
+                  {announcementAudience === "SPECIFIC"
+                    ? selectedAnnouncementTenantCount > 0
+                      ? `${formatNumber(selectedAnnouncementTenantCount)} workspace${selectedAnnouncementTenantCount === 1 ? "" : "s"} selected`
+                      : "Choose one or more workspaces"
+                    : "All active workspaces"}
+                </div>
+              </div>
+          </div>
+
+          <div className="mt-5 overflow-hidden rounded-2xl border border-blue-300/65 bg-[#dbeafe] shadow-[0_16px_34px_rgba(37,99,235,0.16)] dark:border-blue-300/18 dark:bg-[linear-gradient(135deg,rgba(30,64,175,0.24),rgba(15,23,42,0.96))]">
+            <div className="flex items-start gap-3 px-4 py-3">
+              <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-blue-300/60 bg-blue-600 text-white dark:border-blue-300/20 dark:bg-blue-500/90">
+                <Info size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm leading-6 text-blue-950 dark:text-blue-50">
+                  <span className="font-semibold">
+                    {announcementTitle.trim() || "Your announcement title will show here"}
+                  </span>
+                  {announcementMessage.trim()
+                    ? ` ${announcementMessage.trim()}`
+                    : " Add a short message so app users immediately understand the update."}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-blue-800/80 dark:text-blue-100/80"
+                aria-label="Announcement close preview"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSendAnnouncement} className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+              <input
+                type="text"
+                value={announcementTitle}
+                onChange={(event) => setAnnouncementTitle(event.target.value)}
+                placeholder="Announcement title"
+                className="atlas-input"
+                maxLength={120}
+              />
+              <textarea
+                value={announcementMessage}
+                onChange={(event) => setAnnouncementMessage(event.target.value)}
+                placeholder="Short message for promo, update, or maintenance notice"
+                className="atlas-input min-h-[116px] resize-none"
+                maxLength={280}
+              />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <select
+                value={announcementAudience}
+                onChange={(event) => setAnnouncementAudience(event.target.value)}
+                className="atlas-input"
+              >
+                {ANNOUNCEMENT_AUDIENCE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="rounded-[1.15rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/55 p-3">
+                {announcementAudience !== "SPECIFIC" ? (
+                  <div className="text-sm text-[var(--atlas-muted)]">
+                    This banner will go to every active workspace.
+                  </div>
+                ) : announcementTenantsLoading ? (
+                  <PlatformInlineLoader label="Loading workspaces..." className="border-0 bg-transparent px-0 py-0" />
+                ) : announcementTenants.length === 0 ? (
+                  <div className="text-sm text-[var(--atlas-muted)]">
+                    No active workspaces are ready for targeted delivery.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--atlas-muted)]">
+                      Choose one or more workspaces
+                    </div>
+                    <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                      {announcementTenants.map((tenant) => {
+                        const checked = announcementTenantIds.includes(String(tenant.id));
+                        return (
+                          <label
+                            key={tenant.id}
+                            className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-2.5 transition ${
+                              checked
+                                ? "border-[color:var(--atlas-border-strong)] bg-[color:var(--atlas-surface)]/88"
+                                : "border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface)]/50 hover:bg-[color:var(--atlas-surface)]/70"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleAnnouncementTenant(tenant.id)}
+                              className="mt-1 h-4 w-4 rounded border-[color:var(--atlas-border-strong)]"
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-[var(--atlas-text-strong)]">
+                                {tenant.name}
+                              </span>
+                              <span className="block text-xs text-[var(--atlas-muted)]">
+                                {tenant.plan || "FREE"}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-between gap-4 rounded-[1.4rem] border border-[color:var(--atlas-border)] bg-[color:var(--atlas-surface-soft)]/65 p-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--atlas-muted)]">
+                Send Rules
+              </div>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-[var(--atlas-muted)]">
+                <p>Keep it short so it fits the workspace banner naturally.</p>
+                <p>Use this for promos, release notes, downtime alerts, and quick reminders.</p>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={
+                sendingAnnouncement ||
+                !announcementTitle.trim() ||
+                !announcementMessage.trim() ||
+                (announcementAudience === "SPECIFIC" && announcementTenantIds.length === 0)
+              }
+            >
+              <SendHorizontal size={14} />
+              {sendingAnnouncement ? "Sending..." : "Send banner"}
+            </Button>
+          </div>
+        </form>
       </Card>
 
       <div className="atlas-platform-metric-grid-compact">
@@ -397,11 +662,7 @@ export default function PlatformMessagesPage() {
         <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
           <Card className="atlas-glass-card min-h-[520px] p-3">
             {loading ? (
-              <div className="space-y-3 p-2">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div key={`message-skeleton-${index}`} className="skeleton-glass h-24 rounded-2xl" />
-                ))}
-              </div>
+              <PlatformInlineLoader label="Loading platform messages..." className="h-full min-h-[420px]" />
             ) : tickets.length === 0 ? (
               <EmptyState
                 title="No tenant messages"
@@ -635,3 +896,4 @@ export default function PlatformMessagesPage() {
     </div>
   );
 }
+  const selectedAnnouncementTenantCount = announcementTenantIds.length;
