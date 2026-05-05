@@ -1,0 +1,27 @@
+<svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pondSky" x1="450" y1="0" x2="450" y2="314" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DCEBD4"/>
+      <stop offset="1" stop-color="#B4CF9E"/>
+    </linearGradient>
+    <linearGradient id="pondWater" x1="449.5" y1="281" x2="449.5" y2="875" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5F7E71"/>
+      <stop offset="1" stop-color="#2E453B"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" fill="url(#pondSky)"/>
+  <circle cx="731" cy="135" r="46" fill="#F8E09C"/>
+  <path d="M0 322C129 289 251 275 377 287C503 298 622 334 737 321C809 313 864 284 900 261V900H0V322Z" fill="#5B7E4C"/>
+  <path d="M0 404C168 359 318 355 450 367C583 379 724 412 900 390V900H0V404Z" fill="#405B40"/>
+  <path d="M112 414H281L233 875H44L112 414Z" fill="#9A7A49"/>
+  <path d="M318 438H507L480 875H247L318 438Z" fill="url(#pondWater)"/>
+  <path d="M536 438H725L796 875H563L536 438Z" fill="url(#pondWater)"/>
+  <path d="M112 414H281" stroke="#CDA66B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M318 438H507" stroke="#CDA66B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M536 438H725" stroke="#CDA66B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M281 414L318 438" stroke="#CDA66B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M507 438L536 438" stroke="#CDA66B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M233 875H480" stroke="#CDA66B" stroke-width="14" stroke-linecap="round"/>
+  <path d="M480 875H796" stroke="#CDA66B" stroke-width="14" stroke-linecap="round"/>
+  <path d="M0 900H900V801C778 766 683 748 615 748C487 748 357 805 278 900H0Z" fill="#594126"/>
+</svg>

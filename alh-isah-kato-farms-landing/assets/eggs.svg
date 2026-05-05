@@ -1,0 +1,37 @@
+<svg width="900" height="900" viewBox="0 0 900 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="trayBg" x1="450" y1="0" x2="450" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8D2A1"/>
+      <stop offset="1" stop-color="#C19154"/>
+    </linearGradient>
+    <linearGradient id="eggLight" x1="231" y1="194" x2="227" y2="688" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6E7CC"/>
+      <stop offset="1" stop-color="#E1C18C"/>
+    </linearGradient>
+    <linearGradient id="eggDark" x1="668" y1="194" x2="668" y2="688" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EACF9B"/>
+      <stop offset="1" stop-color="#C79C5E"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" fill="url(#trayBg)"/>
+  <rect x="74" y="118" width="752" height="664" rx="52" fill="#91653A"/>
+  <rect x="98" y="142" width="704" height="616" rx="38" fill="#A77542"/>
+  <path d="M154 259H746" stroke="#8A6135" stroke-width="18" stroke-linecap="round"/>
+  <path d="M154 459H746" stroke="#8A6135" stroke-width="18" stroke-linecap="round"/>
+  <path d="M154 659H746" stroke="#8A6135" stroke-width="18" stroke-linecap="round"/>
+  <path d="M271 174V726" stroke="#8A6135" stroke-width="16" stroke-linecap="round"/>
+  <path d="M450 174V726" stroke="#8A6135" stroke-width="16" stroke-linecap="round"/>
+  <path d="M629 174V726" stroke="#8A6135" stroke-width="16" stroke-linecap="round"/>
+  <ellipse cx="190" cy="227" rx="54" ry="74" fill="url(#eggLight)"/>
+  <ellipse cx="360" cy="227" rx="54" ry="74" fill="url(#eggLight)"/>
+  <ellipse cx="540" cy="227" rx="54" ry="74" fill="url(#eggDark)"/>
+  <ellipse cx="710" cy="227" rx="54" ry="74" fill="url(#eggDark)"/>
+  <ellipse cx="190" cy="427" rx="54" ry="74" fill="url(#eggDark)"/>
+  <ellipse cx="360" cy="427" rx="54" ry="74" fill="url(#eggDark)"/>
+  <ellipse cx="540" cy="427" rx="54" ry="74" fill="url(#eggLight)"/>
+  <ellipse cx="710" cy="427" rx="54" ry="74" fill="url(#eggLight)"/>
+  <ellipse cx="190" cy="627" rx="54" ry="74" fill="url(#eggLight)"/>
+  <ellipse cx="360" cy="627" rx="54" ry="74" fill="url(#eggDark)"/>
+  <ellipse cx="540" cy="627" rx="54" ry="74" fill="url(#eggLight)"/>
+  <ellipse cx="710" cy="627" rx="54" ry="74" fill="url(#eggDark)"/>
+</svg>
