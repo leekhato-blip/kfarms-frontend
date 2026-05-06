@@ -30,10 +30,10 @@ const SECTION_BADGE_BASE_CLASS =
   "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur-sm";
 
 const QUICK_SETUP_BADGE_CLASS =
-  `${SECTION_BADGE_BASE_CLASS} border-emerald-200/90 bg-emerald-100/95 text-emerald-900 dark:border-emerald-300/25 dark:bg-emerald-400/18 dark:text-emerald-50`;
+  `${SECTION_BADGE_BASE_CLASS} border-emerald-200/90 bg-emerald-100/95 text-emerald-900 dark:border-emerald-300/45 dark:bg-emerald-500/28 dark:text-emerald-50`;
 
 const SETUP_GUIDE_BADGE_CLASS =
-  `${SECTION_BADGE_BASE_CLASS} border-violet-200/90 bg-violet-100/95 text-violet-900 dark:border-violet-300/25 dark:bg-violet-400/18 dark:text-violet-50`;
+  `${SECTION_BADGE_BASE_CLASS} border-violet-200/90 bg-violet-100/95 text-violet-900 dark:border-violet-300/45 dark:bg-violet-500/28 dark:text-violet-50`;
 
 const SETUP_GUIDE = [
   "Name the farm and confirm the workspace link.",
@@ -99,6 +99,27 @@ export default function CreateTenant() {
     setActiveTenant(tenantId);
     clearTenantSwitchMessage();
     navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+  };
+
+  const handleGoHome = () => {
+    clearTenantSwitchMessage();
+
+    if (activeTenantId) {
+      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+      return;
+    }
+
+    const nextTenantId = ensureActiveTenant(tenants, {
+      allowFallback: true,
+      redirectIfEmpty: false,
+    });
+
+    if (nextTenantId) {
+      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+      return;
+    }
+
+    navigate("/", { replace: true });
   };
 
   const handleLogoutTo = async (path) => {
@@ -189,7 +210,7 @@ export default function CreateTenant() {
               </button>
               <button
                 type="button"
-                onClick={() => handleLogoutTo("/")}
+                onClick={handleGoHome}
                 className={ACTION_BUTTON_CLASS}
               >
                 <Home className="h-4 w-4" />

@@ -106,13 +106,13 @@ export default function TermsPage() {
             <button
               type="button"
               onClick={handleClose}
-              className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+              className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white/90 text-slate-600 shadow-[0_10px_22px_rgba(15,23,42,0.08)] transition hover:bg-white dark:border-white/15 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
               aria-label="Close terms and conditions"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mt-4 flex flex-col gap-4 border-b border-slate-200/80 pb-6 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                   <FileText className="h-4 w-4 text-accent-primary" />
@@ -128,7 +128,7 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-emerald-300/30 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
+              <div className="self-start rounded-2xl border border-emerald-300/30 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
                 <div className="inline-flex items-center gap-2 font-semibold">
                   <ShieldCheck className="h-4 w-4" />
                   Effective date

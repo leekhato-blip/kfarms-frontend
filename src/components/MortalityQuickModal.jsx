@@ -103,7 +103,9 @@ export default function MortalityQuickModal({
               <div className="relative flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-200">
-                    <Skull className="h-3.5 w-3.5" />
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-700 dark:bg-rose-400/15 dark:text-rose-100">
+                      <Skull className="h-3.5 w-3.5" />
+                    </span>
                     Quick mortality
                   </div>
                   <h2 className="mt-3 text-xl font-semibold text-slate-900 dark:text-slate-50">
@@ -118,7 +120,7 @@ export default function MortalityQuickModal({
                   type="button"
                   onClick={onClose}
                   aria-label="Close mortality form"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15"
                 >
                   <X className="h-5 w-5" />
                 </button>

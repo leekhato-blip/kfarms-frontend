@@ -38,15 +38,15 @@ const TYPE_OPTIONS = [
 const CONTROL_CLASS =
   "w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-accent-primary/40 focus:ring-2 focus:ring-accent-primary/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100";
 const LABEL_CLASS =
-  "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400";
+  "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400";
 const SEGMENT_CLASS =
   "inline-flex min-h-11 items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold transition";
 const META_CARD_CLASS =
-  "rounded-2xl border border-slate-200/80 bg-slate-50/90 p-3 dark:border-white/10 dark:bg-white/[0.04]";
+  "rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-white/10 dark:bg-white/[0.04]";
 const PRIMARY_BUTTON_CLASS =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
 const SECONDARY_BUTTON_CLASS =
-  "inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200/80 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:hover:bg-white/[0.1]";
+  "inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200/90 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-100 dark:hover:bg-white/[0.1]";
 
 export default function ExportModal({
   open,
@@ -145,7 +145,7 @@ export default function ExportModal({
                 >
                   Export data
                 </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                   Pick a section and download it.
                 </p>
               </div>
@@ -197,7 +197,7 @@ export default function ExportModal({
                         className={`${SEGMENT_CLASS} ${
                           active
                             ? "border-accent-primary bg-accent-primary text-white"
-                            : "border-slate-200/80 bg-white/85 text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200"
+                            : "border-slate-200/90 bg-slate-50/90 text-slate-800 hover:border-slate-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200"
                         } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
                       >
                         {opt.label}
@@ -245,13 +245,13 @@ export default function ExportModal({
                       <FileSpreadsheet className="mt-0.5 h-4 w-4 text-accent-primary" />
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">
                         {selectedTypeMeta.label}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {selectedCategoryMeta.label}
                       </p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">
                         {selectedTypeMeta.description}
                       </p>
                     </div>
@@ -262,13 +262,13 @@ export default function ExportModal({
                   <div className="flex items-start gap-2">
                     <CalendarRange className="mt-0.5 h-4 w-4 text-accent-primary" />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">
                         Date range
                       </p>
                       <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {start || end ? "Filtered" : "All dates"}
                       </p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">
                         {resolvedDateRange}
                       </p>
                     </div>
@@ -278,20 +278,20 @@ export default function ExportModal({
 
               {previewFields.length > 0 ? (
                 <div className={META_CARD_CLASS}>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-400">
                     Included fields
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {visiblePreviewFields.map((field) => (
                       <span
                         key={field}
-                        className="inline-flex rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200"
+                        className="inline-flex rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200"
                       >
                         {field}
                       </span>
                     ))}
                     {hiddenFieldCount > 0 ? (
-                      <span className="inline-flex rounded-full border border-dashed border-slate-300/80 bg-slate-100/80 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300">
+                      <span className="inline-flex rounded-full border border-dashed border-slate-300/80 bg-slate-100/80 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-300">
                         +{hiddenFieldCount} more
                       </span>
                     ) : null}

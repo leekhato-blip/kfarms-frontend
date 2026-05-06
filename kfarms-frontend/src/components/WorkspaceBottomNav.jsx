@@ -201,8 +201,8 @@ export default function WorkspaceBottomNav() {
               : "pointer-events-none translate-y-2 opacity-0"
           }`}
         >
-          <div className="rounded-[1.7rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,245,251,0.94))] px-2 py-2.5 shadow-[0_20px_40px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,17,32,0.98),rgba(11,25,45,0.96))]">
-            <div className="grid grid-cols-3 gap-1.5">
+          <div className="rounded-[1.7rem] border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,245,251,0.94))] px-2.5 py-2.5 shadow-[0_20px_40px_rgba(15,23,42,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,17,32,0.98),rgba(11,25,45,0.96))]">
+            <div className="grid grid-cols-3 gap-2">
               {quickActions.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -210,14 +210,14 @@ export default function WorkspaceBottomNav() {
                     key={item.id}
                     type="button"
                     onClick={() => handleQuickAction(item.action)}
-                    className="group flex min-w-0 flex-col items-center gap-1.5 rounded-[1.05rem] border border-slate-200/80 bg-white/90 px-1.5 py-2.5 text-center text-[0.62rem] font-semibold leading-tight text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/28 hover:text-accent-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-accent-primary/40"
+                    className="group flex min-h-[5.35rem] min-w-0 flex-col items-center gap-2 rounded-[1.1rem] border border-slate-200/90 bg-white px-2 py-3 text-center text-[0.72rem] font-semibold leading-tight text-slate-800 shadow-[0_10px_20px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-primary/28 hover:text-accent-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-accent-primary/40"
                   >
                     <span
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 ${item.iconTone}`}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 ${item.iconTone}`}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-[1.15rem] w-[1.15rem]" />
                     </span>
-                    <span className="block w-full truncate whitespace-nowrap text-[0.62rem] leading-none">
+                    <span className="block w-full truncate whitespace-nowrap text-[0.7rem] leading-tight">
                       {item.label}
                     </span>
                   </button>
@@ -228,8 +228,8 @@ export default function WorkspaceBottomNav() {
         </div>
 
         <div className="relative">
-          <div className="pointer-events-none absolute left-1/2 top-0 z-0 h-[4.35rem] w-[7.4rem] -translate-x-1/2 -translate-y-[19%] overflow-hidden">
-            <div className="absolute inset-x-[0.16rem] top-0 h-[4.12rem] rounded-[2.55rem] border border-slate-200/70 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.96),rgba(232,239,247,0.98)_58%,rgba(217,228,240,0.98)_100%)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_50%_0%,rgba(23,37,65,0.4),rgba(7,15,30,0.98)_62%,rgba(4,10,22,1)_100%)]" />
+          <div className="pointer-events-none absolute left-1/2 top-0 z-0 h-[4.85rem] w-[8.25rem] -translate-x-1/2 -translate-y-[19%] overflow-hidden">
+            <div className="absolute inset-x-[0.16rem] top-0 h-[4.56rem] rounded-[2.75rem] border border-slate-200/70 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.96),rgba(232,239,247,0.98)_58%,rgba(217,228,240,0.98)_100%)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_50%_0%,rgba(23,37,65,0.4),rgba(7,15,30,0.98)_62%,rgba(4,10,22,1)_100%)]" />
           </div>
 
           <div className="relative z-10 flex items-end justify-between gap-1 rounded-[1.7rem] border border-slate-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.91),rgba(239,245,251,0.93))] px-2.5 pb-2.5 pt-3.5 shadow-[0_16px_34px_rgba(15,23,42,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,17,32,0.95),rgba(11,25,45,0.94))]">
@@ -262,7 +262,7 @@ export default function WorkspaceBottomNav() {
             );
           })}
 
-          <div className="w-[5.7rem] shrink-0" />
+          <div className="w-[6.35rem] shrink-0" />
 
           {NAV_ITEMS.slice(2).map((item) => {
             const Icon = item.icon;
@@ -298,7 +298,7 @@ export default function WorkspaceBottomNav() {
             aria-expanded={expanded}
             aria-label={expanded ? "Close quick actions" : "Open quick actions"}
             onClick={() => setExpanded((current) => !current)}
-            className={`absolute left-1/2 top-0 z-30 inline-flex h-14 w-14 -translate-x-1/2 -translate-y-[22%] items-center justify-center rounded-full border border-white/25 text-white shadow-[0_16px_28px_rgba(37,99,235,0.24)] transition-all duration-300 ${
+            className={`absolute left-1/2 top-0 z-30 inline-flex h-[4.2rem] w-[4.2rem] -translate-x-1/2 -translate-y-[28%] flex-col items-center justify-center gap-0.5 rounded-[1.45rem] border border-white/25 px-2 pb-2 pt-2.5 text-white shadow-[0_16px_28px_rgba(37,99,235,0.24)] transition-all duration-300 ${
               expanded
                 ? "bg-[linear-gradient(135deg,#0f172a,#1d4ed8)]"
                 : "bg-[linear-gradient(135deg,#2563eb,#38bdf8)]"
@@ -314,6 +314,9 @@ export default function WorkspaceBottomNav() {
               ) : (
                 <Plus className="h-5 w-5" />
               )}
+            </span>
+            <span className="text-[0.56rem] font-semibold uppercase tracking-[0.12em] text-white/92">
+              Quick add
             </span>
           </button>
         </div>

@@ -460,12 +460,6 @@ export default function BillingPage() {
     setProcessingPlanId(
       normalizedPlan === "PRO" ? `${normalizedPlan}:${normalizedInterval}` : normalizedPlan,
     );
-    const checkoutWindow =
-      typeof window !== "undefined" ? window.open("", "_blank") : null;
-    if (checkoutWindow) {
-      checkoutWindow.opener = null;
-      checkoutWindow.document.title = "KFarms Checkout";
-    }
     try {
       const successUrl =
         typeof window !== "undefined"
@@ -489,16 +483,11 @@ export default function BillingPage() {
         throw new Error("Checkout URL was not provided.");
       }
 
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.location.replace(result.checkoutUrl);
-      } else {
+      if (typeof window !== "undefined") {
         window.location.assign(result.checkoutUrl);
       }
       return true;
     } catch (error) {
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.close();
-      }
       setToast({
         message: error?.message || "Could not open the payment page.",
         type: "error",

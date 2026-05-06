@@ -99,10 +99,10 @@ export default function ExportModal({
           <div className="rounded-2xl bg-white/80 dark:bg-black/60 backdrop-blur-xl border border-white/20 p-4 sm:p-6 space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-lightText dark:text-darkText">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Download report
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
                   {canUseAdvancedExport
                     ? "Choose the file type, date range, and section you want to download."
                     : "Exports are available on Pro and Enterprise plans. Upgrade to unlock CSV, XLSX, PDF downloads, and date filters."}
@@ -131,14 +131,14 @@ export default function ExportModal({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1">
-                <label className="text-xs text-slate-500 dark:text-slate-400">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
                   File type
                 </label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/80 bg-white/90 px-3 py-2 text-slate-900 dark:border-white/20 dark:bg-black/50 dark:text-slate-100"
                 >
                   {TYPE_OPTIONS.map((opt) => (
                     <option
@@ -153,14 +153,14 @@ export default function ExportModal({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-500 dark:text-slate-400">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
                   Section
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/80 bg-white/90 px-3 py-2 text-slate-900 dark:border-white/20 dark:bg-black/50 dark:text-slate-100"
                 >
                   {categories.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -171,7 +171,7 @@ export default function ExportModal({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-500 dark:text-slate-400">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
                   Start date
                 </label>
                 <input
@@ -179,12 +179,12 @@ export default function ExportModal({
                   value={start}
                   onChange={(e) => setStart(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/80 bg-white/90 px-3 py-2 text-slate-900 dark:border-white/20 dark:bg-black/50 dark:text-slate-100"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-500 dark:text-slate-400">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
                   End date
                 </label>
                 <input
@@ -192,7 +192,7 @@ export default function ExportModal({
                   value={end}
                   onChange={(e) => setEnd(e.target.value)}
                   disabled={!canUseAdvancedExport}
-                  className="w-full px-3 py-2 rounded-md bg-white/70 dark:bg-black/50 border border-white/20"
+                  className="w-full rounded-md border border-slate-200/80 bg-white/90 px-3 py-2 text-slate-900 dark:border-white/20 dark:bg-black/50 dark:text-slate-100"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function ExportModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full rounded-md border border-white/10 bg-transparent px-4 py-2 hover:bg-white/5 sm:w-auto sm:min-w-[8.5rem]"
+                className="w-full rounded-md border border-slate-200/80 bg-white/70 px-4 py-2 font-medium text-slate-700 hover:bg-white sm:w-auto sm:min-w-[8.5rem] dark:border-white/10 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/5"
               >
                 Cancel
               </button>

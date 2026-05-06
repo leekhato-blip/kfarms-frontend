@@ -14,6 +14,7 @@ import { isOfflinePendingRecord } from "../offline/offlineResources";
 import { useOfflineSyncRefresh } from "../offline/useOfflineSyncRefresh";
 import { exportReport } from "../services/reportService";
 import useQuickCreateModal from "../hooks/useQuickCreateModal";
+import useIsMobileViewport from "../hooks/useIsMobileViewport";
 import {
   adjustInventoryStock,
   deleteInventory,
@@ -315,6 +316,7 @@ function buildSystemSignals(summary) {
 }
 
 export default function InventoryPage() {
+  const isMobileViewport = useIsMobileViewport();
   const { activeTenant, activeTenantId, tenantBootstrapDone } = useTenant();
   const workspaceCurrency = String(activeTenant?.currency || "NGN").trim().toUpperCase() || "NGN";
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
@@ -1140,46 +1142,171 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="mt-4 overflow-x-auto hide-scrollbar">
-                <table className="w-full min-w-[980px] border-separate border-spacing-y-2 text-sm [&_tbody_tr]:bg-white/5 [&_tbody_tr]:shadow-soft [&_tbody_tr]:transition [&_tbody_tr:hover]:shadow-neo dark:[&_tbody_tr]:bg-darkCard/60 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_td]:px-3 [&_td]:py-2.5 [&_th]:px-3 [&_th]:pb-2">
-                  <thead>
-                    <tr className="font-header text-[11px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-200">
-                      <th className="text-left">Item</th>
-                      <th className="text-left">Category</th>
-                      <th className="text-left">SKU</th>
-                      <th className="text-right">On Hand</th>
-                      <th className="text-right">Reorder</th>
-                      <th className="text-right">Unit Cost</th>
-                      <th className="text-right">Value</th>
-                      <th className="text-center">Status</th>
-                      <th className="text-left">Supplier</th>
-                      <th className="text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {listLoading ? (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          className="!rounded-xl !py-10 text-center text-slate-500 dark:text-slate-400"
+              {listLoading ? (
+                <div className="mt-4 space-y-3" aria-hidden="true">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <div
+                      key={`inventory-row-skeleton-${idx}`}
+                      className="skeleton-glass h-12 rounded-xl"
+                    />
+                  ))}
+                </div>
+              ) : items.length === 0 ? (
+                <div className="mt-4">
+                  <InventoryEmptyState
+                    compact
+                    title={listEmptyTitle}
+                    message={listEmptyMessage}
+                    actionLabel={firstInventoryCtaLabel}
+                    onAction={canCreateOrEdit && !hasActiveFilters ? openCreate : undefined}
+                  />
+                </div>
+              ) : isMobileViewport ? (
+                <div className="mt-4 space-y-3">
+                  {items.map((item) => {
+                    const state = resolveStockStatus(item);
+                    return (
+                      <article
+                        key={item.id}
+                        className="rounded-2xl border border-white/10 bg-white/5 p-4 dark:bg-white/[0.03]"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setDetailItem(item)}
+                          className="w-full text-left"
+                          aria-label={`View details for ${getItemName(item)}`}
                         >
-                          Loading inventory items...
-                        </td>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                {getItemName(item)}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {formatInventoryCategoryLabel(getItemCategory(item))} • {getItemLocation(item)}
+                              </div>
+                            </div>
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${state.classes}`}
+                            >
+                              {state.label}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
+                            <div>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                On hand:
+                              </span>{" "}
+                              {formatCount(getItemQuantity(item))} {getItemUnit(item)}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                Reorder:
+                              </span>{" "}
+                              {formatCount(getItemThreshold(item))}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                Value:
+                              </span>{" "}
+                              {formatCurrency(getItemTotalValue(item), workspaceCurrency)}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                SKU:
+                              </span>{" "}
+                              {item?.sku || "—"}
+                            </div>
+                            <div className="col-span-2">
+                              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                Supplier:
+                              </span>{" "}
+                              {getItemSupplier(item)}
+                            </div>
+                          </div>
+                        </button>
+
+                        {canCreateOrEdit ? (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleAdjust(item, 5)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-200"
+                              title="Stock in (+5)"
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                              Stock in
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAdjust(item, -5)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-200"
+                              title="Stock out (-5)"
+                            >
+                              <ArrowDown className="h-4 w-4" />
+                              Stock out
+                            </button>
+                          </div>
+                        ) : null}
+
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDetailItem(item)}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-accent-primary/25 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary"
+                            title="View item"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View details
+                          </button>
+                          {canCreateOrEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(item)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs font-semibold text-sky-700 dark:text-sky-200"
+                              title="Edit item"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </button>
+                          ) : null}
+                          {canDeleteOrRestore ? (
+                            <button
+                              type="button"
+                              onClick={() => askDelete(item)}
+                              className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-200 ${
+                                canCreateOrEdit ? "col-span-2" : ""
+                              }`}
+                              title="Delete item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-4 overflow-x-auto hide-scrollbar">
+                  <table className="w-full min-w-[980px] border-separate border-spacing-y-2 text-sm [&_tbody_tr]:bg-white/5 [&_tbody_tr]:shadow-soft [&_tbody_tr]:transition [&_tbody_tr:hover]:shadow-neo dark:[&_tbody_tr]:bg-darkCard/60 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_td]:px-3 [&_td]:py-2.5 [&_th]:px-3 [&_th]:pb-2">
+                    <thead>
+                      <tr className="font-header text-[11px] uppercase tracking-[0.16em] text-slate-700 dark:text-slate-200">
+                        <th className="text-left">Item</th>
+                        <th className="text-left">Category</th>
+                        <th className="text-left">SKU</th>
+                        <th className="text-right">On Hand</th>
+                        <th className="text-right">Reorder</th>
+                        <th className="text-right">Unit Cost</th>
+                        <th className="text-right">Value</th>
+                        <th className="text-center">Status</th>
+                        <th className="text-left">Supplier</th>
+                        <th className="text-center">Actions</th>
                       </tr>
-                    ) : items.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="!rounded-xl !py-8">
-                          <InventoryEmptyState
-                            compact
-                            title={listEmptyTitle}
-                            message={listEmptyMessage}
-                            actionLabel={firstInventoryCtaLabel}
-                            onAction={canCreateOrEdit && !hasActiveFilters ? openCreate : undefined}
-                          />
-                        </td>
-                      </tr>
-                    ) : (
-                      items.map((item) => {
+                    </thead>
+                    <tbody>
+                      {items.map((item) => {
                         const state = resolveStockStatus(item);
                         return (
                           <tr key={item.id}>
@@ -1269,11 +1396,11 @@ export default function InventoryPage() {
                             </td>
                           </tr>
                         );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-slate-500 dark:text-slate-400">

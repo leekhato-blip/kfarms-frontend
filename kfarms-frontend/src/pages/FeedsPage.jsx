@@ -1207,96 +1207,183 @@ export default function FeedsPage() {
               </div>
             </div>
           ) : hasFeedData ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[900px] border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
-                <thead className="text-lightText dark:text-darkText font-body">
-                  <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-slate-200">
-                    <th className="py-3 text-left whitespace-nowrap">Date</th>
-                    <th className="text-left whitespace-nowrap">Batch Type</th>
-                    <th className="text-right whitespace-nowrap">Quantity</th>
-                    <th className="text-right whitespace-nowrap">Unit Cost</th>
-                    <th className="text-right whitespace-nowrap">Total</th>
-                    <th className="text-center whitespace-nowrap">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {feeds.map((item) => {
-                    const quantity = getFeedQuantity(item);
-                    const unitCost = Number(item.unitCost || 0);
-                    const total = quantity * unitCost;
-                    const type = item.batchType || item.type || "—";
-                    const date = item.date || item.feedDate || item.createdAt;
+            isMobileViewport ? (
+              <div className="space-y-3">
+                {feeds.map((item) => {
+                  const quantity = getFeedQuantity(item);
+                  const unitCost = Number(item.unitCost || 0);
+                  const total = quantity * unitCost;
+                  const type = item.batchType || item.type || "—";
+                  const date = item.date || item.feedDate || item.createdAt;
 
-                    return (
-                      <tr
-                        key={item.id}
+                  return (
+                    <article
+                      key={item.id}
+                      className="rounded-2xl border border-white/10 bg-white/5 p-4 dark:bg-white/[0.03]"
+                    >
+                      <button
+                        type="button"
                         onClick={() => openDetails(item)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            openDetails(item);
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
+                        className="w-full text-left"
                         aria-label={`View details for ${type}`}
-                        className="border-b font-body dark:border-white/10 hover:bg-accent-primary/25 dark:hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
                       >
-                        <td className="text-left whitespace-nowrap">
-                          {formatDate(date)}
-                        </td>
-                        <td className="text-left whitespace-nowrap">
-                          {type}
-                        </td>
-                        <td className="text-right whitespace-nowrap">
-                          {formatCount(quantity)} {data?.unit || ""}
-                        </td>
-                        <td className="text-right whitespace-nowrap">
-                          {unitCost ? formatCurrency(unitCost, workspaceCurrency) : "—"}
-                        </td>
-                        <td className="text-right whitespace-nowrap">
-                          {total ? formatCurrency(total, workspaceCurrency) : "—"}
-                        </td>
-                        <td className="text-center">
-                          {canCreateOrEdit || canDeleteOrRestore ? (
-                            <div className="flex gap-2 justify-center">
-                              {canCreateOrEdit && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEdit(item);
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
-                                  title="Edit feed record"
-                                >
-                                  <Edit className="w-6 h-6" />
-                                  <span className="text-xs font-semibold">Edit</span>
-                                </button>
-                              )}
-                              {canDeleteOrRestore && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    askDelete(item);
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
-                                  title="Delete feed record"
-                                >
-                                  <Trash2 className="w-6 h-6" />
-                                  <span className="text-xs font-semibold">Delete</span>
-                                </button>
-                              )}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              {type}
                             </div>
-                          ) : (
-                            <span className="text-xs text-slate-400">View only</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {formatDate(date)}
+                            </div>
+                          </div>
+                          <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                            {total ? formatCurrency(total, workspaceCurrency) : "—"}
+                          </span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <div>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">
+                              Quantity:
+                            </span>{" "}
+                            {formatCount(quantity)} {data?.unit || ""}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">
+                              Unit cost:
+                            </span>{" "}
+                            {unitCost ? formatCurrency(unitCost, workspaceCurrency) : "—"}
+                          </div>
+                        </div>
+                      </button>
+
+                      {canCreateOrEdit || canDeleteOrRestore ? (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {canCreateOrEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(item)}
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-accent-primary/25 bg-accent-primary/10 px-3 py-2 text-xs font-semibold text-accent-primary"
+                              title="Edit feed record"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </button>
+                          ) : null}
+                          {canDeleteOrRestore ? (
+                            <button
+                              type="button"
+                              onClick={() => askDelete(item)}
+                              className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-200 ${
+                                canCreateOrEdit ? "" : "col-span-2"
+                              }`}
+                              title="Delete feed record"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="mt-3 text-xs text-slate-400">
+                          Tap the card to view details.
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[900px] border-separate border-spacing-y-2 [&_th]:px-4 [&_th]:pb-2 [&_td]:px-4 [&_td]:py-3 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl [&_tbody_tr]:bg-white/5 dark:[&_tbody_tr]:bg-darkCard/60 [&_tbody_tr]:shadow-soft [&_tbody_tr:hover]:shadow-neo [&_tbody_tr]:transition">
+                  <thead className="text-lightText dark:text-darkText font-body">
+                    <tr className="font-header text-[11px] uppercase tracking-[0.2em] text-slate-700 dark:text-slate-200">
+                      <th className="py-3 text-left whitespace-nowrap">Date</th>
+                      <th className="text-left whitespace-nowrap">Batch Type</th>
+                      <th className="text-right whitespace-nowrap">Quantity</th>
+                      <th className="text-right whitespace-nowrap">Unit Cost</th>
+                      <th className="text-right whitespace-nowrap">Total</th>
+                      <th className="text-center whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feeds.map((item) => {
+                      const quantity = getFeedQuantity(item);
+                      const unitCost = Number(item.unitCost || 0);
+                      const total = quantity * unitCost;
+                      const type = item.batchType || item.type || "—";
+                      const date = item.date || item.feedDate || item.createdAt;
+
+                      return (
+                        <tr
+                          key={item.id}
+                          onClick={() => openDetails(item)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openDetails(item);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`View details for ${type}`}
+                          className="border-b font-body dark:border-white/10 hover:bg-accent-primary/25 dark:hover:bg-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
+                        >
+                          <td className="text-left whitespace-nowrap">
+                            {formatDate(date)}
+                          </td>
+                          <td className="text-left whitespace-nowrap">
+                            {type}
+                          </td>
+                          <td className="text-right whitespace-nowrap">
+                            {formatCount(quantity)} {data?.unit || ""}
+                          </td>
+                          <td className="text-right whitespace-nowrap">
+                            {unitCost ? formatCurrency(unitCost, workspaceCurrency) : "—"}
+                          </td>
+                          <td className="text-right whitespace-nowrap">
+                            {total ? formatCurrency(total, workspaceCurrency) : "—"}
+                          </td>
+                          <td className="text-center">
+                            {canCreateOrEdit || canDeleteOrRestore ? (
+                              <div className="flex gap-2 justify-center">
+                                {canCreateOrEdit && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openEdit(item);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-accent-primary"
+                                    title="Edit feed record"
+                                  >
+                                    <Edit className="w-6 h-6" />
+                                    <span className="text-xs font-semibold">Edit</span>
+                                  </button>
+                                )}
+                                {canDeleteOrRestore && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      askDelete(item);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-white/5 text-status-danger"
+                                    title="Delete feed record"
+                                  >
+                                    <Trash2 className="w-6 h-6" />
+                                    <span className="text-xs font-semibold">Delete</span>
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">View only</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : (
             <FeedSectionEmptyState
               icon={hasActiveFilters ? AlertTriangle : Wheat}

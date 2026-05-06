@@ -514,10 +514,21 @@ export default function LivestockPage() {
   const totalGroupes =
     overviewTotals.totalGroupes ??
     overviewTotals.totalGroups ??
+    overviewTotals.totalBatches ??
     overviewTotals.totalLivestockGroups ??
+    overviewTotals.totalLivestockBatches ??
+    overview?.totalGroupes ??
+    overview?.totalGroups ??
+    overview?.totalBatches ??
+    overview?.totalLivestockGroups ??
+    overview?.totalLivestockBatches ??
     summary?.totalLivestockGroupes ??
     summary?.totalLivestockGroups ??
+    summary?.totalLivestockBatches ??
+    summary?.totalBatches ??
     summary?.totalGroups ??
+    batchCards.length ??
+    items.length ??
     0;
   const mortalityRate =
     overviewTotals.mortalityRate != null
