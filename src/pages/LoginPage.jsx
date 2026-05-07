@@ -32,6 +32,10 @@ import { normalizeContactVerificationState } from "../utils/contactVerification"
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const postAuthRedirect =
+    typeof location.state?.postAuthRedirect === "string"
+      ? location.state.postAuthRedirect
+      : "";
   const { login, loading: authLoading } = useAuth();
   const { refreshTenants, ensureActiveTenant, setActiveTenant, resetTenantState } = useTenant();
   const brandName = "KFarms";
@@ -153,8 +157,16 @@ export default function LoginPage() {
         type: "success",
       });
 
-      navigate(hasTenants ? toKfarmsAppPath("/dashboard") : "/onboarding/create-tenant", {
+      if (hasTenants) {
+        navigate(postAuthRedirect || toKfarmsAppPath("/dashboard"), {
+          replace: true,
+        });
+        return;
+      }
+
+      navigate("/onboarding/create-tenant", {
         replace: true,
+        state: postAuthRedirect ? { postCreateRedirect: postAuthRedirect } : undefined,
       });
     } catch (err) {
       const verificationPayload = err?.response?.data?.data;
@@ -300,6 +312,7 @@ export default function LoginPage() {
                   </button>
                   <Link
                     to="/auth/signup"
+                    state={postAuthRedirect ? { postAuthRedirect } : undefined}
                     className="text-sm text-slate-600 hover:text-accent-primary dark:text-slate-300"
                   >
                     Create account

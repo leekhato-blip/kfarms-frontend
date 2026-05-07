@@ -52,6 +52,10 @@ function readErrorMessage(error) {
 export default function CreateTenant() {
   const navigate = useNavigate();
   const location = useLocation();
+  const postCreateRedirect =
+    typeof location.state?.postCreateRedirect === "string"
+      ? location.state.postCreateRedirect
+      : "";
   const { logout } = useAuth();
   const {
     tenants,
@@ -174,7 +178,7 @@ export default function CreateTenant() {
       }
 
       clearTenantSwitchMessage();
-      navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+      navigate(postCreateRedirect || toKfarmsAppPath("/dashboard"), { replace: true });
     } catch (err) {
       setError(readErrorMessage(err));
     } finally {

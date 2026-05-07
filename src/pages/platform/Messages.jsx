@@ -243,6 +243,7 @@ export default function PlatformMessagesPage() {
   const hasActiveFilters = Boolean(search || status !== "ALL" || lane !== "ALL");
   const hasPendingFilterChanges =
     searchInput.trim() !== search || statusInput !== status || laneInput !== lane;
+  const selectedAnnouncementTenantCount = announcementTenantIds.length;
 
   function handleApplyFilters() {
     setSearch(searchInput.trim());
@@ -896,4 +897,3 @@ export default function PlatformMessagesPage() {
     </div>
   );
 }
-  const selectedAnnouncementTenantCount = announcementTenantIds.length;

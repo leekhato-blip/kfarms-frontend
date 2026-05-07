@@ -47,7 +47,7 @@ export function ToastProvider({ children }) {
       {children}
       {typeof document !== "undefined"
         ? createPortal(
-            <div className="pointer-events-none fixed left-1/2 top-4 z-[180] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-3 sm:left-auto sm:right-4 sm:translate-x-0 sm:px-0">
+            <div className="pointer-events-none fixed left-1/2 top-4 z-[110000] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-3 sm:left-auto sm:right-4 sm:translate-x-0 sm:px-0">
               {toasts.map((toast) => {
                 const Icon = iconFor(toast.type);
                 return (

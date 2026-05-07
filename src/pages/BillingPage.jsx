@@ -43,6 +43,7 @@ import {
   getOrganizationSettings,
 } from "../services/settingsService";
 import {
+  BILLING_INTERVAL_PARAM,
   BILLING_PLAN_FOCUS_PARAM,
   getBillingPlanCardAnchor,
 } from "../utils/billingNavigation";
@@ -194,6 +195,16 @@ export default function BillingPage() {
       ),
     [location.search],
   );
+  const focusBillingInterval = React.useMemo(() => {
+    const raw = new URLSearchParams(location.search).get(BILLING_INTERVAL_PARAM);
+    return raw ? normalizeBillingInterval(raw, "MONTHLY") : "";
+  }, [location.search]);
+
+  React.useEffect(() => {
+    if (focusPlanId === "PRO" && focusBillingInterval) {
+      setSelectedProInterval(focusBillingInterval);
+    }
+  }, [focusBillingInterval, focusPlanId]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;

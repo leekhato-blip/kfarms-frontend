@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -88,6 +88,11 @@ function resolveCreatedTenantId(createdTenant, tenantList, farmSlug) {
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const postAuthRedirect =
+    typeof location.state?.postAuthRedirect === "string"
+      ? location.state.postAuthRedirect
+      : "";
   const { login, refreshMe } = useAuth();
   const { refreshTenants, ensureActiveTenant, setActiveTenant, resetTenantState } = useTenant();
   const brandName = "KFarms";
@@ -285,6 +290,7 @@ export default function SignupPage() {
           replace: true,
           state: {
             prefillIdentifier: email,
+            postAuthRedirect,
             signupRecoveryMessage:
               extractErrorMessage(
                 error,
@@ -309,7 +315,7 @@ export default function SignupPage() {
           ensureActiveTenant(tenantList, { redirectIfEmpty: false });
         }
         await refreshMe().catch(() => null);
-        navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+        navigate(postAuthRedirect || toKfarmsAppPath("/dashboard"), { replace: true });
         return;
       } catch (error) {
         const tenantList = await refreshTenants({ force: true }).catch(() => []);
@@ -317,13 +323,14 @@ export default function SignupPage() {
         if (createdTenantId) {
           setActiveTenant(createdTenantId);
           await refreshMe().catch(() => null);
-          navigate(toKfarmsAppPath("/dashboard"), { replace: true });
+          navigate(postAuthRedirect || toKfarmsAppPath("/dashboard"), { replace: true });
           return;
         }
 
         navigate("/onboarding/create-tenant", {
           replace: true,
           state: {
+            ...(postAuthRedirect ? { postCreateRedirect: postAuthRedirect } : {}),
             prefill: {
               name: farmName,
               slug: farmSlug,
@@ -730,6 +737,7 @@ export default function SignupPage() {
                 <div className="flex flex-col gap-2.5 border-t border-slate-200/80 pt-3 dark:border-white/10 sm:flex-row sm:items-center sm:justify-between sm:pt-4">
                   <Link
                     to="/auth/login"
+                    state={postAuthRedirect ? { postAuthRedirect } : undefined}
                     className="text-sm text-slate-700 transition hover:text-accent-primary dark:text-darkText"
                   >
                     I already have an account
