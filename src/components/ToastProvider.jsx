@@ -21,6 +21,24 @@ function styleFor(type) {
   return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-400/30 dark:bg-blue-500/20 dark:text-blue-100";
 }
 
+const TOAST_CONTAINER_ID = "kf-toast-root";
+
+function getToastContainer() {
+  if (typeof document === "undefined") return null;
+  let container = document.getElementById(TOAST_CONTAINER_ID);
+  if (!container) {
+    container = document.createElement("div");
+    container.id = TOAST_CONTAINER_ID;
+    container.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;z-index:999999;pointer-events:none;";
+    document.body.appendChild(container);
+  }
+  // Always move to end of body so it renders above any other portals
+  if (container.parentNode && container !== container.parentNode.lastElementChild) {
+    container.parentNode.appendChild(container);
+  }
+  return container;
+}
+
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = React.useState([]);
 
@@ -42,12 +60,16 @@ export function ToastProvider({ children }) {
     [notify, dismiss],
   );
 
+  const toastContainer = getToastContainer();
+
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {typeof document !== "undefined"
+      {toastContainer
         ? createPortal(
-            <div className="pointer-events-none fixed left-1/2 top-4 z-[110000] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-3 sm:left-auto sm:right-4 sm:translate-x-0 sm:px-0">
+            <div
+              className="pointer-events-none fixed left-1/2 top-4 z-[999999] flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-3 sm:left-auto sm:right-4 sm:translate-x-0 sm:px-0"
+            >
               {toasts.map((toast) => {
                 const Icon = iconFor(toast.type);
                 return (
@@ -70,7 +92,7 @@ export function ToastProvider({ children }) {
                 );
               })}
             </div>,
-            document.body,
+            toastContainer,
           )
         : null}
     </ToastContext.Provider>

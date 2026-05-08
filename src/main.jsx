@@ -8,6 +8,7 @@ import { TenantProvider } from "./tenant/TenantContext.jsx";
 import { PlatformAuthProvider } from "./auth/AuthProvider.jsx";
 import { initializeOfflineSync } from "./offline/offlineSync.js";
 import { getStoredThemeMode, resolveThemeScopeFromPath } from "./constants/settings.js";
+import { SalesModalProvider } from "./components/SalesModalProvider.jsx";
 
 const SPA_REDIRECT_STORAGE_KEY = "kf_spa_redirect";
 const SERVICE_WORKER_CLEANUP_SESSION_KEY = "kf_sw_cleanup_v3";
@@ -100,7 +101,9 @@ createRoot(root).render(
       <AuthProvider>
         <BrowserRouter>
           <TenantProvider>
-            <App />
+            <SalesModalProvider>
+              <App />
+            </SalesModalProvider>
           </TenantProvider>
         </BrowserRouter>
       </AuthProvider>

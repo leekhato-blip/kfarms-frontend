@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowUp,
   ArrowUpRight,
@@ -34,7 +34,12 @@ import {
 } from "../constants/plans";
 import { usePlanCatalog } from "../hooks/usePlanCatalog";
 import { getPlanBillingInfo, getPlanBillingOptions } from "../services/billingService";
-import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
+import {
+  buildBillingPlanFocusPath,
+  buildTalkToSalesPath,
+  SALES_MODAL_PARAM,
+} from "../utils/billingNavigation";
+import { useSalesModal } from "../components/SalesModalProvider";
 
 const PLAN_TONE = {
   FREE: {
@@ -216,12 +221,13 @@ function normalizeLimitLabel(label) {
 }
 
 export default function ProductProfilePage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { theme, isDark, toggleTheme } = useTheme();
   const [showScrollTop, setShowScrollTop] = React.useState(false);
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
-  const [salesModalOpen, setSalesModalOpen] = React.useState(false);
   const [selectedProInterval, setSelectedProInterval] = React.useState("MONTHLY");
+  const { openModal } = useSalesModal();
   const { isAuthenticated, user, logout } = useAuth();
   const { activeTenantId, activeTenant, tenants, loadingTenants } = useTenant();
   const planTierConfig = usePlanCatalog();
@@ -286,23 +292,11 @@ export default function ProductProfilePage() {
   }, []);
 
   React.useEffect(() => {
-    if (!salesModalOpen || typeof window === "undefined") return undefined;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setSalesModalOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [salesModalOpen]);
+    const params = new URLSearchParams(location.search);
+    if (params.get(SALES_MODAL_PARAM) === "1") {
+      openModal();
+    }
+  }, [location.search, openModal]);
 
   const handleSignOut = async () => {
     await logout();
@@ -817,40 +811,6 @@ export default function ProductProfilePage() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-4 rounded-[1.6rem] border border-slate-200/80 bg-white/75 p-4 shadow-soft dark:border-white/10 dark:bg-white/[0.05] md:flex-row md:items-center md:justify-between">
-              <div className="max-w-2xl">
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Pro billing
-                </div>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  Pick the billing cycle before checkout. Annual gives the bigger savings, monthly keeps it flexible.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 rounded-[1.2rem] border border-slate-200/80 bg-slate-50/90 p-2 dark:border-white/10 dark:bg-slate-950/50">
-                {proBillingOptions.map((option) => {
-                  const optionSelected = selectedProInterval === option.interval;
-                  const intervalLabel = option.interval === "ANNUAL" ? "Annual" : "Monthly";
-                  return (
-                    <button
-                      key={option.interval}
-                      type="button"
-                      onClick={() => setSelectedProInterval(option.interval)}
-                      className={`rounded-xl px-4 py-3 text-left transition ${
-                        optionSelected
-                          ? "bg-slate-900 text-white shadow-[0_16px_34px_rgba(15,23,42,0.18)] dark:bg-white dark:text-slate-950"
-                          : "bg-white text-slate-700 hover:bg-slate-100 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/[0.1]"
-                      }`}
-                    >
-                      <div className="text-sm font-semibold">{intervalLabel}</div>
-                      <div className={`mt-1 text-[11px] ${optionSelected ? "text-white/80 dark:text-slate-700" : "text-slate-500 dark:text-slate-400"}`}>
-                        {option.savingsLabel || "Flexible billing"}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
               {planTierConfig.map((plan) => {
                 const tone = PLAN_TONE[plan.id] || PLAN_TONE.FREE;
@@ -893,7 +853,7 @@ export default function ProductProfilePage() {
                     actionPath =
                       currentTenantPlanId === "ENTERPRISE"
                         ? "/billing"
-                        : "/product-profile#contact";
+                        : buildTalkToSalesPath();
                     actionLabel =
                       currentTenantPlanId === "ENTERPRISE"
                         ? "Manage Enterprise Plan"
@@ -901,10 +861,7 @@ export default function ProductProfilePage() {
                   }
                 } else if (plan.id === "PRO") {
                   actionPath = "/auth/signup";
-                  actionLabel =
-                    selectedProInterval === "ANNUAL"
-                      ? "Sign up for Annual Pro"
-                      : "Sign up for Monthly Pro";
+                  actionLabel = plan.ctaLabel;
                 }
 
                 return (
@@ -924,6 +881,52 @@ export default function ProductProfilePage() {
                         </span>
                       )}
                     </div>
+                    {isProPlan ? (
+                      <div className="mt-4 rounded-2xl border border-violet-200/80 bg-violet-50/85 p-3 shadow-[0_12px_28px_rgba(124,58,237,0.08)] dark:border-violet-300/15 dark:bg-violet-500/10 dark:shadow-none">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-700 dark:text-violet-200">
+                              Pro billing
+                            </div>
+                            <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300">
+                              Choose monthly or annual before checkout.
+                            </p>
+                          </div>
+                          <div className="rounded-full border border-violet-200/80 bg-white/80 px-2 py-1 text-[10px] font-semibold text-violet-700 dark:border-violet-300/15 dark:bg-white/10 dark:text-violet-200">
+                            {selectedProInterval === "ANNUAL" ? "Best value" : "Flexible"}
+                          </div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {proBillingOptions.map((option) => {
+                            const optionSelected = selectedProInterval === option.interval;
+                            const intervalLabel = option.interval === "ANNUAL" ? "Annual" : "Monthly";
+                            return (
+                              <button
+                                key={option.interval}
+                                type="button"
+                                onClick={() => setSelectedProInterval(option.interval)}
+                                className={`rounded-xl border px-3 py-3 text-left transition ${
+                                  optionSelected
+                                    ? "border-slate-900 bg-slate-900 text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] dark:border-white dark:bg-white dark:text-slate-950"
+                                    : "border-violet-200/80 bg-white text-slate-700 hover:bg-violet-50 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/[0.1]"
+                                }`}
+                              >
+                                <div className="text-sm font-semibold">{intervalLabel}</div>
+                                <div
+                                  className={`mt-1 text-[11px] ${
+                                    optionSelected
+                                      ? "text-white/80 dark:text-slate-700"
+                                      : "text-slate-500 dark:text-slate-400"
+                                  }`}
+                                >
+                                  {option.savingsLabel || "Flexible billing"}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
                     {(compareAtPriceLabel || priceLabel) ? (
                       <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/90 p-4 dark:border-white/10 dark:bg-white/[0.04]">
                         <div className="flex flex-wrap items-end gap-3">
@@ -976,31 +979,15 @@ export default function ProductProfilePage() {
                     {plan.id === "ENTERPRISE" && currentTenantPlanId !== "ENTERPRISE" ? (
                       <button
                         type="button"
-                        onClick={() => setSalesModalOpen(true)}
+                        onClick={openModal}
                         className={`mt-5 inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
                       >
                         Talk to Sales
                       </button>
-                    ) : !isAuthenticated && isProPlan ? (
-                      <div className="mt-5 space-y-2">
-                        <Link
-                          to={actionPath}
-                          state={proAuthState}
-                          className={`inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
-                        >
-                          {actionLabel}
-                        </Link>
-                        <Link
-                          to="/auth/login"
-                          state={proAuthState}
-                          className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-                        >
-                          Log in to continue
-                        </Link>
-                      </div>
                     ) : (
                       <Link
                         to={actionPath}
+                        state={!isAuthenticated && isProPlan ? proAuthState : undefined}
                         className={`mt-5 inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
                       >
                         {actionLabel}
@@ -1168,75 +1155,8 @@ export default function ProductProfilePage() {
         </div>
       </section>
 
-      {salesModalOpen ? (
-        <div className="fixed inset-0 z-[14000] flex items-center justify-center px-4 py-6">
-          <button
-            type="button"
-            aria-label="Close sales contact modal"
-            className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
-            onClick={() => setSalesModalOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-[2rem] border border-white/15 bg-white/95 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-slate-950/95">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/60 bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-800 dark:border-emerald-300/25 dark:bg-emerald-500/12 dark:text-emerald-200">
-                  Talk to Sales
-                </div>
-                <h3 className="mt-4 text-2xl font-header font-semibold text-slate-950 dark:text-slate-50">
-                  Contact the KFarms team
-                </h3>
-                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  Share your setup, team size, and workflow needs. We&apos;ll help you choose the right rollout and enterprise support path.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSalesModalOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/80 bg-white text-slate-700 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/[0.1]"
-                aria-label="Close sales contact modal"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      {/* Sales Modal Moved to Global Provider */}
 
-            <div className="mt-6 grid gap-3">
-              <a
-                href="mailto:support@kfarms.app"
-                className="inline-flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-              >
-                <Mail className="h-4 w-4 text-slate-400" />
-                support@kfarms.app
-              </a>
-              <a
-                href="tel:+2349035085579"
-                className="inline-flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08]"
-              >
-                <Phone className="h-4 w-4 text-slate-400" />
-                +234 903 5085 579
-              </a>
-              <div className="inline-flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
-                <MapPin className="h-4 w-4 text-slate-400" />
-                Abuja, Nigeria
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <a
-                href="mailto:support@kfarms.app?subject=KFarms%20Enterprise%20Inquiry"
-                className="inline-flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:opacity-90"
-              >
-                Email sales
-              </a>
-              <a
-                href="tel:+2349035085579"
-                className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:bg-white/[0.08]"
-              >
-                Call now
-              </a>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <footer className="relative overflow-hidden border-t border-white/10 bg-white/10 dark:bg-darkCard/40">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_25%,rgba(99,102,241,0.17),transparent_42%),radial-gradient(circle_at_86%_8%,rgba(16,185,129,0.15),transparent_36%),radial-gradient(circle_at_84%_86%,rgba(56,189,248,0.14),transparent_36%)]" />

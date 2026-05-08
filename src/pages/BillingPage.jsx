@@ -45,8 +45,10 @@ import {
 import {
   BILLING_INTERVAL_PARAM,
   BILLING_PLAN_FOCUS_PARAM,
+  buildTalkToSalesPath,
   getBillingPlanCardAnchor,
 } from "../utils/billingNavigation";
+import { useSalesModal } from "../components/SalesModalProvider";
 import {
   WORKSPACE_PERMISSIONS,
   hasWorkspacePermission,
@@ -137,6 +139,7 @@ export default function BillingPage() {
   const { user } = useAuth();
   const { activeTenant, activeTenantId, refreshTenants } = useTenant();
   const displayPlans = usePlanCatalog();
+  const { openModal } = useSalesModal();
 
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -464,7 +467,7 @@ export default function BillingPage() {
       return false;
     }
     if (normalizedPlan === "ENTERPRISE") {
-      navigate("/product-profile#contact");
+      openModal();
       return false;
     }
 
@@ -613,9 +616,9 @@ export default function BillingPage() {
     }
 
     if (requestedPlan === "ENTERPRISE") {
-      navigate("/product-profile#contact");
+      openModal();
       clearPlanIntentQuery();
-                    return;
+      return;
     }
 
     (async () => {
@@ -1147,12 +1150,13 @@ export default function BillingPage() {
 
                         <div className="mt-5">
                           {isEnterprise ? (
-                            <Link
-                              to="/product-profile#contact"
+                            <button
+                              type="button"
+                              onClick={openModal}
                               className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300/80 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
                             >
                               Talk to Sales
-                            </Link>
+                            </button>
                           ) : isCurrentSelection ? (
                             <button
                               type="button"

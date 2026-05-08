@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Lock, Sparkles } from "lucide-react";
 import { getPlanById, normalizePlanId } from "../constants/plans";
 import { buildBillingPlanFocusPath } from "../utils/billingNavigation";
+import { useSalesModal } from "./SalesModalProvider";
 
 export default function PlanUpgradePrompt({
   title = "Upgrade required",
@@ -12,12 +13,13 @@ export default function PlanUpgradePrompt({
   compact = false,
   className = "",
 }) {
+  const { openModal } = useSalesModal();
   const normalizedPlan = normalizePlanId(requiredPlan, "PRO");
   const plan = getPlanById(normalizedPlan, "PRO");
   const highlights = Array.isArray(plan?.highlights) ? plan.highlights.slice(0, 3) : [];
   const upgradePath =
     normalizedPlan === "ENTERPRISE"
-      ? plan.ctaPath || "/product-profile#contact"
+      ? plan.ctaPath || "/product-profile?sales=1"
       : buildBillingPlanFocusPath(normalizedPlan);
   const comparePath =
     normalizedPlan === "ENTERPRISE"
@@ -64,12 +66,22 @@ export default function PlanUpgradePrompt({
       )}
 
       <div className="relative z-10 mt-4 flex flex-wrap gap-2">
-        <Link
-          to={upgradePath}
-          className="inline-flex items-center justify-center rounded-md border border-accent-primary/40 bg-accent-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
-        >
-          {upgradeLabel}
-        </Link>
+        {normalizedPlan === "ENTERPRISE" ? (
+          <button
+            type="button"
+            onClick={openModal}
+            className="inline-flex items-center justify-center rounded-md border border-accent-primary/40 bg-accent-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+          >
+            {upgradeLabel}
+          </button>
+        ) : (
+          <Link
+            to={upgradePath}
+            className="inline-flex items-center justify-center rounded-md border border-accent-primary/40 bg-accent-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+          >
+            {upgradeLabel}
+          </Link>
+        )}
         <Link
           to={comparePath}
           className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-white dark:border-white/20 dark:bg-white/10 dark:text-darkText dark:hover:bg-white/20"
