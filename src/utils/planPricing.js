@@ -35,7 +35,7 @@ export function readPlanPromoSettings(planId = "PRO") {
 
 export function getDisplayPlan(plan, promoSettings = readPlatformControlSettings()) {
   const promo = normalizePlanPromoSettings(promoSettings, plan?.id || "PRO");
-  const nextPlan = { ...plan, compareAtPriceLabel: "" };
+  const nextPlan = { ...plan, compareAtPriceLabel: plan.compareAtPriceLabel || "" };
 
   if (plan.id !== promo.planId || !promo.enabled) {
     return nextPlan;
@@ -48,7 +48,7 @@ export function getDisplayPlan(plan, promoSettings = readPlatformControlSettings
     const monthLabel = months === 1 ? "month" : "months";
     return {
       ...nextPlan,
-      compareAtPriceLabel: regularPriceLabel,
+      compareAtPriceLabel: plan.compareAtPriceLabel || regularPriceLabel,
       priceLabel: "Free",
       cycleLabel: `${months}-${monthLabel} free trial`,
       promoNote: `Then ${regularPriceLabel} per month`,
@@ -66,7 +66,7 @@ export function getDisplayPlan(plan, promoSettings = readPlatformControlSettings
 
   return {
     ...nextPlan,
-    compareAtPriceLabel: regularPriceLabel,
+    compareAtPriceLabel: plan.compareAtPriceLabel || regularPriceLabel,
     priceLabel: formatPromotionPrice(promo.discountPrice) || "NGN 7,000",
     cycleLabel: "intro price per month",
     promoNote: `Regular price returns after ${promo.durationDays || "30"} days`,

@@ -28,6 +28,8 @@ const PRO_BILLING_OPTIONS = Object.freeze({
     paymentRequired: true,
     label: "NGN 7,000 / month",
     priceLabel: "NGN 7,000",
+    compareAtAmount: 10000,
+    compareAtLabel: "NGN 10,000",
     cycleLabel: "per month",
     promoNote: "Billed every month",
   },
