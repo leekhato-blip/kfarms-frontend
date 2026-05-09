@@ -315,7 +315,8 @@ export default function SignupPage() {
           ensureActiveTenant(tenantList, { redirectIfEmpty: false });
         }
         await refreshMe().catch(() => null);
-        navigate(postAuthRedirect || "/workspace", { replace: true });
+        const target = createdTenantId ? toKfarmsAppPath("/dashboard") : "/workspace";
+        navigate(postAuthRedirect || target, { replace: true });
         return;
       } catch (error) {
         const tenantList = await refreshTenants({ force: true }).catch(() => []);
@@ -323,7 +324,8 @@ export default function SignupPage() {
         if (createdTenantId) {
           setActiveTenant(createdTenantId);
           await refreshMe().catch(() => null);
-          navigate(postAuthRedirect || "/workspace", { replace: true });
+          const target = createdTenantId ? toKfarmsAppPath("/dashboard") : "/workspace";
+          navigate(postAuthRedirect || target, { replace: true });
           return;
         }
 

@@ -1475,7 +1475,7 @@ export default function SettingsPage() {
                                   )
                                 }
                                 className={inputClassName}
-                                placeholder="Welcome back to Delta Integrated Farms"
+                                placeholder="Welcome back to Delta Integrated Farms (Demo)"
                               />
                             </div>
 
