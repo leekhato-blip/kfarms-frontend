@@ -197,7 +197,7 @@ export function WorkspaceRedirect() {
       setPreferencesReady(true);
     } else {
       setLandingPage("/dashboard");
-      setPreferencesReady(false);
+      setPreferencesReady(true);
     }
 
     getUserPreferences({

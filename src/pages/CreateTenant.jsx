@@ -30,10 +30,10 @@ const SECTION_BADGE_BASE_CLASS =
   "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur-sm";
 
 const QUICK_SETUP_BADGE_CLASS =
-  `${SECTION_BADGE_BASE_CLASS} border-emerald-200/90 bg-emerald-100/95 text-emerald-900 dark:border-emerald-300/45 dark:bg-emerald-500/28 dark:text-emerald-50`;
+  `${SECTION_BADGE_BASE_CLASS} border-emerald-200/90 bg-emerald-100/95 text-emerald-900 dark:border-emerald-400/40 dark:bg-emerald-500/25 dark:text-emerald-300`;
 
 const SETUP_GUIDE_BADGE_CLASS =
-  `${SECTION_BADGE_BASE_CLASS} border-violet-200/90 bg-violet-100/95 text-violet-900 dark:border-violet-300/45 dark:bg-violet-500/28 dark:text-violet-50`;
+  `${SECTION_BADGE_BASE_CLASS} border-violet-200/90 bg-violet-100/95 text-violet-900 dark:border-violet-400/40 dark:bg-violet-500/25 dark:text-violet-300`;
 
 const SETUP_GUIDE = [
   "Name the farm and confirm the workspace link.",
