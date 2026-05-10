@@ -24,5 +24,5 @@ export function resolveWorkspaceRedirect({
     );
   }
 
-  return "/onboarding/create-tenant";
+  return "/dashboard";
 }

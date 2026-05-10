@@ -2,7 +2,7 @@ import React from "react";
 import AuthCard from "../components/AuthCard";
 import AuthWatermark from "../components/AuthWatermark";
 import GlassToast from "../components/GlassToast";
-import { PLATFORM_ONLY_WORKSPACE_MESSAGE, useAuth } from "../hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 import PageWrapper from "../components/PageWrapper";
@@ -94,9 +94,7 @@ export default function LoginPage() {
   }, []);
 
   const getLoginErrorMessage = (err) => {
-    if (err?.platformOnlyAccount || err?.code === "ERR_PLATFORM_ONLY_ACCOUNT") {
-      return PLATFORM_ONLY_WORKSPACE_MESSAGE;
-    }
+
 
     const status = err?.response?.status;
     const isNetwork =

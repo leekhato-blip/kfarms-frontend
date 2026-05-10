@@ -79,8 +79,12 @@ function resolveCreatedTenantId(createdTenant, tenantList, farmSlug) {
   const list = Array.isArray(tenantList) ? tenantList : [];
   return (
     Number(createdTenant?.tenantId) ||
+    Number(createdTenant?.id) ||
     Number(
       list.find((tenant) => String(tenant?.slug || "").trim() === farmSlug)?.tenantId,
+    ) ||
+    Number(
+      list.find((tenant) => String(tenant?.slug || "").trim() === farmSlug)?.id,
     ) ||
     null
   );
@@ -315,8 +319,7 @@ export default function SignupPage() {
           ensureActiveTenant(tenantList, { redirectIfEmpty: false });
         }
         await refreshMe().catch(() => null);
-        const target = createdTenantId ? toKfarmsAppPath("/dashboard") : "/workspace";
-        navigate(postAuthRedirect || target, { replace: true });
+        navigate(postAuthRedirect || "/workspace", { replace: true });
         return;
       } catch (error) {
         const tenantList = await refreshTenants({ force: true }).catch(() => []);
@@ -324,8 +327,7 @@ export default function SignupPage() {
         if (createdTenantId) {
           setActiveTenant(createdTenantId);
           await refreshMe().catch(() => null);
-          const target = createdTenantId ? toKfarmsAppPath("/dashboard") : "/workspace";
-          navigate(postAuthRedirect || target, { replace: true });
+          navigate(postAuthRedirect || "/workspace", { replace: true });
           return;
         }
 

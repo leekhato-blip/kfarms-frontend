@@ -47,7 +47,7 @@ export default function ProtectedRoute({
   }
 
   if (requireTenant && !activeTenantId) {
-    return <Navigate to="/onboarding/create-tenant" replace state={{ from: location.pathname }} />;
+    return <PageLoader />;
   }
 
   if (requireTenant) {

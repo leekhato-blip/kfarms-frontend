@@ -867,10 +867,10 @@ export default function ProductProfilePage() {
                 return (
                   <div
                     key={plan.id}
-                    className={`relative overflow-hidden rounded-xl border bg-white/80 dark:bg-darkCard/70 p-5 shadow-soft dark:shadow-dark card-hover ${tone.border}`}
+                    className={`relative flex flex-col h-full overflow-hidden rounded-xl border bg-white/80 dark:bg-darkCard/70 p-5 shadow-soft dark:shadow-dark card-hover ${tone.border}`}
                   >
                     <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${tone.glow} opacity-80`} />
-                    <div className="relative">
+                    <div className="relative flex flex-col h-full">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone.badge}`}>
                         {plan.name}
@@ -976,23 +976,25 @@ export default function ProductProfilePage() {
                       ))}
                     </div>
 
-                    {plan.id === "ENTERPRISE" && currentTenantPlanId !== "ENTERPRISE" ? (
-                      <button
-                        type="button"
-                        onClick={openModal}
-                        className={`mt-5 inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
-                      >
-                        Talk to Sales
-                      </button>
-                    ) : (
-                      <Link
-                        to={actionPath}
-                        state={!isAuthenticated && isProPlan ? proAuthState : undefined}
-                        className={`mt-5 inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
-                      >
-                        {actionLabel}
-                      </Link>
-                    )}
+                    <div className="mt-auto pt-5">
+                      {plan.id === "ENTERPRISE" && currentTenantPlanId !== "ENTERPRISE" ? (
+                        <button
+                          type="button"
+                          onClick={openModal}
+                          className={`inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
+                        >
+                          Talk to Sales
+                        </button>
+                      ) : (
+                        <Link
+                          to={actionPath}
+                          state={!isAuthenticated && isProPlan ? proAuthState : undefined}
+                          className={`inline-flex w-full items-center justify-center rounded-lg border px-3 py-2 text-xs font-semibold transition ${tone.button}`}
+                        >
+                          {actionLabel}
+                        </Link>
+                      )}
+                    </div>
                     </div>
                   </div>
                 );

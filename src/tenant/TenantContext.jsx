@@ -244,13 +244,7 @@ export function TenantProvider({ children }) {
 
       if (list.length === 0) {
         setActiveTenant(null);
-        if (
-          redirectIfEmpty &&
-          !isTenantOnboardingPath(currentPath) &&
-          isTenantScopedPath(currentPath)
-        ) {
-          navigate("/onboarding/create-tenant", { replace: true });
-        }
+
         return null;
       }
 
@@ -309,12 +303,7 @@ export function TenantProvider({ children }) {
             ensureActiveTenant([], { allowFallback: false, redirectIfEmpty: false });
           } else {
             setActiveTenant(null);
-            if (
-              !isTenantOnboardingPath(currentPath) &&
-              isTenantScopedPath(currentPath)
-            ) {
-              navigate("/onboarding/create-tenant", { replace: true });
-            }
+
           }
           return;
         }
@@ -375,29 +364,14 @@ export function TenantProvider({ children }) {
         const tenantList = await refreshTenants();
         const currentPath = pathnameRef.current;
         if (tenantList.length === 0) {
-          if (
-            !isTenantOnboardingPath(currentPath) &&
-            isTenantScopedPath(currentPath)
-          ) {
-            navigate("/onboarding/create-tenant", { replace: true });
-          }
+
           return;
         }
 
-        if (
-          !isTenantOnboardingPath(currentPath) &&
-          isTenantScopedPath(currentPath)
-        ) {
-          navigate("/onboarding/create-tenant", { replace: true });
-        }
+
       } catch {
         const currentPath = pathnameRef.current;
-        if (
-          !isTenantOnboardingPath(currentPath) &&
-          isTenantScopedPath(currentPath)
-        ) {
-          navigate("/onboarding/create-tenant", { replace: true });
-        }
+
       }
     };
 

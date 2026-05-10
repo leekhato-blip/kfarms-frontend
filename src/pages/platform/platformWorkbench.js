@@ -92,6 +92,17 @@ const DEMO_APP_METRICS = Object.freeze({
 
 const DEMO_TENANT_BLUEPRINTS = Object.freeze([
   {
+    id: 301,
+    name: "Isah Farms",
+    slug: "isah-farms",
+    appName: "KFarms",
+    plan: "PRO",
+    status: "ACTIVE",
+    ownerEmail: "ops@isahfarms.africa",
+    memberCount: 9,
+    lastActivityHoursAgo: 2,
+  },
+  {
     id: 302,
     name: "Delta Integrated Farms (Demo)",
     slug: "delta-integrated",
@@ -101,6 +112,39 @@ const DEMO_TENANT_BLUEPRINTS = Object.freeze([
     ownerEmail: "owner@delta-integrated.africa",
     memberCount: 8,
     lastActivityHoursAgo: 5,
+  },
+  {
+    id: 303,
+    name: "Riverbank Poultry",
+    slug: "riverbank-poultry",
+    appName: "KFarms",
+    plan: "ENTERPRISE",
+    status: "ACTIVE",
+    ownerEmail: "team@riverbankpoultry.africa",
+    memberCount: 24,
+    lastActivityHoursAgo: 8,
+  },
+  {
+    id: 304,
+    name: "Blue Basin Fish",
+    slug: "blue-basin-fish",
+    appName: "KFarms",
+    plan: "PRO",
+    status: "ACTIVE",
+    ownerEmail: "hello@bluebasinfish.com",
+    memberCount: 7,
+    lastActivityHoursAgo: 31,
+  },
+  {
+    id: 305,
+    name: "Green Basket Foods",
+    slug: "green-basket-foods",
+    appName: "KFarms",
+    plan: "PRO",
+    status: "ACTIVE",
+    ownerEmail: "team@greenbasket.io",
+    memberCount: 9,
+    lastActivityHoursAgo: 1,
   },
 ]);
 

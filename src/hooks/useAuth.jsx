@@ -12,8 +12,6 @@ import { readTokenFromPayload } from "../utils/formatters";
 
 export const AuthContext = React.createContext(null);
 const AUTH_SESSION_HINT_KEY = "kf_auth_session_hint";
-export const PLATFORM_ONLY_WORKSPACE_MESSAGE =
-  "This account has ROOTS platform access, but it is not linked to any farm workspace yet. Open the platform login instead.";
 
 function isPlatformPathActive() {
   if (typeof window === "undefined") return false;
@@ -42,30 +40,6 @@ export function useAuth() {
   return React.useContext(AuthContext);
 }
 
-function isPlatformAdminUser(userData) {
-  return String(userData?.role || "").trim().toUpperCase() === "PLATFORM_ADMIN";
-}
-
-async function canAccessWorkspaceProduct(userData) {
-  if (!isPlatformAdminUser(userData)) {
-    return true;
-  }
-
-  try {
-    const response = await apiClient.get("/tenants/my", { skipAuthInvalid: true });
-    const payload = response.data?.data ?? response.data;
-    return Array.isArray(payload) && payload.length > 0;
-  } catch (error) {
-    const status = Number(error?.response?.status || 0);
-
-    if ([400, 401, 403].includes(status)) {
-      return false;
-    }
-
-    // Avoid blocking real workspace users during transient backend/network issues.
-    return true;
-  }
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = React.useState(null);
@@ -88,14 +62,6 @@ export function AuthProvider({ children }) {
     const userData = await loginApi({ identifier, password });
     setWorkspaceToken(readTokenFromPayload(userData));
     const resolvedUser = userData?.user ?? userData;
-
-    if (!(await canAccessWorkspaceProduct(resolvedUser))) {
-      logoutLocal();
-      const error = new Error(PLATFORM_ONLY_WORKSPACE_MESSAGE);
-      error.code = "ERR_PLATFORM_ONLY_ACCOUNT";
-      error.platformOnlyAccount = true;
-      throw error;
-    }
 
     setSession(resolvedUser);
     return resolvedUser;
@@ -123,10 +89,6 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const userData = await meApi();
-      if (!(await canAccessWorkspaceProduct(userData))) {
-        logoutLocal();
-        return;
-      }
       setSession(userData);
     } catch {
       logoutLocal();
@@ -169,12 +131,6 @@ export function AuthProvider({ children }) {
     meApi()
       .then(async (userData) => {
         if (!active) return;
-        const canAccessWorkspace = await canAccessWorkspaceProduct(userData);
-        if (!active) return;
-        if (!canAccessWorkspace) {
-          logoutLocal();
-          return;
-        }
         setSession(userData);
       })
       .catch(() => {
