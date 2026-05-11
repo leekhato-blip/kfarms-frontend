@@ -34,18 +34,18 @@ const PRO_BILLING_OPTIONS = Object.freeze({
     promoNote: "NGN 7,000 for the first month, then NGN 10,000/mo",
   },
   ANNUAL: {
-    amount: 70000,
+    amount: 100000,
     currency: "NGN",
     interval: "ANNUAL",
     paymentRequired: true,
-    label: "NGN 70,000 / year",
-    priceLabel: "NGN 70,000",
+    label: "NGN 100,000 / year",
+    priceLabel: "NGN 100,000",
     cycleLabel: "per year",
-    promoNote: "Best value: Save 40% vs regular monthly",
+    promoNote: "Save 16% off the regular monthly rate",
     compareAtAmount: 120000,
     compareAtLabel: "NGN 120,000",
-    savingsLabel: "Save 40%",
-    discountPercent: 40,
+    savingsLabel: "Save 16%",
+    discountPercent: 16,
   },
 });
 
@@ -281,7 +281,7 @@ function normalizeInvoice(raw = {}) {
     downloadUrl,
     mode:
       String(raw.mode || "").trim().toLowerCase() === "placeholder" ||
-      downloadUrl.startsWith("placeholder://")
+        downloadUrl.startsWith("placeholder://")
         ? "placeholder"
         : "api",
   };
@@ -739,12 +739,12 @@ export async function verifyCheckoutSession({
       });
       const invoice = planMeta.paymentRequired
         ? buildPlaceholderInvoice({
-            reference: checkout.reference,
-            planId: checkout.planId || normalizedPlan,
-            amount: planMeta.amount,
-            currency: planMeta.currency,
-            createdAt: updatedAt,
-          })
+          reference: checkout.reference,
+          planId: checkout.planId || normalizedPlan,
+          amount: planMeta.amount,
+          currency: planMeta.currency,
+          createdAt: updatedAt,
+        })
         : null;
 
       if (invoice) {
