@@ -268,7 +268,7 @@ export default function ProductProfilePage() {
           }
         });
       },
-      { threshold: 0.2 },
+      { threshold: 0.1 },
     );
 
     nodes.forEach((node) => observer.observe(node));
@@ -789,9 +789,7 @@ export default function ProductProfilePage() {
       {/* Plans */}
       <section
         id="plans"
-        className="max-w-6xl mx-auto px-6 pb-12 reveal"
-        data-reveal
-        style={{ "--reveal-delay": "130ms" }}
+        className="max-w-6xl mx-auto px-6 pb-12"
       >
         <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/10 dark:bg-darkCard/70 shadow-neo dark:shadow-dark p-6">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-emerald-500/10 opacity-80" />
