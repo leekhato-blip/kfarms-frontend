@@ -578,67 +578,71 @@ export default function SignupPage() {
                   {currentStep === 0 ? (
                     <div className="mt-4 space-y-3.5 sm:mt-5 sm:space-y-4 lg:mt-4 lg:space-y-3">
                       <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-                        <FloatingInput
-                          label="Email"
-                          value={form.email}
-                          onChange={(event) => updateField("email", event.target.value)}
-                          autoComplete="email"
-                          type="email"
-                          required
-                        />
-                        <FloatingInput
-                          label="Username"
-                          value={form.username}
-                          onChange={(event) => updateField("username", event.target.value)}
-                          autoComplete="username"
-                          required
-                        />
-                        <FloatingInput
-                          label="Password"
-                          value={form.password}
-                          onChange={(event) => updateField("password", event.target.value)}
-                          type="password"
-                          autoComplete="new-password"
-                          required
-                        />
-                        <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                            Password checklist
-                          </div>
-                          <div className="mt-2 grid gap-2">
-                            {passwordRequirements.map((requirement) => (
-                              <div
-                                key={requirement.id}
-                                className={`inline-flex items-center gap-2 text-xs sm:text-sm ${
-                                  requirement.met
-                                    ? "text-emerald-700 dark:text-emerald-200"
-                                    : "text-slate-500 dark:text-slate-400"
-                                }`}
-                              >
-                                <span
-                                  className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] ${
+                        <div className="space-y-3 sm:space-y-4">
+                          <FloatingInput
+                            label="Email"
+                            value={form.email}
+                            onChange={(event) => updateField("email", event.target.value)}
+                            autoComplete="email"
+                            type="email"
+                            required
+                          />
+                          <FloatingInput
+                            label="Password"
+                            value={form.password}
+                            onChange={(event) => updateField("password", event.target.value)}
+                            type="password"
+                            autoComplete="new-password"
+                            required
+                          />
+                          <FloatingInput
+                            label="Confirm password"
+                            value={form.confirmPassword}
+                            onChange={(event) =>
+                              updateField("confirmPassword", event.target.value)
+                            }
+                            type="password"
+                            autoComplete="new-password"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-3 sm:space-y-4">
+                          <FloatingInput
+                            label="Username"
+                            value={form.username}
+                            onChange={(event) => updateField("username", event.target.value)}
+                            autoComplete="username"
+                            required
+                          />
+                          <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 h-full">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                              Password checklist
+                            </div>
+                            <div className="mt-2 grid gap-2">
+                              {passwordRequirements.map((requirement) => (
+                                <div
+                                  key={requirement.id}
+                                  className={`inline-flex items-center gap-2 text-xs sm:text-sm ${
                                     requirement.met
-                                      ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
-                                      : "border-slate-300 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500"
+                                      ? "text-emerald-700 dark:text-emerald-200"
+                                      : "text-slate-500 dark:text-slate-400"
                                   }`}
                                 >
-                                  {requirement.met ? "✓" : ""}
-                                </span>
-                                <span>{requirement.label}</span>
-                              </div>
-                            ))}
+                                  <span
+                                    className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] ${
+                                      requirement.met
+                                        ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                        : "border-slate-300 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500"
+                                    }`}
+                                  >
+                                    {requirement.met ? "✓" : ""}
+                                  </span>
+                                  <span>{requirement.label}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        <FloatingInput
-                          label="Confirm password"
-                          value={form.confirmPassword}
-                          onChange={(event) =>
-                            updateField("confirmPassword", event.target.value)
-                          }
-                          type="password"
-                          autoComplete="new-password"
-                          required
-                        />
                       </div>
                     </div>
                   ) : null}

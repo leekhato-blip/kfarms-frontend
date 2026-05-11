@@ -1,6 +1,6 @@
 export const DEMO_ACCOUNT_HINT_KEY = "kf_demo_account";
-export const DEMO_ACCOUNT_EMAIL = "demo.user@demo.kfarms.local";
-export const DEMO_ACCOUNT_USERNAME = "demo.user";
+export const DEMO_ACCOUNT_EMAIL = "demo.viewer@demo.kfarms.local";
+export const DEMO_ACCOUNT_USERNAME = "demo.viewer";
 export const DEMO_ACCOUNT_PASSWORD = "FarmDemo@2026";
 export const DEMO_ACCOUNT_LABEL = "Open demo workspace";
 export const DEMO_ACCOUNT_INFO =
