@@ -601,6 +601,16 @@ export default function SignupPage() {
                           autoComplete="new-password"
                           required
                         />
+                        <FloatingInput
+                          label="Confirm password"
+                          value={form.confirmPassword}
+                          onChange={(event) =>
+                            updateField("confirmPassword", event.target.value)
+                          }
+                          type="password"
+                          autoComplete="new-password"
+                          required
+                        />
                         <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 lg:col-span-2">
                           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                             Password checklist
@@ -629,16 +639,6 @@ export default function SignupPage() {
                             ))}
                           </div>
                         </div>
-                        <FloatingInput
-                          label="Confirm password"
-                          value={form.confirmPassword}
-                          onChange={(event) =>
-                            updateField("confirmPassword", event.target.value)
-                          }
-                          type="password"
-                          autoComplete="new-password"
-                          required
-                        />
                       </div>
                     </div>
                   ) : null}
