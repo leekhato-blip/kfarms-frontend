@@ -392,10 +392,7 @@ export default function SignupPage() {
 
         <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 items-center gap-4 px-0 py-10 sm:px-2 sm:py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,44rem)] lg:gap-6 lg:px-4 lg:py-12">
           <div className="hidden lg:flex lg:flex-col lg:gap-5">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300">
-              <Sparkles className="h-4 w-4" style={{ color: brandAccentColor }} />
-              One friendly setup
-            </div>
+
 
             <div className="flex items-center gap-3">
               <div className="grid h-16 w-16 place-items-center overflow-hidden">
@@ -614,7 +611,7 @@ export default function SignupPage() {
                             autoComplete="username"
                             required
                           />
-                          <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 h-full">
+                          <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 dark:border-white/10 dark:bg-white/5 sm:px-4 sm:py-4">
                             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                               Password checklist
                             </div>

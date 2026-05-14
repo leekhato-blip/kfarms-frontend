@@ -177,7 +177,7 @@ const OFFLINE_PANELS = [
     body: "Stock updates, task progress, production entries, and daily records do not have to wait for stable internet.",
   },
   {
-    title: "Sync-safe recovery",
+    title: "Seamless recovery",
     body: "Work returns cleanly after interruptions instead of forcing your team to guess what was saved.",
   },
   {
@@ -370,18 +370,15 @@ export default function ProductProfilePage() {
       <div className="page-load">
         {/* Hero */}
         <section className="relative overflow-hidden">
-          {isDark ? (
-            <>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(59,130,246,0.22),transparent_34%),radial-gradient(circle_at_86%_8%,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_68%_58%,rgba(6,182,212,0.12),transparent_28%)]" />
-              <div className="absolute inset-0 bg-[#061124]" />
-              <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(4,16,38,0.94)_0%,rgba(6,18,37,0.9)_40%,rgba(7,50,69,0.7)_100%)]" />
-            </>
-          ) : (
-            <>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_86%_8%,rgba(16,185,129,0.14),transparent_30%),radial-gradient(circle_at_68%_58%,rgba(6,182,212,0.12),transparent_28%)]" />
-              <div className="absolute inset-0 bg-[linear-gradient(125deg,rgba(236,246,255,0.95)_0%,rgba(226,244,247,0.92)_40%,rgba(209,241,238,0.78)_100%)]" />
-            </>
-          )}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/src/assets/fishpond_poultry_bg.png" 
+              alt="" 
+              className="h-full w-full object-cover opacity-[0.07] dark:opacity-[0.04]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-lightbg/40 via-lightbg/80 to-lightbg dark:from-darkBg/40 dark:via-darkBg/80 dark:to-darkBg" />
+          </div>
+
           <div className="pointer-events-none absolute left-[52%] top-[61%] hidden h-[22rem] w-[22rem] rounded-full border border-emerald-400/10 lg:block" />
           <div className="pointer-events-none absolute left-[56%] top-[65%] hidden h-[15rem] w-[15rem] rounded-full border border-cyan-400/10 lg:block" />
 
@@ -433,18 +430,19 @@ export default function ProductProfilePage() {
               >
                 <div className="overflow-hidden">
                   <div className="rounded-[1.6rem] border border-white/10 bg-white/10 p-4 shadow-soft backdrop-blur-xl dark:bg-darkCard/[0.55]">
-                  <div className="grid gap-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {HERO_NAV_LINKS.map((link) => (
                       <a
                         key={`mobile-${link.label}`}
                         href={link.href}
                         onClick={() => setMobileNavOpen(false)}
-                        className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white/10 dark:text-slate-100"
+                        className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-white/10 dark:text-slate-100"
                       >
                         {link.label}
                       </a>
                     ))}
                   </div>
+
 
                   <div className="mt-4 grid gap-2.5">
                     {isAuthenticated ? (
@@ -614,16 +612,29 @@ export default function ProductProfilePage() {
               </div>
 
               <div className="relative min-w-0 lg:justify-self-end">
-                <div className="pointer-events-none absolute -inset-6 rounded-[2.8rem] bg-[radial-gradient(circle_at_38%_28%,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_76%_26%,rgba(16,185,129,0.14),transparent_35%)] blur-2xl" />
-                <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.14] bg-[#091426]/80 p-2 shadow-[0_30px_90px_rgba(2,8,23,0.38)] backdrop-blur-xl">
-                  <img
-                    src="/hero-dashboard-live-demo.png"
-                    alt="Demo KFarms dashboard showing farm metrics, charts, and recent activity."
-                    className="block w-full rounded-[1.55rem] border border-white/10 bg-[#091426]"
-                    loading="eager"
-                  />
+                <div className="relative">
+                  {/* Desktop Mockup */}
+                  <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.14] bg-[#091426]/80 p-2 shadow-[0_30px_90px_rgba(2,8,23,0.38)] backdrop-blur-xl">
+                    <img
+                      src="/src/assets/dashboard_desktop.png"
+                      alt="Desktop KFarms dashboard showing real farm metrics."
+                      className="block w-full rounded-[1.55rem] border border-white/10 bg-[#091426]"
+                      loading="eager"
+                    />
+                  </div>
+                  
+                  {/* Mobile Mockup Overlay */}
+                  <div className="absolute -bottom-6 -right-6 hidden w-[14rem] overflow-hidden rounded-[2.5rem] border-[6px] border-[#091426] bg-[#091426] shadow-2xl sm:block lg:-right-10">
+                    <img
+                      src="/src/assets/dashboard_mobile.png"
+                      alt="Mobile KFarms dashboard."
+                      className="block w-full"
+                      loading="eager"
+                    />
+                  </div>
                 </div>
               </div>
+
             </div>
 
             <div className="mt-12 grid gap-4 border-white/10 md:mt-14 md:grid-cols-3 md:gap-0 md:px-3">
