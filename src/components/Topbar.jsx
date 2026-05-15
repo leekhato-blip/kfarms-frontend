@@ -584,6 +584,7 @@ export default function Topbar() {
 
     let isActive = true;
     let source;
+    let streamFailed = false;
     let resyncId;
     let pollId;
 
@@ -667,8 +668,15 @@ export default function Topbar() {
 
       source.addEventListener("notification", handleNotification);
       source.addEventListener("error", () => {
-        if (source.readyState === EventSource.CLOSED) {
-          source.close();
+        if (!isActive || streamFailed) {
+          return;
+        }
+
+        streamFailed = true;
+        source.close();
+
+        if (typeof window !== "undefined" && !pollId) {
+          pollId = window.setInterval(syncIfVisible, NOTIFICATION_FALLBACK_POLL_MS);
         }
       });
       resyncId = window.setInterval(syncIfVisible, NOTIFICATION_RESYNC_MS);

@@ -623,15 +623,12 @@ export default function ProductProfilePage() {
                 <div className="pointer-events-none absolute -inset-x-6 -inset-y-8 rounded-[3rem] bg-[radial-gradient(circle_at_24%_28%,rgba(59,130,246,0.2),transparent_34%),radial-gradient(circle_at_76%_72%,rgba(16,185,129,0.16),transparent_28%),radial-gradient(circle_at_82%_12%,rgba(99,102,241,0.18),transparent_24%)] blur-3xl" />
 
                 <div className="relative mx-auto w-full max-w-[44rem] pb-20 sm:pb-24 lg:mx-0 lg:pb-28">
-                  <div className="relative overflow-hidden rounded-[2.2rem] border border-white/[0.14] bg-slate-950/95 p-3 shadow-[0_35px_90px_rgba(2,8,23,0.5)] ring-1 ring-white/8 backdrop-blur-xl">
-                    <div className="rounded-[1.7rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))] p-3">
+                  <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/95 p-1 sm:p-1.5 shadow-[0_35px_90px_rgba(2,8,23,0.5)] ring-1 ring-white/8 backdrop-blur-xl">
+                    <div className="rounded-[1.5rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))] p-1 sm:p-1.5">
                       <div className="mb-3 flex items-center gap-2 px-1.5">
                         <span className="h-2.5 w-2.5 rounded-full bg-rose-400/90" />
                         <span className="h-2.5 w-2.5 rounded-full bg-amber-300/90" />
                         <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
-                        <span className="ml-3 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-slate-300">
-                          Desktop dashboard
-                        </span>
                       </div>
 
                       <div className="overflow-hidden rounded-[1.3rem] border border-white/10 bg-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
@@ -647,20 +644,14 @@ export default function ProductProfilePage() {
                     <div className="pointer-events-none absolute inset-x-10 top-0 h-24 bg-gradient-to-b from-white/10 to-transparent" />
                   </div>
 
-                  <div className="absolute bottom-0 right-0 z-20 w-[28%] min-w-[8.75rem] max-w-[12.25rem] sm:w-[30%] sm:min-w-[10rem] sm:max-w-[13.25rem] md:w-[29%] md:max-w-[14rem] lg:w-[31%] lg:max-w-[15rem]">
-                    <div className="overflow-hidden rounded-[2rem] shadow-[0_28px_56px_rgba(2,8,23,0.42)]">
+                  <div className="absolute bottom-12 -right-6 z-20 w-1/2 min-w-[14rem] max-w-none sm:bottom-14 sm:-right-8 sm:min-w-[16rem]">
+                    <div className="overflow-visible rounded-none shadow-none">
                       <img
                         src={heroMobileMockup}
                         alt="KFarms mobile mockup preview showing quick farm tasks in the current theme."
-                        className="block w-full h-auto"
+                        className="block h-auto w-[185%] max-w-none -ml-[42%] -mt-[14%]"
                         loading="eager"
                       />
-                    </div>
-
-                    <div className="mt-3 flex justify-center">
-                      <span className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.28em] text-slate-300 shadow-[0_10px_24px_rgba(2,8,23,0.35)]">
-                        Mobile mockup
-                      </span>
                     </div>
                   </div>
                 </div>

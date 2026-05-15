@@ -89,10 +89,6 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, [inlineError]);
 
-  React.useEffect(() => {
-    void waitForBackendConnection({ silent: false, intervalMs: 2500 });
-  }, []);
-
   const getLoginErrorMessage = (err) => {
 
 
@@ -183,7 +179,7 @@ export default function LoginPage() {
       setInlineError(getLoginErrorMessage(err));
     } finally {
       const elapsed = Date.now() - loaderStartRef.current;
-      const minVisible = loginSuccessRef.current ? 900 : 500;
+      const minVisible = loginSuccessRef.current ? 250 : 200;
       const remaining = Math.max(minVisible - elapsed, 0);
       setTimeout(() => {
         setLoading(false);

@@ -38,6 +38,7 @@ export default class RouteErrorBoundary extends React.Component {
       msg.includes("removeChild") ||
       msg.includes("insertBefore") ||
       msg.includes("not a child");
+    const isDynamicImportFetchError = msg.includes("Failed to fetch dynamically imported module");
 
     if (!isRemoveChildCrash) {
       console.error("[RouteErrorBoundary] Unexpected error:", error, info?.componentStack);
@@ -46,6 +47,17 @@ export default class RouteErrorBoundary extends React.Component {
         "[RouteErrorBoundary] Caught a DOM mutation crash (likely mobile browser auto-formatting). Recovering…",
         msg,
       );
+    }
+
+    if (isDynamicImportFetchError && typeof window !== "undefined") {
+      const key = "kfarms:route-import-reload-once";
+      const hasReloaded = window.sessionStorage.getItem(key) === "1";
+      if (!hasReloaded) {
+        window.sessionStorage.setItem(key, "1");
+        window.location.reload();
+      } else {
+        window.sessionStorage.removeItem(key);
+      }
     }
   }
 
